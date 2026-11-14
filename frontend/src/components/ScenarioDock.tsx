@@ -34,6 +34,12 @@ const SCENARIO_BUTTONS: Array<{
     style: 'border-amber-400/60 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25',
   },
   {
+    id: 'headache_branching',
+    label: '▲ Headache: CO₂ or Dehydration?',
+    badge: 'CONTEXT',
+    style: 'border-amber-400/60 bg-amber-500/15 text-amber-100 hover:bg-amber-500/25',
+  },
+  {
     id: 'orthostatic_intolerance',
     label: '■ Landing Orthostatic Drop',
     badge: 'WARNING',
@@ -122,7 +128,7 @@ export const ScenarioDock: React.FC = () => {
                 key={spd}
                 type="button"
                 onClick={() => setSimSpeed(spd)}
-                className={`min-h-[34px] rounded px-2 py-1 text-xs font-mono font-semibold transition-colors ${
+                className={`min-h-[44px] min-w-[44px] rounded px-2 py-1 text-xs font-mono font-semibold transition-colors ${
                   sim.speed === spd
                     ? 'bg-cyan-500 text-slate-950'
                     : 'text-slate-300 hover:bg-space-800'
@@ -133,6 +139,16 @@ export const ScenarioDock: React.FC = () => {
             ))}
           </div>
 
+          {sim.backend_connected ? (
+            // Connected: the phase is set by scenario events in the backend, so it is shown, not chosen.
+            <div
+              className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-space-950 px-2.5 py-1.5 min-h-[44px]"
+              title="Set by the running scenario"
+            >
+              <span className="text-[11px] text-slate-400">Phase:</span>
+              <span className="font-mono text-xs font-semibold text-slate-100">{sim.phase}</span>
+            </div>
+          ) : (
           <label className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-space-950 px-2.5 py-1.5 min-h-[44px]">
             <span className="text-[11px] text-slate-400">Phase:</span>
             <select
@@ -148,6 +164,7 @@ export const ScenarioDock: React.FC = () => {
               ))}
             </select>
           </label>
+          )}
 
           <label className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-space-950 px-2.5 py-1.5 min-h-[44px]">
             <span className="text-[11px] text-slate-400">Seed:</span>

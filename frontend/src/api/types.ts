@@ -52,6 +52,7 @@ export type ScenarioName =
   | 'spe_event'
   | 'co2_scrubber_degradation'
   | 'insomnia_streak'
+  | 'headache_branching'
   | 'orthostatic_intolerance';
 
 export type ReadinessKind = 'OVERALL' | 'EVA' | 'COGNITIVE' | 'PHYSICAL';
@@ -400,20 +401,15 @@ export interface CrewVitalsSnapshot {
   bp_diastolic: number;
   activity_counts: number;
   sleep_hours_24h: number;
-  sleep_efficiency_pct: number;
   dose_rate_uSv_h: number;
   neutron_dose_uSv_h: number;
   bmd_estimate_pct: number;
   body_mass_kg: number;
-  exercise_minutes_today: number;
-  workload_score: number;
 }
 
 export interface SleepNightRecord {
   dayLabel: string;
   hours: number;
-  efficiencyPct: number;
-  awakenings: number;
 }
 
 export interface LongTermTrendPoint {

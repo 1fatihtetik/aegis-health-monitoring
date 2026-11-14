@@ -353,7 +353,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-slate-100">
-                  7-Night Wrist Actigraphy Sleep Duration & Efficiency
+                  7-Night Sleep Duration (Wrist Actigraphy)
                 </h3>
                 <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
                   HRP-14

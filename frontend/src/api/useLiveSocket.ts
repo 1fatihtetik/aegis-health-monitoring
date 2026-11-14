@@ -405,18 +405,16 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const cdr = next.crew.find((c) => c.id === 'C1');
         if (cdr) {
           cdr.vitals.sleep_hours_24h = 4.4;
-          cdr.vitals.sleep_efficiency_pct = 68;
           cdr.vitals.hrv_rmssd = 34;
           cdr.vitals.heart_rate = 79;
-          cdr.vitals.workload_score = 84;
           cdr.sleep_7d = [
-            { dayLabel: 'D-6', hours: 6.8, efficiencyPct: 86, awakenings: 1 },
-            { dayLabel: 'D-5', hours: 6.1, efficiencyPct: 81, awakenings: 2 },
-            { dayLabel: 'D-4', hours: 5.5, efficiencyPct: 77, awakenings: 3 },
-            { dayLabel: 'D-3', hours: 5.1, efficiencyPct: 74, awakenings: 3 },
-            { dayLabel: 'D-2', hours: 4.8, efficiencyPct: 71, awakenings: 4 },
-            { dayLabel: 'D-1', hours: 4.6, efficiencyPct: 69, awakenings: 4 },
-            { dayLabel: 'Today', hours: 4.4, efficiencyPct: 68, awakenings: 5 },
+            { dayLabel: 'D-6', hours: 6.8 },
+            { dayLabel: 'D-5', hours: 6.1 },
+            { dayLabel: 'D-4', hours: 5.5 },
+            { dayLabel: 'D-3', hours: 5.1 },
+            { dayLabel: 'D-2', hours: 4.8 },
+            { dayLabel: 'D-1', hours: 4.6 },
+            { dayLabel: 'Today', hours: 4.4 },
           ];
 
           const evaComp = [

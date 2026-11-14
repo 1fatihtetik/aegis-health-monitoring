@@ -625,9 +625,6 @@ function sleepNights(series: SeriesPoints | undefined): SleepNightRecord[] {
   return nights.map(([ts, hours], i) => ({
     dayLabel: i === nights.length - 1 ? 'Last night' : ts.slice(5, 10),
     hours: round(hours),
-    // No backend data for efficiency / awakenings yet (work queue G3-5).
-    efficiencyPct: 0,
-    awakenings: 0,
   }));
 }
 
@@ -707,13 +704,10 @@ function mapCrew(input: MapInput): CrewMemberSummary[] {
         bp_diastolic: round(v.bp_diastolic ?? 0, 0),
         activity_counts: round(v.activity_counts ?? 0),
         sleep_hours_24h: round(v.sleep_hours_24h ?? 0),
-        sleep_efficiency_pct: 0,
         dose_rate_uSv_h: round(doseRate),
         neutron_dose_uSv_h: round(doseRate * neutronFraction),
         bmd_estimate_pct: round(c.trends.bmd_estimate ?? 0, 2),
         body_mass_kg: round(c.trends.body_mass ?? 0),
-        exercise_minutes_today: 0,
-        workload_score: 0,
       },
       readiness,
       sparklines: {

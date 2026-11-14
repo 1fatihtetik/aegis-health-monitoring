@@ -180,8 +180,6 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
     const sleep7d = ['D-6', 'D-5', 'D-4', 'D-3', 'D-2', 'D-1', 'Today'].map((dayLabel) => ({
       dayLabel,
       hours: Number((7.1 + (rng() - 0.45) * 1.1).toFixed(1)),
-      efficiencyPct: Math.round(88 + (rng() - 0.45) * 8),
-      awakenings: Math.max(0, Math.round(1 + (rng() - 0.5) * 2)),
     }));
 
     const buildReadiness = (kind: ReadinessKind, scoreVal: number): ReadinessScore => ({
@@ -274,13 +272,10 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
         bp_diastolic: bpSeries[bpSeries.length - 1].secondaryValue ?? p.bp_dia,
         activity_counts: 142,
         sleep_hours_24h: sleep7d[6].hours,
-        sleep_efficiency_pct: sleep7d[6].efficiencyPct,
         dose_rate_uSv_h: 22.4,
         neutron_dose_uSv_h: 6.8,
         bmd_estimate_pct: latestTrend.bmdPct,
         body_mass_kg: latestTrend.bodyMassKg,
-        exercise_minutes_today: 55,
-        workload_score: 42,
       },
       readiness: {
         OVERALL: buildReadiness('OVERALL', 92),
