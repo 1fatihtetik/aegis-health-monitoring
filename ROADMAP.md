@@ -3,7 +3,7 @@
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
 **Current state (2026-11-14):** the 30-hour MVP, Block R (real NASA data) and Block P (phases and gravity) are built and approved. The demo is frozen at tag `demo-ready-v2` (D-4); the Block R demo stays at `demo-ready`. See `implementationsandgoals.txt`.
-**Current priority: Block T, crew self-tests and body map (§0). Status: IN PROGRESS (go-ahead 2026-11-15).** Built: T-0, T-3, T-1, T-2, T-4 (ready for review). Next: T-5 stand test, after the protocol is confirmed.
+**Current priority: Block T, crew self-tests and body map (§0). Status: IN PROGRESS (go-ahead 2026-11-15).** Built: T-0, T-3, T-1, T-2, T-4 (approved), T-5 stand test (ready for review; protocol confirmed 2026-11-15). Next: T-7 SANS rule.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
@@ -121,6 +121,6 @@ If something already built breaks late, drop in this order: landing orthostatic 
 
 - Submission deadline and format: still to confirm. They decide whether all of Block T (≈ 29 h) fits or the §0.5 cut order is used.
 - T-3: glucose, temperature and intake bands have no NASA clause read yet; they enter as `verified: false` unless one is found (NASA-STD-3001 Vol 1 / OCHMO briefs are checked first).
-- T-5: confirm the NASA stand-test protocol details (timing, positive criteria) from Lee et al. and the HRP cardiovascular evidence before coding.
+- T-5: protocol confirmed by the supervisor 2026-11-15 (wall-lean adaptation of Lee et al. 2015, 5 min supine, readings at 1/3/5/10 min, STOP control, Freeman 2011 criteria); built.
 - T-7: the SANS evidence for CO₂ and sodium is limited; the rule's copy must say so. Revisit if the HRP SANS evidence report gives a usable measure.
 - T-10: the exact demo test moments are proposed in T-10 and agreed with the user before the rehearsal.
