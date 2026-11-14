@@ -1,9 +1,10 @@
 # PRD — AEGIS: Autonomous Exploration Guardian for Integrated crew health & Safety
 
 > Working title. Rename freely.
-> Status: Draft v1.2 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
+> Status: Draft v1.3 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
-> **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo.
+> **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo. *Done: Gate P, tag `demo-ready-v2`.*
+> **v1.3 change (Block T, `ROADMAP.md` §0, planned, not started):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11.
 
 ---
 
@@ -108,6 +109,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - G4: Delay-tolerant ground link with a realistic comm-delay simulation.
 - G5: Countermeasure tracking (exercise, sleep/light, nutrition, Thigh Cuff, supplements) and adherence.
 - G6: Research-grade export ("Standard Measures").
+- **G7 (v1.3): Crew self-assessment.** The crew can test and measure themselves on a routine, understand each result without medical training, and see it on a body figure, with or without the ground link.
 - **G0 (priority 1): Real-data grounding.** Radiation (every mission phase, v1.2), space weather, comm delay and limits come from measured data (§1.8), NASA wherever it exists, with provenance shown on every value.
 
 ### Non-goals (MVP)
@@ -116,12 +118,14 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - No full Integrated Medical Model reimplementation.
 - No real PHI handling. No identifiable person's health data. Crew physiology is synthetic; the NASA data is environmental/radiation data or aggregate reference ranges.
 - No live calls to NASA APIs at runtime. Datasets are bundled snapshots.
+- No gamification (v1.3, user decision): no points, streaks, badges, levels or leaderboards. Health tasks are a plain clinical routine.
+- No camera or image input (ultrasound, photos) in the MVP.
 
 ## 4. Users & personas
 
 | Persona | Needs | Main surface |
 |---|---|---|
-| **Crew member** | Quick "am I OK?" status, clear actions, low cognitive load, a private journal | Crew app (tablet) |
+| **Crew member** | Quick "am I OK?" status, clear actions, low cognitive load, a private journal; (v1.3) take routine tests and measurements with step-by-step instructions and see what each result means | Crew app (tablet) |
 | **Crew Medical Officer (CMO)** | Detailed physiology for all crew, alert triage, procedures, works with no ground link | Crew app, medical view |
 | **Commander** | Crew readiness for EVAs and critical operations; team and workload view | Crew app, readiness view |
 | **Flight surgeon (ground)** | Delayed sync of all data, trends, alert history, sends recommendations | Ground console |
@@ -135,11 +139,16 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - ★ US-4: As the commander, I see an EVA go/no-go readiness score for each crew member (sleep, fatigue, CO₂ exposure, DCS prebreathe status).
 - ★ US-5: As a flight surgeon, I see the same data delayed by the configured comm delay and can send a recommendation that reaches the crew after that delay.
 - ★ US-6: As the CMO, I see 30/90/180-day trends: bone density estimate, body mass, VO₂max proxy, sleep efficiency, cumulative dose.
-- US-7: As a crew member, I can fill in a short mood/workload survey and a private journal, analyzed on the device only.
-- US-8: As the CMO, I see a SANS watch panel: OCT/fundoscope exam log, headaches/vision complaints, Thigh Cuff use.
+- US-7: As a crew member, I can fill in a short mood/workload survey and a private journal, analyzed on the device only. *(v1.3: the survey part is T-4; answers never leave the spacecraft.)*
+- US-8: As the CMO, I see a SANS watch panel: OCT/fundoscope exam log, headaches/vision complaints, Thigh Cuff use. *(v1.3: partly covered by the T-7 SANS rule, T-9 Amsler grid and the body map eye region.)*
 - US-9: As a researcher, I export a mission's Standard Measures as CSV/Parquet with a data dictionary.
 - US-10: As the CMO, I see a VTE risk score and kidney-stone risk indicators (hydration, urine calcium proxy).
 - ★ US-11: As a demo presenter, I can play scenarios (SPE, CO₂ scrubber failure, insomnia streak, cardiac arrhythmia, post-landing fainting) at adjustable speed.
+- ★ US-12 (v1.3): As a crew member, I see which tests and measurements are due, done or overdue today, filtered by hazard, and start one in at most 3 taps.
+- ★ US-13 (v1.3): As a crew member without medical training, I take a measurement (BP, SpO₂, temperature, body mass, glucose, intake) following numbered steps, see the normal band while I enter it, and get a plain explanation of the result.
+- ★ US-14 (v1.3): As a crew member, I take a 3-minute reaction-time test (PVT-B) after sleep, and my COGNITIVE readiness shows the result.
+- ★ US-15 (v1.3): As the CMO, before a landing or other gravity increase I see a Go / Hold gate per crew member built from the stand test, reaction test, fluids and SpO₂.
+- ★ US-16 (v1.3): As a crew member, I tap a region of a body figure (brain & eyes, heart & vessels, lungs, bones & muscles, kidneys, blood & immune) and see what it does, its status, linked signals, HRP risks and the tests for it.
 
 ## 6. Scope: feature modules
 
@@ -147,7 +156,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - `scripts/fetch_nasa_data.py` (build time only) downloads the D1–D5 windows into `data/nasa/raw/`, writes normalized files to `data/nasa/derived/`, and records each in `data/nasa/MANIFEST.yaml` (dataset id, tier, source URL, retrieval date, sha256, terms, transform).
 - `config/datasets.yaml` maps datasets to signals, phases and scenarios, plus the time mapping (window start, compression, loop/hold, gap hold time).
 - Replay adapters (`backend/app/datasets/`) implement the same `DeviceAdapter → Observation` interface as M1, so the engine path does not change.
-- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency.
+- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `CREW_ENTERED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency. `CREW_ENTERED` (v1.3, planned) is a value a person typed or tapped in the UI: no `dataset_id`, kept in memory only, ranked between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`; scripted results for the synthetic crew stay `SYNTHETIC`.
 - Startup verifies the manifest and sha256. A missing or bad file falls back to the synthetic generator for that signal, labelled `SYNTHETIC`, and never stops the crew app.
 - `GET /api/v1/datasets` lists the sources. The UI shows a `DataSourceBadge` on every chart, tile and alert evidence block.
 - Work items R-0…R-6 and Gate R: done (`ROADMAP.md` §3). Block P (P-0…P-7, Gate P): `ROADMAP.md` §0.3.
@@ -191,6 +200,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - **Compound rules**: boolean or weighted combinations across modalities (e.g., `sleep_debt > 6h AND ppCO2 > limit_1h AND workload_high` → cognitive performance risk, HRP-14 + Hostile Env).
 - **Readiness scores** (0–100) per crew member: Overall, EVA, Cognitive, Physical. Transparent weighted formulas whose components can be inspected.
 - **Scores ported from literature** (optional, P1): VTE risk indicator, kidney stone risk indicator, orthostatic intolerance prediction after landing.
+- *(v1.3, planned)* Self-test results use the same rule types, no new engine: thresholds on the new entries, a SANS compound rule (HRP-10; low-g days, ppCO₂, sodium/fluid intake, Amsler flag; heuristic, evidence stated as limited), PVT-B lapses + sleepiness as extra evidence for `cog.performance_risk`, the stand test feeding `cardio.orthostatic`, and a new `LANDING` readiness kind (Go / Hold).
 - Each rule has an `id`, `hazard[]`, `hrp_risk[]`, `severity`, `rationale`, `recommended_action`, and `source_ref` (e.g., "NASA-STD-3001 Vol 2 §6.x, VERIFY").
 
 ### M4. Alerting & crew guidance ★
@@ -198,6 +208,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
   - `CAUTION` → may affect a mission objective
   - `WARNING` → may cause loss of mission or major health impact
   - `EMERGENCY` → immediate threat to crew life (loss of crew)
+  - *(v1.3)* the UI shows the loss category as a sublabel: CAUTION = LOMO, WARNING = LOM, EMERGENCY = LOC (§7.4). The engine keeps `INFO < CAUTION < WARNING < EMERGENCY`.
 - Alert lifecycle: `RAISED → ACKNOWLEDGED → IN_TREATMENT → RESOLVED`, also `SUPPRESSED`/`FALSE_POSITIVE`, with an audit trail.
 - Deduplication and hysteresis to avoid alert fatigue (crew attention is a scarce resource).
 - Every alert shows: what, who, since when, the evidence chart, linked hazard/risk, a suggested checklist (e.g., "SPE: go to the shelter, log location, dosimeter check every 15 min").
@@ -239,6 +250,15 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 
 ### M10. Admin/config (P1)
 - Limits & rules editor (YAML), crew profiles & baselines, mission phase timeline, device registry.
+
+### M11. Crew self-tests & body map ★ (v1.3, planned; `ROADMAP.md` §0)
+- **Catalog** (`config/selftests.yaml`): per test its signals, why it exists (RIDGE hazard + HRP risk), numbered steps, normal band (`limits.yaml` ref, unverified marker shown), schedule and when to involve the CMO or ground. No test text in components.
+- **Routine (T-1):** due / done / overdue list from the simulation clock (morning BP + SpO₂, post-sleep PVT-B, weekly body mass, daily intake, extra checks after a gravity increase). RIDGE filter. Overdue is a neutral `INFO` item with no readiness penalty.
+- **Tests:** T-2 PVT-B (3 min, random 1–4 s gaps, lapse > 355 ms; Basner et al. 2011), T-3 guided measurements (BP, SpO₂, temperature, body mass, glucose mg/dL, fluid mL, sodium mg), T-4 questionnaires (Karolinska Sleepiness Scale, NASA-TLX, motion sickness, mood; onboard only, never sent by the link), T-5 10-minute stand test (supine, then 1/3/5/10 min HR + BP), T-9 Amsler grid (click input, one eye at a time).
+- **Uses of the results:** T-7 SANS rule, T-8 `LANDING` readiness gate, COGNITIVE readiness, `cardio.orthostatic`.
+- **Body map (T-6):** SVG figure with 6 regions; colour + icon + text by the highest open severity linked to the region; a drawer with what the region does, live signals and charts, HRP risks, hazards, its tests and (blood & immune) the Inspiration4 panel. Region links live in config. Never diagnoses.
+- **Honesty and privacy:** results are `Observation`s on the existing path; UI entries are `CREW_ENTERED` and kept in memory only; short demo modes are labelled as not the real protocol.
+- **No gamification.**
 
 ## 7. Domain model
 
@@ -297,12 +317,12 @@ Provenance after Block R: `dose_rate_absorbed`/`dose_rate_equivalent` (area) = `
 | viral_shedding_flag | bool | biosample | 01 |
 
 ### 7.4 Severity ↔ Standards Pyramid
-| Level | Meaning | UI |
-|---|---|---|
-| INFO | Trend worth noting | Feed only |
-| CAUTION | Could affect mission objectives | Amber banner |
-| WARNING | Could cause loss of mission or serious health impact | Red banner + sound |
-| EMERGENCY | Immediate threat to life (loss of crew) | Full-screen takeover + alarm |
+| Level | Meaning | Sublabel (v1.3) | UI |
+|---|---|---|---|
+| INFO | Trend worth noting (also: overdue self-test) | none | Feed only |
+| CAUTION | Could affect mission objectives | LOMO | Amber banner |
+| WARNING | Could cause loss of mission or serious health impact | LOM | Red banner + sound |
+| EMERGENCY | Immediate threat to life (loss of crew) | LOC | Full-screen takeover + alarm |
 
 ## 8. Data model (core entities)
 
@@ -310,14 +330,17 @@ Provenance after Block R: `dose_rate_absorbed`/`dose_rate_equivalent` (area) = `
 CrewMember(id, callsign, role[CDR|CMO|MS|PS], baseline{hr_rest, hrv, body_mass, bmd, vo2max_proxy}, career_dose_prior_mSv)
 Device(id, type, crew_id?|location, adapter, status, last_seen)
 Observation(id, ts, crew_id?, location?, device_id, signal, value, unit, quality[GOOD|SUSPECT|BAD], phase,
-            provenance[NASA_MEASURED|NASA_DERIVED|MEASURED_OTHER|SYNTHETIC_CALIBRATED|SYNTHETIC], dataset_id?)
+            provenance[NASA_MEASURED|NASA_DERIVED|MEASURED_OTHER|CREW_ENTERED|SYNTHETIC_CALIBRATED|SYNTHETIC], dataset_id?)
 Dataset(id, tier[D1..D7], title, source_url, retrieved, sha256, terms, transform, signals[], window{start,end})
 MissionPhase(id, name, start_ts, end_ts, gravity_g, comm_delay_s, radiation_profile)
 Rule(id, type[THRESHOLD|BASELINE|TREND|CUMULATIVE|COMPOUND], expr, window, severity, hazards[], hrp_risks[], rationale, action, source_ref)
 Alert(id, rule_id, crew_id?, severity, state, raised_ts, ack_ts?, resolved_ts?, evidence{signal_refs, values}, notes[], origin[ONBOARD|GROUND])
-ReadinessScore(crew_id, ts, kind[OVERALL|EVA|COGNITIVE|PHYSICAL], value, components{})
+ReadinessScore(crew_id, ts, kind[OVERALL|EVA|COGNITIVE|PHYSICAL|LANDING(v1.3)], value, components{})
 Countermeasure(id, crew_id, type[EXERCISE|LIGHT|SUPPLEMENT|THIGH_CUFF|NUTRITION], prescribed, completed, ts)
 SurveyResponse(id, crew_id, ts, instrument, answers{}, private:boolean)
+SelfTest(id, title, signals[], why, steps[], limit_refs[], hazards[], hrp_risks[], schedule, escalation, onboard_only)   # v1.3, config
+SelfTestTask(id, crew_id, test_id, due_ts, state[DUE|DONE|OVERDUE], done_ts?, observation_ids[])   # v1.3, derived from the sim clock
+BodyRegion(id, label, function, signals[], rule_ids[], test_ids[], hrp_risks[])   # v1.3, config
 Message(id, direction[DOWN|UP], priority, payload, sent_ts, deliver_ts, delivered:boolean)
 ```
 
@@ -427,7 +450,16 @@ WS     /ws/live?node=                  # messages: snapshot (full state, ~5/s), 
 Not built: PUT /rules/{id}, GET /export/standard-measures, sim "jump"
 ```
 
-Planned in Block R (v1.1):
+Planned in Block T (v1.3; results still go through `POST /observations`):
+
+```text
+GET    /api/v1/selftests               # catalog: tests + body-map regions
+GET    /api/v1/selftests/schedule?crew_id=   # due / done / overdue for the current sim time
+GET    /api/v1/readiness?kind=LANDING
+Observation gains provenance CREW_ENTERED (no dataset_id) and an entry method; onboard-only signals are never sent by link/
+```
+
+Built in Block R (v1.1):
 
 ```text
 GET    /api/v1/datasets                # [{id, tier, title, source_url, retrieved, sha256_ok, provenance, signals[], transform}]
@@ -465,7 +497,7 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 
 **Gate R:** NASA-measured radiation and SPE in the demo, ≥ 6 verified limits, provenance everywhere, demo runs offline, checks pass. Then the D-3 freeze. *Done: Gate R and D-3 approved, tag `demo-ready`.*
 
-**Block P (v1.2, current priority).** Full table in `ROADMAP.md` §0.3.
+**Block P (v1.2, done).** Full plan in git history of `ROADMAP.md`.
 
 | Hours | Item | Done when |
 |---|---|---|
@@ -479,6 +511,24 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 | P+12 to 14 | P-7 Extended demo + re-rehearsal | Plays twice untouched, offline |
 
 **Gate P:** measured radiation with correct provenance in every phase, cited gravity parameters, aggregate-only Inspiration4 data, extended demo offline, checks pass. Then the D-4 re-freeze (`demo-ready-v2`). *Done: Gate P approved, tag `demo-ready-v2`.*
+
+**Block T (v1.3, current priority, planned; build after the user's go-ahead).** Full table in `ROADMAP.md` §0.4. About 29 h.
+
+| Hours | Item | Done when |
+|---|---|---|
+| T+0 to 2 | T-0 `CREW_ENTERED` label, self-test catalog, severity sublabel | Provenance + catalog tests pass; sublabel shown |
+| T+2 to 6 | T-3 Guided measurements | A crew-entered low SpO₂ raises the existing alert with `CREW_ENTERED` evidence, link blacked out |
+| T+6 to 9 | T-1 Routine schedule | Same scenario + seed gives the same due list; overdue stays `INFO` |
+| T+9 to 12 | T-2 PVT-B reaction test | Lapse and gap rules tested; COGNITIVE readiness includes it |
+| T+12 to 14 | T-4 Questionnaires (onboard only) | No answer reaches the ground store |
+| T+14 to 17 | T-5 Stand test | Drives `cardio.orthostatic` in `orthostatic_intolerance` |
+| T+17 to 19 | T-7 SANS rule + intake | Rule tests; copy states the limited evidence |
+| T+19 to 21 | T-8 Landing readiness gate | Hold for C3 before the Mars landing |
+| T+21 to 23 | T-9 Amsler grid | Click input recorded; flag feeds T-7 |
+| T+23 to 27 | T-6 Clickable body map | Region colour follows open alerts; every region links a test or signal |
+| T+27 to 29 | T-10 Extended demo + rehearsal | Plays twice untouched, offline |
+
+**Gate T:** every test explains why / how / normal; `CREW_ENTERED` only on UI input and never stored; questionnaires never reach the ground; no gamification; new rules carry hazards + HRP risks and honest limits; the body map never diagnoses; offline and blackout safe; checks pass. Then the D-5 re-freeze (`demo-ready-v3`). Cut order if behind: T-9 → T-8 → T-7 → T-10 as a separate scenario; never T-0..T-6.
 
 Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infection` scenarios, Countermeasures and Wellbeing views (M5), research export (M9), admin/config (M10), a separate ground process and docker compose (§11).
 
@@ -510,12 +560,15 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 0b. **Lunar surface stop (0.16 g).** Radiation switches to the LRO CRaTER surface dose (NASA-derived); the Gravity tile shows bone loss at 84 % of the 0 g rate and the fainting risk recorded for the gravity increase. Then on to Mars transit, where the comm delay jumps from 1.3 s to ~11 min.
 `README.md` keeps the rehearsed timings.
 
+*v1.3 (T-10, planned):* test moments are added to the same script, e.g. C1's scripted PVT-B lapses after the sleep loss (evidence for the cognitive CAUTION), the due board, and before the Mars landing the `LANDING` gate showing Hold for C3 with a scripted stand test. An optional live PVT-B in a labelled short mode may be shown; the script does not wait for it. The exact moments are agreed with the user before the rehearsal.
+
 ## 15. Success metrics
 
 - Demo: every scenario fires the expected alert within its configured window, with **0 missed EMERGENCY** events and ≤ 1 false WARNING per simulated day.
 - Explainability: 100% of alerts have a hazard, an HRP risk, evidence and a `source_ref`.
 - Real data (v1.1): radiation and SPE in the demo are 100 % replayed NASA measurements; ≥ 6 limits verified with clause ids; 100 % of displayed values carry a provenance badge.
 - Autonomy: the full flow works with the ground node stopped.
+- Self-assessment (v1.3): every self-test is reachable in ≤ 3 taps and shows why / how / normal; 100 % of crew-entered values carry `CREW_ENTERED`; 0 questionnaire answers on the ground node.
 - Performance: p95 time from ingest to UI ≤ 2 s at 100× speed.
 
 ## 16. Risks & open questions
@@ -531,6 +584,10 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 - **RadNet measures terrestrial gamma radiation (v1.2),** not space radiation, and it is EPA, not NASA. The badge must say both.
 - Should crew see each other's detailed vitals? Default: no, only a status summary (privacy and teamwork dynamics, HRP-13).
 - Alert fatigue vs. sensitivity tuning: needs scenario-based calibration.
+- **Crew-entered values may be a real person's data (v1.3).** A presenter may type their own numbers. Keep them in memory only, never log, export, commit or send them except as normal onboard alerts, and say so in the UI.
+- **Self-test numbers are mostly unverified (v1.3).** Glucose, temperature, PVT-B, KSS, stand-test and intake bands have no NASA-STD-3001 clause read yet; they enter as `verified: false` and are marked.
+- **Protocol fidelity (v1.3).** PVT-B is a 3-minute test and the stand test 10 minutes; short demo modes must be labelled. Confirm the NASA stand-test protocol (Lee et al.) before coding T-5.
+- **SANS evidence is limited (v1.3).** Links to CO₂ and sodium are hypotheses; the T-7 rule is a heuristic watch, not a predictor, and its copy says so.
 - Which device names to show in the UI: use generic names ("biomonitor", "neutron spectrometer") and avoid implying endorsement.
 
 ## 17. References
@@ -562,3 +619,11 @@ Data sources added in v1.2 (Block P):
 - LRO CRaTER calibrated data (PDS): https://catalog.data.gov/dataset/lro-moon-crater-3-calibrated-energy-data-v1-0-fe2bb
 - Zhang et al. 2020, first radiation dose measurements on the lunar surface (Chang'e-4 LND), Science Advances 6(39): eaaz1334
 - US EPA RadNet: https://www.epa.gov/radnet
+
+Methods planned in v1.3 (Block T; each citation is checked again when its item is built):
+- Basner, Mollicone & Dinges 2011, validity and sensitivity of a brief psychomotor vigilance test (PVT-B), Acta Astronautica 69: 949-959
+- Basner et al. 2015, development and validation of the Cognition test battery for spaceflight, Aerospace Medicine and Human Performance 86(11): 942-952
+- Åkerstedt & Gillberg 1990, subjective and objective sleepiness in the active individual (Karolinska Sleepiness Scale), Int J Neurosci 52: 29-37
+- Hart & Staveland 1988, development of NASA-TLX, in Human Mental Workload (Elsevier)
+- Lee et al., orthostatic intolerance after ISS and Space Shuttle missions (stand-test protocol), Aerospace Medicine and Human Performance 2015
+- NASA HRP evidence: Risk of Spaceflight Associated Neuro-ocular Syndrome (SANS), humanresearchroadmap.nasa.gov

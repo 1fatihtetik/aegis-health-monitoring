@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current state (2026-11-14): Block P done, demo re-frozen at tag `demo-ready-v2` (D-4).** Block R (real NASA data, tag `demo-ready`) and Block P (`ROADMAP.md` §0, PRD §1.8, §6 M0/M2) are approved. Further work only on the user's request (stretch list in `implementationsandgoals.txt` §6). Block P added measured radiation for LEO, the lunar surface and Earth, gravity-dependent physiology, the Inspiration4 reference panel and an extended demo. §2a below covers how to handle real data.
+> **Current priority (2026-11-14): Block T, crew self-tests and body map: PLANNED, not started** (`ROADMAP.md` §0). Build only after the user's go-ahead. Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
@@ -52,9 +52,12 @@ scripts/
 frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Recharts (implemented by Claude)
   src/
     views/          CrewOverview (includes RIDGE tiles; Environment is the Hostile-Env
-                    drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole
+                    drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole;
+                    Block T adds SelfTests (due/done/overdue board + test screens)
     components/     StatusRing, Sparkline, LimitBandChart, AlertBanner, EmergencyTakeover,
-                    ScenarioDock, AlertChecklist, EvidenceDetails, HeadacheReport, LimitBadge
+                    ScenarioDock, AlertChecklist, EvidenceDetails, HeadacheReport, LimitBadge;
+                    Block T adds MeasurementForm, PvtTest, Questionnaire, StandTest, AmslerGrid,
+                    BodyMap, ReadinessGate, SeveritySublabel
     api/            hand-written typed client + WebSocket hook; limits.ts bundles config/limits.yaml
                     for the offline fallback (GET /api/v1/limits replaces it when connected)
 config/
@@ -64,11 +67,13 @@ config/
   crew.yaml         4 synthetic crew + baselines
   readiness.yaml    readiness score components, weights, alert penalties
   datasets.yaml     (Block R) which dataset feeds which signal/phase/scenario, time windows, compression
+  selftests.yaml    (Block T) self-test catalog: why / steps / limit refs / hazards / HRP risks /
+                    schedule / escalation, plus body-map regions -> signals, rules, tests
 Makefile            dev, test, lint, demo
 implementationsandgoals.txt   handoff: Claude implements, Antigravity supervises; work queue, review findings, API contract
 ```
 
-Not in scope (do not build unless `ROADMAP.md` §5 is reached): docker compose, a second backend process, the TREND rule type, Countermeasures and Wellbeing views, research export, rules editor, generated API client, Playwright.
+Not in scope (do not build unless `ROADMAP.md` §5 is reached): docker compose, a second backend process, the TREND rule type, Countermeasures and Wellbeing views, research export, rules editor, generated API client, Playwright. Never (user decision): gamification of any kind, camera input, the downlink summary packet.
 
 Keep this layout unless there is a strong reason to change it. If you change it, update this file.
 
@@ -85,7 +90,7 @@ Keep this layout unless there is a strong reason to change it. If you change it,
 | D7 (Block P, non-NASA) | US EPA RadNet gamma dose equivalent rate (Houston TX, one window) | area dose rate in `POST_LANDING` (P-3); RadNet now publishes nSv/h, so nSv/h ÷ 1000 → µSv/h | `MEASURED_OTHER` |
 
 Rules:
-- **Provenance enum:** `NASA_MEASURED` (a replayed value from a NASA archive), `NASA_DERIVED` (computed from NASA data by a formula named in the manifest), `MEASURED_OTHER` (Block P: a replayed measurement from a non-NASA agency such as EPA; needs a `dataset_id` whose manifest entry has `agency`; the badge names the agency and never says NASA; ranks below `NASA_DERIVED`, so a compound with a non-NASA member is never labelled NASA; the tracker and `POST /observations` reject a label that does not match the dataset's agency), `SYNTHETIC_CALIBRATED` (simulated; parameters cite a NASA source), `SYNTHETIC` (simulated; heuristic parameters).
+- **Provenance enum:** `NASA_MEASURED` (a replayed value from a NASA archive), `NASA_DERIVED` (computed from NASA data by a formula named in the manifest), `MEASURED_OTHER` (Block P: a replayed measurement from a non-NASA agency such as EPA; needs a `dataset_id` whose manifest entry has `agency`; the badge names the agency and never says NASA; ranks below `NASA_DERIVED`, so a compound with a non-NASA member is never labelled NASA; the tracker and `POST /observations` reject a label that does not match the dataset's agency), `CREW_ENTERED` (Block T: a value a person typed or tapped in the UI; no `dataset_id`; records the entry method; ranks above `SYNTHETIC_CALIBRATED` and below `MEASURED_OTHER`; in memory only, never written to disk or git), `SYNTHETIC_CALIBRATED` (simulated; parameters cite a NASA source), `SYNTHETIC` (simulated; heuristic parameters).
 - **Replay through the same path.** Replay adapters emit `Observation`s into the same tick → store → rules path as the simulator. The engine does not know or care where a value came from; the UI does.
 - **Time mapping.** `config/datasets.yaml` maps the simulated clock onto a dataset window (start, compression factor, loop or hold). Mapping is deterministic. If compression is used, label it in the UI ("2012-03-07 event, replayed ×N").
 - **Gaps.** RAD data has gaps. Fill only by holding the last value for a time set in `datasets.yaml`, then mark points `quality: SUSPECT`. Never interpolate across a gap silently.
@@ -96,6 +101,34 @@ Rules:
 - **Reference values from non-NASA papers** (e.g. Chang'e-4) go into the manifest `reference` block and a fidelity test, never into the data stream.
 - **LEO SAA (P-1):** the ISS crosses the South Atlantic Anomaly several times a day and the measured dose rate spikes past the SPE alarm level. The replay emits `saa_transit` (position inside the SAA box of Berger et al. 2017) and `rad.spe.dose_rate` stands down through its `unless:` predicate. Never "fix" this by editing or capping the data.
 - **Partial gravity:** the user picked model A, LINEAR (P-4): drift rate = 0 g rate x (1 - g), BP = in-flight baseline + g x Norsk 2015 offset, orthostatic risk after a gravity increase = Meck 2001 fraction x the increase. Parameters live in `mission.yaml sim.gravity` and each cites its source or says `heuristic`. Do not swap the model without the user.
+
+## 2b. Crew self-tests (Block T, planned)
+
+Decided by the user on 2026-11-14; plan in `ROADMAP.md` §0. Do not start before the go-ahead.
+
+| Item | What | Feeds |
+|---|---|---|
+| T-0 | `CREW_ENTERED` label, `config/selftests.yaml` catalog, `GET /selftests`, severity sublabel (CAUTION = LOMO, WARNING = LOM, EMERGENCY = LOC; PRD §7.4) | everything below |
+| T-1 | Due / done / overdue schedule from the sim clock; RIDGE filter; extra checks after a gravity increase | starts the tests |
+| T-2 | PVT-B reaction test (3 min, 1-4 s gaps, lapse > 355 ms; Basner et al. 2011) | COGNITIVE readiness, `cog.performance_risk` |
+| T-3 | Guided measurements: BP, SpO₂, temperature, body mass, glucose (mg/dL), fluid (mL), sodium (mg) | existing and new rules |
+| T-4 | KSS, NASA-TLX, motion sickness, mood (onboard only) | local compound rules |
+| T-5 | 10-min stand test (supine, then 1/3/5/10 min) | `cardio.orthostatic`, Gravity tile, T-8 |
+| T-6 | Clickable SVG body map (brain & eyes, heart & vessels, lungs, bones & muscles, kidneys, blood & immune) | shows alerts, signals, tests, Inspiration4 panel |
+| T-7 | SANS compound rule (HRP-10) with intake | CAUTION + eye self-check |
+| T-8 | `LANDING` readiness gate (Go / Hold) | before a gravity increase |
+| T-9 | Amsler grid self-exam (click input) | T-7, body map eye region |
+| T-10 | Extended `demo_5min`, re-freeze `demo-ready-v3` | demo |
+
+Rules:
+- **No gamification.** No points, streaks, badges, levels, leaderboards or compliance scores. Overdue is a neutral `INFO` item with no readiness penalty.
+- **Same path.** Test results are `Observation`s through `POST /api/v1/observations` (or the in-process call) → store → rules. No second evaluator.
+- **`CREW_ENTERED` only for UI input.** Scripted results for the synthetic crew stay `SYNTHETIC` ("scripted self-test result"). Never present a synthetic result as crew-entered.
+- **Every test explains itself** from the catalog: why (hazard + HRP risk), numbered steps, the normal band from `limits.yaml` with the unverified marker, when to involve the CMO / ground. No test text hardcoded in components.
+- **New limits are honest.** Glucose, temperature, PVT-B, KSS, stand-test and intake bands enter `limits.yaml` as `verified: false` with a paper or "clinical heuristic" `source_ref`, unless a NASA clause was actually read.
+- **Questionnaires (T-4) stay onboard.** Their signals are marked onboard-only; `link/` never sends them, not even as rollups.
+- **Short modes are labelled** ("Demo length, not the 3-minute protocol"). Real-time stand tests keep the protocol length; scenarios run them on the sim clock.
+- **Body map regions and their links live in config**, colour = highest open severity + icon + text, never a diagnosis.
 
 ## 3. Commands
 
@@ -117,7 +150,7 @@ Run `make lint test` before you call a task done. Report failures honestly.
   "quality": "GOOD", "phase": "MARS_TRANSIT",
   "provenance": "SYNTHETIC_CALIBRATED", "dataset_id": null }
 ```
-- `provenance` and `dataset_id` are added in R-0. Replayed RAD values look like `"provenance": "NASA_MEASURED", "dataset_id": "msl_rad_cruise_2012"`.
+- `provenance` and `dataset_id` are added in R-0. Block T adds `CREW_ENTERED` (no `dataset_id`). Replayed RAD values look like `"provenance": "NASA_MEASURED", "dataset_id": "msl_rad_cruise_2012"`.
 - `POST /api/v1/observations` takes a list and is idempotent on `id`.
 - Units are canonical per signal (PRD §7.3). Adapters convert. The engine never converts.
 
@@ -163,7 +196,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Block P (P-5, built): gravity drives physiology with the user's LINEAR model (bone and fitness drift at (1 - g) x the 0 g rate, BP rises g x 8/9 mmHg, orthostatic risk recorded after a gravity increase).
 - Radiation stream split into total and **neutron** components (neutrons ≈ 30% in LEO per CSA).
 - The simulator feeds the engine in-process on each simulated tick. `POST /api/v1/observations` exists and uses the same code path, but the simulator does not go through HTTP.
-- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Deferred: `arrhythmia`, `eva`, `infection`.
+- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Block T (planned) adds scripted self-test results to scenarios (seeded, `SYNTHETIC`) and extends `demo_5min` again (T-10). Deferred: `arrhythmia`, `eva`, `infection`.
 - `demo_5min` sets the simulation speed per segment, so a 12-minute comm delay passes in about 10 real seconds.
 - Speed control 1×–10,000×. Simulated clock is injectable everywhere (never call `datetime.now()` in domain code; use `Clock`).
 
@@ -194,6 +227,16 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
   - **Inspiration4:** the bundled file has no per-person rows.
   - **Extended demo:** plays twice with identical alerts and passes the no-network test.
 
+- Block T (planned):
+  - **Provenance:** `CREW_ENTERED` needs no `dataset_id`, ranks between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`, and is never put on a scripted scenario value.
+  - **Catalog:** every self-test has why / steps / hazards / HRP risks; every limit ref exists in `limits.yaml`.
+  - **Schedule:** same scenario + seed gives the same due list; a gravity increase adds the extra checks; overdue never goes above `INFO`.
+  - **PVT-B:** gap range, lapse rule, false starts; COGNITIVE readiness includes the PVT-B component.
+  - **Onboard only:** no T-4 signal reaches the ground store, also after a blackout ends.
+  - **No gamification:** a test fails if UI copy contains points, streak, badge, level-up or leaderboard wording.
+  - **Body map:** region colour follows open alerts; every region links at least one signal or test.
+  - **Extended demo:** plays twice with identical alerts and passes the no-network test.
+
 ## 8. UI guidelines
 
 - Tablet first (1024×768 minimum), dark theme by default, high contrast.
@@ -202,6 +245,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Charts show limit bands from config and mark unverified limits.
 - Persistent footer: "Decision support only, not a medical diagnosis." followed by the data line. After R-0 the data line reads "Radiation, space weather and limits: NASA sources. Crew physiology: synthetic." When a non-NASA measured source is active (Block P, after landing), the line names it (e.g. "Ground radiation: EPA RadNet").
 - Every chart, tile and alert evidence block shows a `DataSourceBadge`: "NASA · MSL/RAD 2012" (measured), "NASA-derived", "Measured · EPA RadNet" (Block P, `MEASURED_OTHER`), "Synthetic (NASA-calibrated)" or "Synthetic". Tapping it shows the manifest entry (source, retrieved date, transform).
+- Block T: show the severity sublabel (LOMO / LOM / LOC) next to CAUTION / WARNING / EMERGENCY. Self-test screens: one task per screen, numbered steps, big Start / Done buttons, the normal band and the unverified marker visible while entering. No gamification.
 - Journal entries are private by default. Never sync them to ground unless the user opts in.
 
 ## 9. Definition of done (per task)
@@ -214,9 +258,10 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - [ ] Types: no `any` in TS, type hints on public functions in Python.
 - [ ] Any new data source: manifest entry, `provenance` on its values, works with networking blocked.
 - [ ] Any limit flipped to `verified: true`: document + revision + clause id in `source_ref`.
+- [ ] Any new self-test (Block T): catalog entry in `config/selftests.yaml` (why, steps, limit refs, hazards, HRP risks), results through the observation path, no gamification.
 
 ## 10. Build order
 
 Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`).
 
-**Was (done):** Block P (`ROADMAP.md` §0.3, mirrored in PRD §13): P-0 `MEASURED_OTHER` label → P-1 LEO radiation (RadLab) → P-2 lunar radiation (CRaTER) → P-3 Earth radiation (RadNet) → P-4 partial-gravity research (**stop: the user picks the model**) → P-5 gravity physiology → P-6 Inspiration4 panel → P-7 extended demo → **Gate P** → D-4 re-freeze (`demo-ready-v2`). If behind, cut in the order given in `ROADMAP.md` §0.4.
+**Next (planned, needs the user's go-ahead):** Block T (`ROADMAP.md` §0.4): T-0 foundation (`CREW_ENTERED`, catalog, severity sublabel) → T-3 guided measurements → T-1 schedule → T-2 PVT-B → T-4 questionnaires → T-5 stand test → T-7 SANS rule → T-8 landing gate → T-9 Amsler grid → T-6 body map → T-10 extended demo → **Gate T** → D-5 re-freeze (`demo-ready-v3`). If behind, cut in the order given in `ROADMAP.md` §0.5. Block P is done (P-0..P-7, Gate P, `demo-ready-v2`).

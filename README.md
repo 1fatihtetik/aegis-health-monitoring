@@ -11,10 +11,17 @@ Horizons, about 11 min one way on the demo date).
 > light time (R-4); the ground console shows the real DONKI/OMNI2 record of that event (R-5); every simulator
 > constant cites a source or says "heuristic" (R-6). Crew physiology is synthetic and labelled so.
 
-> **Next: Block P (phases and gravity), planned.** Measured radiation for LEO, the lunar surface and Earth,
-> physiology that responds to each phase's gravity, an Inspiration4 reference panel, and an extended demo.
+> **Block P (phases and gravity), done.** Measured radiation for LEO, the lunar surface and Earth, physiology
+> that responds to each phase's gravity (linear model), an Inspiration4 aggregate blood panel, and the extended demo.
 
-Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block P is §0), `AGENTS.md` (how to build).
+> **Next: Block T (crew self-tests and body map), planned, not started.** The crew takes tests and measurements
+> themselves on a plain due / done / overdue routine: reaction-time test (PVT-B), guided blood pressure, SpO2,
+> temperature, body mass, glucose and intake entries, sleepiness and workload questionnaires (stay on board),
+> a 10-minute stand test, an Amsler grid eye check, a SANS (eye/brain) rule and a landing Go / Hold gate.
+> Results show on a clickable body map. Values typed by a person are labelled `CREW_ENTERED`. No gamification.
+> Plan: `ROADMAP.md` §0.
+
+Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block T is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
 
 ## Data: what is real and what is not
@@ -29,13 +36,14 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 | Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, heuristic parameters (each listed under `sources` in `config/crew.yaml`). NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
 | LEO, lunar-surface and post-landing radiation | **Measured (Block P).** LEO: ISS Columbus DOSTEL-1 via NASA OSDR RadLab (Jan 2019), with South Atlantic Anomaly passes flagged so they do not trigger the SPE alarm. Lunar surface: LRO CRaTER, surface-corrected by the CRaTER team (NASA ISWA), checked against Chang'e-4. After landing: EPA RadNet Houston (non-NASA, labelled `MEASURED_OTHER`). | P-1..P-3, done |
 | Gravity effects on the body | **Synthetic, linear model (P-5, user's pick)**: bone and fitness loss run at (1 - g) x the zero-g rate (animal partial-loading data, Ellman 2013; Mortreux 2018), blood pressure rises g x 8/9 mmHg (Norsk 2015), fainting risk after a landing from Meck 2001. No human data exist at 0.16 g or 0.38 g | P-5, done |
-| Inspiration4 blood panels | Planned (Block P): aggregate pre/post-flight CBC/CMP ranges from NASA OSDR (OSD-569/570/571/575), never one person's values | planned |
+| Inspiration4 blood panels | **Measured, aggregate only (P-6)**: pre/post-flight CBC/CMP mean ± SD per time point from NASA OSDR (OSD-569 CBC, OSD-575 CMP), cells with n < 3 dropped, never one person's values; reference only, never feeds alerts | P-6, done |
+| Crew self-test entries | **Planned (Block T)**: values a person enters in the UI, labelled `CREW_ENTERED`, kept in memory only. Scripted results for the synthetic crew stay `SYNTHETIC` | planned |
 
 NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py rad-cruise` / `rad-surface` / `rad-spe` /
-`horizons` / `space-weather`, build time only; `verify` re-checks the hashes) into `data/nasa/` (~210 KB),
+`horizons` / `space-weather`, build time only; `verify` re-checks the hashes) into `data/nasa/` (~2.1 MB),
 listed with source URL, date and sha256 in `data/nasa/MANIFEST.yaml`, and replayed offline. The running
 system never calls the internet. Every chart and alert shows a badge saying whether a value is NASA-measured,
-NASA-derived or synthetic.
+NASA-derived, measured by another agency (EPA) or synthetic.
 
 ## Run it
 
@@ -130,7 +138,8 @@ simulated offsets from the start. The story: the crew handles everything onboard
 ```text
 backend/app/   FastAPI app, simulator, rules engine, alerts, scores, link, in-memory stores
 backend/tests/ pytest: rule types, scenarios, link delay/blackout, API
-config/        limits, rules, mission, crew, readiness, datasets (every limit has source_ref + verified)
+config/        limits, rules, mission, crew, readiness, datasets (every limit has source_ref + verified);
+               Block T adds selftests (test catalog + schedule + body-map regions)
 frontend/      React + TS + Vite + Tailwind UI
 data/nasa/     (Block R) bundled NASA snapshots + MANIFEST.yaml
 scripts/       (Block R) fetch_nasa_data.py, build time only
