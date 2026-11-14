@@ -17,6 +17,7 @@ import {
   CrewId,
   CrewMemberSummary,
   CrewRole,
+  DatasetMeta,
   EnvironmentState,
   Hazard,
   HrpRiskId,
@@ -28,6 +29,7 @@ import {
   RadiationSummary,
   ReadinessComponent,
   ReadinessKind,
+  RadReplayInfo,
   ReadinessScore,
   RecommendationMessage,
   Severity,
@@ -61,6 +63,8 @@ export interface BackendEvidence {
   context?: { group: string; branch: string };
   provenance?: Provenance;
   dataset_id?: string | null;
+  basis?: string;
+  dataset?: DatasetMeta | null;
 }
 
 export interface BackendAlert {
@@ -141,6 +145,7 @@ export interface BackendRadiation {
   crew: Record<string, BackendRadiationCrew>;
   area: {
     dose_rate_uSv_h: number;
+    dose_rate_absorbed_uGy_h?: number | null;
     neutron_rate_uSv_h: number;
     neutron_fraction: number;
     neutron_spectrum?: Array<{
@@ -161,6 +166,7 @@ export interface BackendRadiation {
     headcount: Record<string, boolean>;
     all_sheltered: boolean;
   };
+  replay?: RadReplayInfo | null;
 }
 
 export interface BackendLink {
@@ -523,7 +529,11 @@ const SIGNAL_LABEL: Record<string, string> = {
   sleep_hours_24h: 'Sleep in last 24 h',
   symptom_headache: 'Headache report (0–3)',
   dose_rate_equivalent: 'Personal radiation dose rate',
+  dose_rate_absorbed: 'Personal absorbed dose rate',
+  dose_mission: 'Mission radiation dose',
+  area_dose_rate_absorbed: 'Cabin absorbed dose rate (RAD)',
   area_dose_rate_equivalent: 'Cabin radiation dose rate',
+  neutron_dose_equivalent_rate: 'Neutron dose rate',
   dose_24h: 'Radiation dose, last 24 h',
 };
 
@@ -549,6 +559,8 @@ function mapClause(m: BackendEvidence): AlertEvidenceClause {
     source_ref: m.limit_source_ref ?? '',
     provenance: m.provenance,
     dataset_id: m.dataset_id,
+    basis: m.basis,
+    dataset: m.dataset,
   };
 }
 
@@ -568,6 +580,8 @@ export function mapAlert(a: BackendAlert): AlertItem {
     hysteresis_hold: e.hysteresis_hold,
     provenance: e.provenance,
     dataset_id: e.dataset_id,
+    basis: e.basis,
+    dataset: e.dataset,
   };
   if (e.signal === 'compound') {
     evidence.unit = 'conditions';
@@ -814,6 +828,8 @@ function mapRadiation(snap: BackendSnapshot, history: BackendHistory): Radiation
       qualityFactor: b.quality_factor,
     })),
     history: toPoints(history.environment.area_dose_rate_equivalent, history.environment.neutron_dose_equivalent_rate),
+    area_dose_rate_absorbed_uGy_h: r?.area.dose_rate_absorbed_uGy_h ?? undefined,
+    replay: r?.replay ?? null,
   };
 }
 

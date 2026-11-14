@@ -124,7 +124,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
             <DataSourceBadge
               compact
-              source={{ provenance: top.evidence.provenance, dataset_id: top.evidence.dataset_id }}
+              source={{ provenance: top.evidence.provenance, dataset_id: top.evidence.dataset_id ?? null, basis: top.evidence.basis, dataset: top.evidence.dataset }}
             />
 
             {top.evidence.limit_verified && (

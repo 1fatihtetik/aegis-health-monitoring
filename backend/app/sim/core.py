@@ -1,6 +1,7 @@
-"""Synthetic data simulator (PRD M2). Deterministic for a given scenario + seed.
+"""Data simulator (PRD M2). Deterministic for a given scenario + seed.
 
-One step = one tick of simulated time (mission.yaml tick_s). All numbers are synthetic.
+One step = one tick of simulated time (mission.yaml tick_s). Radiation comes from the MSL/RAD replay
+(app.datasets.rad) when one is active for the phase; everything else is synthetic.
 """
 
 import math
@@ -12,6 +13,7 @@ from typing import Any
 
 from app.clock import SimClock
 from app.config import Config
+from app.datasets.rad import RadiationReplays, RadSample
 
 Sample = tuple[str | None, str, float]  # (crew_id or None for cabin, signal, value)
 DatedSample = tuple[datetime, str | None, str, float]
@@ -38,7 +40,8 @@ class CrewState:
 
 
 class Simulator:
-    def __init__(self, cfg: Config, clock: SimClock, seed: int, phase: str, start_ts: datetime) -> None:
+    def __init__(self, cfg: Config, clock: SimClock, seed: int, phase: str, start_ts: datetime,
+                 radiation: RadiationReplays | None = None) -> None:
         self.cfg = cfg
         self.clock = clock
         self.seed = seed
@@ -49,11 +52,16 @@ class Simulator:
         self.tick_h = mission["tick_s"] / 3600
         self.params = mission["sim"]
         self.effects: list[Effect] = []
+        self.radiation = radiation
+        self.rad_sample: RadSample | None = None  # last replayed RAD value (None = synthetic radiation)
+        self.spe_active = False
         self.set_phase(phase)
         bone = cfg.limits["bone"]["bmd_loss_pct_per_month_expected_0g"]
         self._bmd_rate = (bone["min"] + bone["max"]) / 2
         log_len = int(24 * 3600 / mission["tick_s"])
-        daily_dose = self.phase_cfg["radiation_uSv_h"] * 24 / 1000
+        replay = radiation.for_phase(phase) if radiation else None
+        # Dose before the scenario: mission days x the replay's mean RAD rate (or the phase constant if synthetic).
+        daily_dose = (replay.mean_equivalent_uSv_h if replay else self.phase_cfg["radiation_uSv_h"]) * 24 / 1000
         self._daily_dose_mSv = daily_dose
         self.crew = [
             CrewState(c["id"], c, deque(maxlen=log_len), self.elapsed_days(clock.now()) * daily_dose)
@@ -157,7 +165,18 @@ class Simulator:
         # ---- cabin + area radiation
         spe = self._effect("spe", t)
         factor = self._spe_factor(spe, t) if spe else 1.0
-        area = self.phase_cfg["radiation_uSv_h"] * factor * (1 + g(0, 0.02))
+        self.spe_active = spe is not None
+        rad = self.radiation.sample(t, self.phase) if self.radiation else None
+        self.rad_sample = rad
+        area_noise = g(0, 0.02)  # drawn either way, so the other RNG streams do not shift with the data source
+        if rad:
+            area = rad.equivalent_uSv_h * factor
+            area_absorbed = rad.absorbed_uGy_h * factor
+            q = rad.equivalent_uSv_h / rad.absorbed_uGy_h if rad.absorbed_uGy_h else self.params["quality_factor"]
+        else:
+            area = self.phase_cfg["radiation_uSv_h"] * factor * (1 + area_noise)
+            q = self.params["quality_factor"]
+            area_absorbed = area / q
         co2 = 2.0 + 0.15 * math.sin(2 * math.pi * (h - 14) / 24) + g(0, 0.03)
         ramp = self._effect("co2_ramp", t)
         if ramp:
@@ -171,8 +190,12 @@ class Simulator:
             (None, "cabin_temp", 22.5 + 0.5 * math.sin(2 * math.pi * (h - 15) / 24) + g(0, 0.05)),
             (None, "humidity", 45 + g(0, 0.5)),
             (None, "noise_level", (58 if day_shift else 46) + g(0, 1.0)),
+            (None, "area_dose_rate_absorbed", area_absorbed),
             (None, "area_dose_rate_equivalent", area),
-            (None, "neutron_dose_equivalent_rate", area * self.phase_cfg["neutron_fraction"] * (1 + g(0, 0.03))),
+            # Neutron share: fixed fraction of the area dose equivalent (CSA LEO ~30%, heuristic). Its noise is drawn
+            # either way (RNG stream unchanged) but only applied to the synthetic background.
+            (None, "neutron_dose_equivalent_rate",
+             area * self.phase_cfg["neutron_fraction"] * (1 + (0.0 if rad else 1.0) * g(0, 0.03))),
         ]
 
         # ---- crew
@@ -229,7 +252,7 @@ class Simulator:
                 (cid, "sleep_hours_24h", sum(c.sleep_log) * self.tick_h),
                 (cid, "symptom_headache", headache),
                 (cid, "dose_rate_equivalent", dose_rate),
-                (cid, "dose_rate_absorbed", dose_rate / self.params["quality_factor"]),
+                (cid, "dose_rate_absorbed", dose_rate / q),
                 (cid, "dose_mission", c.mission_dose_mSv),
             ]
             if bp_due:

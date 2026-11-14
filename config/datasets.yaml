@@ -12,11 +12,46 @@ signals:
     provenance: SYNTHETIC_CALIBRATED
     basis: "Loss rate 1-1.5 %/month in 0 g, NASA HRP Gravity Fields hazard page (limits.yaml bone.bmd_loss_pct_per_month_expected_0g, verified)"
 
-# Replays of bundled NASA data (R-2 onwards). Each entry:
-#   - id: msl_rad_cruise              # replay id
-#     dataset_id: msl_rad_cruise_2012 # must exist in data/nasa/MANIFEST.yaml
-#     file: derived/msl_rad_cruise_2012.csv  # must be listed under that dataset, sha256 must match
-#     signals: [area_dose_rate_equivalent]
-#     phases: [MARS_TRANSIT]
-# An inactive replay (missing/unlisted/tampered file) falls back to the synthetic generator.
-replays: []
+# Replays of bundled NASA data. Each entry must point at a file listed under its dataset in
+# data/nasa/MANIFEST.yaml with a matching sha256; otherwise it is inactive and the synthetic generator is used.
+#   adapter: rad      -> backend/app/datasets/rad.py (MSL/RAD dosimetry)
+#   phases:           mission phases the replay feeds (others stay synthetic)
+#   start:            dataset time that the scenario start (T0) maps to; the 48 h prewarm maps to the 48 h before it
+#   compression:      dataset seconds per simulated second (1 = real time). Shown in the UI when != 1.
+#   mode:             loop (wrap around the window) | hold
+#   max_step:         an observation is the current value for this long (instrument cadence)
+#   max_hold:         past max_step, or over a SUSPECT row, hold the last GOOD value this long (marked SUSPECT);
+#                     after that the synthetic generator takes over
+#   quality_factor:   mean <Q> published for the window; dose equivalent = RAD tissue dose x <Q> (NASA_DERIVED)
+# Signals: area_dose_rate_absorbed is NASA_MEASURED (RAD E detector). area_dose_rate_equivalent,
+# neutron_dose_equivalent_rate and the per-crew dose signals are NASA_DERIVED (formulas in `basis` below).
+# While a synthetic SPE effect is active (until R-3 replays a real one) the radiation signals are SYNTHETIC.
+replays:
+  - id: rad_cruise
+    adapter: rad
+    dataset_id: msl_rad_cruise_2012
+    file: derived/msl_rad_cruise_2012.csv
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission]
+    phases: [TRANSIT, MARS_TRANSIT, RETURN]
+    start: "2012-04-12T00:00:00Z"
+    compression: 1
+    mode: loop
+    max_step: 1h
+    max_hold: 6h          # the window has one 5.9 h downlink gap (2012-04-18 22:42 UTC); GCR is steady over hours
+    quality_factor: 3.82
+    quality_factor_ref: "Zeitlin et al. (2013) Science 340:1080, MSL/RAD cruise mean <Q>"
+  - id: rad_gale
+    adapter: rad
+    dataset_id: msl_rad_gale_2013
+    file: derived/msl_rad_gale_2013.csv
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission]
+    phases: [MARS_SURFACE]
+    start: "2013-03-25T00:00:00Z"
+    compression: 1
+    mode: loop
+    max_step: 2h
+    max_hold: 4h
+    quality_factor: 3.05
+    quality_factor_ref: "Hassler et al. (2014) Science 343:1244797, Gale crater mean <Q>"

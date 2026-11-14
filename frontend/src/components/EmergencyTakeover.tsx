@@ -136,7 +136,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
                 </span>
                 <DataSourceBadge
                   compact
-                  source={{ provenance: alert.evidence.provenance, dataset_id: alert.evidence.dataset_id }}
+                  source={{ provenance: alert.evidence.provenance, dataset_id: alert.evidence.dataset_id ?? null, basis: alert.evidence.basis, dataset: alert.evidence.dataset }}
                 />
                 {!alert.evidence.limit_verified && (
                   <span className="rounded bg-amber-500/25 border border-amber-300/60 px-2 py-0.5 text-xs font-bold text-amber-100">

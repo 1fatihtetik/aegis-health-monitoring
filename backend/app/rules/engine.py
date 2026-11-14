@@ -100,7 +100,8 @@ class RuleEngine:
 
     def _source(self, signal: str) -> dict[str, Any]:
         src = self.provenance(signal)
-        return {"provenance": src["provenance"], "dataset_id": src["dataset_id"]}
+        return {"provenance": src["provenance"], "dataset_id": src["dataset_id"], "basis": src.get("basis", ""),
+                "dataset": src.get("dataset")}
 
     def _values(self, spec: Rule | Predicate, subject: Subject, window: str, now: datetime) -> list[float]:
         subj = subject if SIGNALS[str(spec.signal)].scope == "crew" else None

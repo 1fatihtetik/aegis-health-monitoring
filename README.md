@@ -4,9 +4,10 @@ Hackathon MVP. A crew-side system that watches 4 synthetic astronauts and the ca
 alerts on its own, and syncs to a ground console over a delayed, lossy link (12 min one way in Mars transit).
 
 > Decision support only, not a medical diagnosis.
-> **Current priority: real NASA data (Block R, in progress).** Today every signal is still synthetic and most
-> limits are placeholders (`verified: false` in `config/limits.yaml`, marked in the UI). Block R replaces them
-> with NASA sources, as described below.
+> **Current priority: real NASA data (Block R, in progress).** Done so far: 9 limits verified against
+> NASA-STD-3001 clauses (R-1), and cabin radiation in Mars transit and on the Mars surface is replayed from
+> MSL Curiosity RAD measurements (R-2). The SPE is still a synthetic profile (real RAD SPE: R-3). Crew
+> physiology is synthetic and labelled so.
 
 Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block R is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
@@ -15,13 +16,14 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 
 | Data | Source | Status |
 |---|---|---|
-| Limits (CO2, radiation career dose, cabin atmosphere, noise…) | NASA-STD-3001 Vol 1/Vol 2 and OCHMO Technical Briefs, with clause ids (e.g. 1-h ppCO2 <= 3 mmHg, [V2 6004]) | R-1, planned |
-| Deep-space and Mars-surface radiation, including a real solar particle event | MSL Curiosity RAD measurements (PDS PPI `MSL-M-RAD-3-RDR-V1.0`, SPDF CDAWeb `MSL_RAD_OBS-L2`) | R-2/R-3, planned |
+| Limits (CO2, radiation career dose, cabin atmosphere, noise…) | NASA-STD-3001 Vol 1/Vol 2 and OCHMO Technical Briefs, with clause ids (e.g. 1-h ppCO2 <= 3 mmHg, [V2 6004]) | R-1, done (9 limits; the rest stay `verified: false` and are marked) |
+| Deep-space and Mars-surface radiation, including a real solar particle event | MSL Curiosity RAD measurements (PDS PPI `MSL-M-RAD-3-RDR-V1.0`, SPDF CDAWeb `MSL_RAD_OBS-L2`) | R-2 done: quiet-GCR cruise (2012-04-10..19, mean 449 µGy/day x <Q> 3.82 = 1.72 mSv/day; published 1.84 ± 0.33) and Gale crater (2013-03-23..04-01, 211 µGy/day x 3.05 = 0.64 mSv/day; published 0.64 ± 0.12). Real SPE: R-3, planned |
 | Space-weather context for that event | NASA CCMC DONKI, SPDF OMNIWeb (OMNI2 >10 MeV proton flux) | R-5, planned |
 | Earth–Mars comm delay | JPL Horizons ephemeris (range / speed of light) | R-4, planned |
 | Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, with parameters taken from published NASA values. NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
 
-NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py`, build time only) into `data/nasa/`,
+NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py rad-cruise` / `rad-surface`, build time
+only; `verify` re-checks the hashes) into `data/nasa/`,
 listed with source URL, date and sha256 in `data/nasa/MANIFEST.yaml`, and replayed offline. The running
 system never calls the internet. Every chart and alert shows a badge saying whether a value is NASA-measured,
 NASA-derived or synthetic.

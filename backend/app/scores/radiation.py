@@ -64,6 +64,7 @@ def radiation_summary(
         crew[cid] = entry
 
     area = store.latest(None, "area_dose_rate_equivalent")
+    absorbed = store.latest(None, "area_dose_rate_absorbed")
     neutron = store.latest(None, "neutron_dose_equivalent_rate")
     spectrum = [
         {
@@ -89,6 +90,7 @@ def radiation_summary(
         "crew": crew,
         "area": {
             "dose_rate_uSv_h": round(area[1], 2) if area else None,
+            "dose_rate_absorbed_uGy_h": round(absorbed[1], 3) if absorbed else None,
             "neutron_rate_uSv_h": round(neutron[1], 2) if neutron else None,
             "neutron_fraction": round(neutron[1] / area[1], 3) if area and neutron and area[1] else None,
             "neutron_spectrum": spectrum,

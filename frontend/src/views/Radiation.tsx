@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatDurationSeconds } from '../api/client';
-import { STATUS_DISPLAY } from '../api/types';
+import { RadReplayInfo, STATUS_DISPLAY } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { clauseId, formatLimit } from '../api/limits';
 import { DataSourceBadge } from '../components/DataSourceBadge';
@@ -9,6 +9,44 @@ import { LimitBandChart } from '../components/LimitBandChart';
 export interface RadiationProps {
   onOpenEmergencyModal: () => void;
 }
+
+function utcMinute(iso: string): string {
+  return `${iso.slice(0, 16).replace('T', ' ')} UTC`;
+}
+
+/** Which NASA measurement is playing right now, and how it maps onto mission time (AGENTS.md §2a). */
+export const ReplayLine: React.FC<{ replay?: RadReplayInfo | null }> = ({ replay }) => {
+  if (!replay) {
+    return (
+      <p className="text-xs text-slate-400" data-testid="rad-replay-line">
+        Radiation source: synthetic background (no NASA RAD replay for this mission phase).
+      </p>
+    );
+  }
+  const speed = replay.compression === 1 ? 'replayed in real time' : `replayed ×${replay.compression}`;
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-xs text-sky-100" data-testid="rad-replay-line">
+      <span className="rounded border border-sky-400/60 bg-sky-950/60 px-2 py-0.5 font-bold">◆ {replay.label}</span>
+      <span>
+        Curiosity RAD measurement from {utcMinute(replay.observation_ts)}, {speed}. Dose equivalent = RAD tissue dose ×
+        Q {replay.quality_factor}.
+      </span>
+      {replay.quality === 'SUSPECT' && (
+        <span
+          className="rounded border border-amber-300/60 bg-amber-950/50 px-2 py-0.5 font-semibold text-amber-100"
+          data-testid="rad-replay-held"
+        >
+          ▲ data gap: holding last good RAD value
+        </span>
+      )}
+      {replay.synthetic_spe_overlay && (
+        <span className="rounded border border-slate-500 bg-slate-800/70 px-2 py-0.5 font-semibold text-slate-100">
+          · SPE profile is synthetic (real RAD SPE replay pending)
+        </span>
+      )}
+    </p>
+  );
+};
 
 export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) => {
   const { state, triggerScenario, toggleCrewShelter, evacuateAllToShelter } = useAegis();
@@ -43,6 +81,16 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <p className="text-xs text-slate-300 max-w-3xl">
             Continuous separation of primary proton/GCR ionizing flux and secondary spacecraft-hull neutron radiation (~30% of biological dose equivalent per Canadian Space Agency CANS heritage).
           </p>
+          <ReplayLine replay={radiation.replay} />
+          {radiation.replay && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+              <span>
+                Cabin absorbed dose rate (RAD, measured):{' '}
+                <strong className="font-mono text-sky-100">{radiation.area_dose_rate_absorbed_uGy_h} µGy/h</strong>
+              </span>
+              <DataSourceBadge compact source={state.provenance.area_dose_rate_absorbed} />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -129,7 +177,19 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             <span className="text-xs text-slate-400">µGy/h</span>
           </div>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
-            Mean quality factor Q ≈ {(radiation.dose_rate_equivalent_uSv_h / Math.max(0.1, radiation.dose_rate_absorbed_uGy_h)).toFixed(1)}
+            {radiation.replay ? (
+              <>
+                Mean quality factor Q = {radiation.replay.quality_factor} (published RAD value)
+                {radiation.area_dose_rate_absorbed_uGy_h !== undefined && (
+                  <> · cabin RAD {radiation.area_dose_rate_absorbed_uGy_h} µGy/h</>
+                )}
+              </>
+            ) : (
+              <>
+                Mean quality factor Q ≈{' '}
+                {(radiation.dose_rate_equivalent_uSv_h / Math.max(0.1, radiation.dose_rate_absorbed_uGy_h)).toFixed(1)}
+              </>
+            )}
           </div>
           <div className="mt-0.5 text-[10px] text-cyan-200" data-testid="hint-quality-factor">
             Q = how much more biological damage this radiation mix does per unit of energy absorbed.
@@ -166,7 +226,11 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
         <div className="lg:col-span-7">
           <LimitBandChart
             title="Total Equivalent Dose Rate vs. CANS Neutron Component (µSv/h)"
-            subtitle="Area dose rate (GCR/SPE) vs neutron component (CANS-style spectrometer channel)"
+            subtitle={
+              radiation.replay
+                ? `Area dose equivalent from ${radiation.replay.label} vs neutron share (heuristic 30% split)`
+                : 'Area dose rate (synthetic GCR/SPE) vs neutron share (heuristic 30% split)'
+            }
             data={radiation.history}
             unit="µSv/h"
             limit={speLimit}

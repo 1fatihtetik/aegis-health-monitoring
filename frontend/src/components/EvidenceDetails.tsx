@@ -66,7 +66,7 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
         )}
         <span className="ml-2 align-middle">
           <DataSourceBadge
-            source={{ provenance: evidence.provenance, dataset_id: evidence.dataset_id ?? null }}
+            source={{ provenance: evidence.provenance, dataset_id: evidence.dataset_id ?? null, basis: evidence.basis, dataset: evidence.dataset }}
             compact
           />
         </span>
@@ -105,7 +105,7 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
                   {cl.hysteresis_hold ? ' · ↺ hysteresis hold' : ''}
                 </div>
                 <div className="mt-1">
-                  <DataSourceBadge source={{ provenance: cl.provenance, dataset_id: cl.dataset_id ?? null }} compact />
+                  <DataSourceBadge source={{ provenance: cl.provenance, dataset_id: cl.dataset_id ?? null, basis: cl.basis, dataset: cl.dataset }} compact />
                 </div>
               </div>
             );

@@ -32,9 +32,11 @@ class SignalSource:
     provenance: Provenance
     dataset_id: str | None = None
     basis: str = ""
+    dataset: dict[str, Any] | None = None  # manifest details (label, title, source_url, retrieved, transform)
 
     def as_dict(self) -> dict[str, Any]:
-        return {"provenance": self.provenance.value, "dataset_id": self.dataset_id, "basis": self.basis}
+        return {"provenance": self.provenance.value, "dataset_id": self.dataset_id, "basis": self.basis,
+                "dataset": self.dataset}
 
 
 @dataclass
@@ -143,6 +145,17 @@ class DatasetRegistry:
     def source(self, signal: str) -> SignalSource:
         return self.signals.get(signal, self.default)
 
+    def dataset_meta(self, dataset_id: str | None) -> dict[str, Any] | None:
+        """What a DataSourceBadge shows on tap (AGENTS.md section 8): the manifest entry, minus file hashes."""
+        entry = self.manifest.get(dataset_id) if dataset_id else None
+        if entry is None:
+            return None
+        return {
+            "id": entry["id"], "label": str(entry.get("label") or entry["title"]), "title": entry["title"],
+            "source_url": entry["source_url"], "retrieved": str(entry["retrieved"]), "terms": entry["terms"],
+            "transform": entry["transform"],
+        }
+
     def replay(self, replay_id: str) -> ReplayStatus | None:
         return next((r for r in self.replays if r.id == replay_id), None)
 
@@ -151,7 +164,8 @@ class DatasetRegistry:
         for entry in self.manifest.values():
             files = [{"path": f["path"], "sha256_ok": self.file_ok.get(f["path"], False)} for f in entry["files"]]
             out.append({
-                "id": entry["id"], "tier": entry["tier"], "title": entry["title"],
+                "id": entry["id"], "tier": entry["tier"], "label": str(entry.get("label") or entry["title"]),
+                "title": entry["title"], "reference": entry.get("reference"),
                 "source_url": entry["source_url"], "retrieved": str(entry["retrieved"]),
                 "terms": entry["terms"], "transform": entry["transform"],
                 "files": files, "sha256_ok": all(f["sha256_ok"] for f in files),

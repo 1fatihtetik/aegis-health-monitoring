@@ -17,6 +17,7 @@ from app.rules.models import Predicate
 from app.runtime import Runtime
 from app.sim.scenario import list_scenarios
 from app.util import iso, parse_duration
+from app.world import RAD_SIGNALS
 
 router = APIRouter(prefix="/api/v1")
 Node = Literal["onboard", "ground"]
@@ -138,7 +139,16 @@ def _timeseries(rt: Runtime, node: str, crew_id: str | None, signal: Signal, sta
         points=[[iso(ts), round(v, 3)] for ts, v in points[::stride]],
         limits=_limits_by_signal(rt).get(signal.value, []),
         provenance=_provenance(rt, node, signal.value, start, end),
+        suspect=_suspect(rt, node, signal.value, start, end),
     )
+
+
+def _suspect(rt: Runtime, node: str, signal: str, start: datetime | None, end: datetime | None) -> list[list[str]]:
+    """[from, to] spans where a RAD data gap was filled by holding the last value (quality SUSPECT)."""
+    if node == "ground" or signal not in RAD_SIGNALS:
+        return []
+    return [[iso(a), iso(b)] for a, b in rt.world.suspect
+            if (end is None or a <= end) and (start is None or b >= start)]
 
 
 def _provenance(rt: Runtime, node: str, signal: str, start: datetime | None, end: datetime | None) -> dict[str, Any]:

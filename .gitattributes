@@ -1,0 +1,3 @@
+# Bundled NASA snapshots are hashed (data/nasa/MANIFEST.yaml): store and check out their bytes unchanged.
+data/nasa/raw/** -text
+data/nasa/derived/** -text

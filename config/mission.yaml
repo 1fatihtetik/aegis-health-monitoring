@@ -1,5 +1,7 @@
 # Mission timeline and simulator inputs. These are simulation parameters, not medical limits.
-# Radiation backgrounds are order-of-magnitude values for the simulator only (unverified).
+# radiation_uSv_h is the synthetic fallback only. In TRANSIT/MARS_TRANSIT/RETURN and MARS_SURFACE the radiation
+# signals are replayed from MSL/RAD (config/datasets.yaml); these constants are used when that replay is inactive
+# (missing/tampered file) and for the other phases. heuristic; the MARS_* values sit within ~6% of the RAD means.
 start_ts: "2026-11-14T20:00:00Z"
 mission_day: 142
 default_phase: MARS_TRANSIT
@@ -20,7 +22,7 @@ link:
   max_msgs_per_tick: 20
 sim:
   shelter_dose_factor: 0.2     # fraction of the area dose a sheltered crew member receives
-  quality_factor: 2.5          # dose equivalent / absorbed dose, simulator only
+  quality_factor: 2.5          # dose equivalent / absorbed dose, synthetic fallback only (RAD replay uses the published <Q>)
   exercise_bmd_protection: 0.6 # share of bone loss prevented at 100% exercise adherence
   # Neutron energy spectrum (CANS-style bins). Synthetic split of the neutron dose rate, simulator only (unverified).
   neutron_spectrum:

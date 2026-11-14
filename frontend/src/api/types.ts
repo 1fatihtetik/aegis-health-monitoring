@@ -294,6 +294,38 @@ export interface SignalSource {
   provenance: Provenance;
   dataset_id: string | null;
   basis: string;
+  /** Manifest entry of the dataset (data/nasa/MANIFEST.yaml), shown when the badge is tapped. */
+  dataset?: DatasetMeta | null;
+}
+
+/** One bundled NASA dataset, as listed in data/nasa/MANIFEST.yaml. */
+export interface DatasetMeta {
+  id: string;
+  label: string;
+  title: string;
+  source_url: string;
+  retrieved: string;
+  terms: string;
+  transform: string;
+}
+
+/** The MSL/RAD replay feeding the radiation signals right now (R-2). */
+export interface RadReplayInfo {
+  replay_id: string;
+  dataset_id: string;
+  label: string;
+  /** Dataset time the simulated clock maps to. */
+  dataset_ts: string;
+  /** Start of the RAD observation whose value is shown. */
+  observation_ts: string;
+  compression: number;
+  /** SUSPECT = a data gap filled by holding the last good value. */
+  quality: 'GOOD' | 'SUSPECT' | 'BAD';
+  quality_factor: number;
+  quality_factor_ref: string;
+  absorbed_uGy_h: number;
+  /** A synthetic SPE profile is multiplied onto the replay (until R-3 replays a real SPE). */
+  synthetic_spe_overlay: boolean;
 }
 
 export interface AlertEvidenceClause {
@@ -313,6 +345,8 @@ export interface AlertEvidenceClause {
   hysteresis_hold?: boolean;
   provenance?: Provenance;
   dataset_id?: string | null;
+  basis?: string;
+  dataset?: DatasetMeta | null;
 }
 
 /** Context-branching rules: same symptoms, different likely cause (e.g. CO2 vs hydration). */
@@ -336,6 +370,8 @@ export interface AlertEvidence {
   hysteresis_hold?: boolean;
   provenance?: Provenance;
   dataset_id?: string | null;
+  basis?: string;
+  dataset?: DatasetMeta | null;
 }
 
 export interface AlertNote {
@@ -521,6 +557,10 @@ export interface RadiationSummary {
   shelter_dose_saved_mSv: number;
   spectrum_bins: NeutronEnergyBin[];
   history: TimeSeriesPoint[];
+  /** Cabin (area) absorbed dose rate: the RAD measurement when a replay is active. */
+  area_dose_rate_absorbed_uGy_h?: number;
+  /** Active MSL/RAD replay; null/undefined when radiation is synthetic. */
+  replay?: RadReplayInfo | null;
 }
 
 export interface RecommendationMessage {

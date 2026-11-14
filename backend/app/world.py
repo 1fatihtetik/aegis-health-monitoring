@@ -12,8 +12,9 @@ from app.alerts.manager import AlertManager
 from app.clock import SimClock
 from app.config import Config
 from app.datasets.provenance import ProvenanceTracker
+from app.datasets.rad import RadiationReplays
 from app.db.store import SeriesStore
-from app.domain.enums import SIGNALS, Hazard, Severity
+from app.domain.enums import SIGNALS, Hazard, Provenance, Quality, Severity
 from app.domain.models import Alert, Observation
 from app.link.link import (
     DOWN,
@@ -31,6 +32,9 @@ from app.scores.readiness import compute_readiness
 from app.sim.core import EFFECT_TYPES, Simulator
 from app.sim.scenario import load_scenario
 from app.util import iso, parse_duration, parse_ts
+
+RAD_SIGNALS = ("area_dose_rate_absorbed", "area_dose_rate_equivalent", "neutron_dose_equivalent_rate",
+               "dose_rate_equivalent", "dose_rate_absorbed", "dose_mission")
 
 
 @dataclass
@@ -54,7 +58,10 @@ class World:
         self.clock = SimClock(self.start_ts - timedelta(hours=mission["prewarm_h"]))
         self.store = SeriesStore()
         self.provenance = ProvenanceTracker(cfg.datasets)
-        self.sim = Simulator(cfg, self.clock, seed, self.scenario.get("phase", mission["default_phase"]), self.start_ts)
+        self.radiation = RadiationReplays(cfg.datasets, self.start_ts)
+        self.suspect: list[list[datetime]] = []  # [from, to] spans where a RAD gap was filled by holding (SUSPECT)
+        self.sim = Simulator(cfg, self.clock, seed, self.scenario.get("phase", mission["default_phase"]), self.start_ts,
+                             self.radiation)
         self._events = sorted(
             ((self.start_ts + parse_duration(e["at"]), i, e) for i, e in enumerate(self.scenario["events"])),
             key=lambda x: (x[0], x[1]),
@@ -89,6 +96,60 @@ class World:
         now = self.clock.now()
         for crew_id, signal, value in samples:
             self.store.add(crew_id, signal, now, value)
+        self._track_radiation_source(now)
+
+    def _track_radiation_source(self, now: datetime) -> None:
+        """Provenance of the radiation signals after a simulator step (R-2, AGENTS.md section 2a)."""
+        rad = self.sim.rad_sample
+        if rad is not None and rad.quality == Quality.SUSPECT:
+            if self.suspect and self.suspect[-1][1] >= now - self.sim.tick:
+                self.suspect[-1][1] = now
+            else:
+                self.suspect.append([now, now])
+        replay = self.radiation.for_phase(self.sim.phase)
+        if rad is None or replay is None:
+            for signal in RAD_SIGNALS:
+                src = self.cfg.datasets.source(signal)
+                self.provenance.set(signal, src.provenance, src.dataset_id, now, src.basis)
+            return
+        if self.sim.spe_active:
+            basis = ("Synthetic SPE profile multiplied onto the MSL/RAD background. A real RAD-measured SPE "
+                     "replaces it in R-3.")
+            for signal in RAD_SIGNALS:
+                self.provenance.set(signal, Provenance.SYNTHETIC, None, now, basis)
+            return
+        did, q = rad.dataset_id, replay.quality_factor
+        fraction = self.sim.phase_cfg["neutron_fraction"]
+        derived = {
+            "area_dose_rate_equivalent": f"RAD tissue dose rate (E detector) x mean quality factor <Q> {q} "
+                                         f"({replay.quality_factor_ref}).",
+            "neutron_dose_equivalent_rate": f"{fraction:.0%} of the derived area dose equivalent (neutron share: "
+                                            "project heuristic from the CSA LEO value, unverified).",
+            "dose_rate_equivalent": "Area dose equivalent x (1 + seeded per-crew variation, sd 2%); x shelter factor "
+                                    f"{self.cfg.mission['sim']['shelter_dose_factor']} (heuristic) while sheltered in "
+                                    "an SPE.",
+            "dose_rate_absorbed": f"Personal dose equivalent / <Q> {q}.",
+            "dose_mission": "Mission days before the scenario x the replay's mean dose-equivalent rate, plus the "
+                            "integral of the personal dose rate.",
+        }
+        self.provenance.set("area_dose_rate_absorbed", Provenance.NASA_MEASURED, did, now)
+        for signal, basis in derived.items():
+            self.provenance.set(signal, Provenance.NASA_DERIVED, did, now, basis)
+
+    def replay_status(self) -> dict[str, Any] | None:
+        """What the radiation view shows about the active RAD replay (AGENTS.md section 2a: label the mapping)."""
+        rad = self.sim.rad_sample
+        replay = self.radiation.for_phase(self.sim.phase)
+        if rad is None or replay is None:
+            return None
+        meta = self.cfg.datasets.dataset_meta(rad.dataset_id) or {}
+        return {
+            "replay_id": rad.replay_id, "dataset_id": rad.dataset_id, "label": meta.get("label", rad.dataset_id),
+            "dataset_ts": iso(rad.dataset_ts), "observation_ts": iso(rad.source_ts),
+            "compression": replay.compression, "quality": rad.quality.value,
+            "quality_factor": replay.quality_factor, "quality_factor_ref": replay.quality_factor_ref,
+            "absorbed_uGy_h": round(rad.absorbed_uGy_h, 3), "synthetic_spe_overlay": self.sim.spe_active,
+        }
 
     def _fire_events(self, now: datetime, result: TickResult, prewarm: bool = False) -> None:
         while self._events and self._events[0][0] <= now:
@@ -241,6 +302,7 @@ class World:
             "environment": environment,
             "hazards": hazards,
             "readiness": readiness,
-            "radiation": radiation_summary(self.cfg, self.store, all_alerts, sheltered, now),
+            "radiation": {**radiation_summary(self.cfg, self.store, all_alerts, sheltered, now),
+                          "replay": self.replay_status()},
             "provenance": self.provenance.snapshot(),
         }

@@ -22,10 +22,15 @@ class ProvenanceTracker:
 
     def set(self, signal: str, provenance: Provenance, dataset_id: str | None, since: datetime,
             basis: str = "") -> None:
+        """Start a new segment if the source changed. A known dataset_id brings its manifest details, and
+        stands in for an empty basis, so tapping any badge shows where the value came from (F-006)."""
+        meta = self.registry.dataset_meta(dataset_id)
+        if not basis and meta:
+            basis = f"{meta['title']}. {meta['transform']}"
         current = self.current(signal)
-        if current.provenance == provenance and current.dataset_id == dataset_id:
+        if (current.provenance, current.dataset_id, current.basis) == (provenance, dataset_id, basis):
             return
-        self._segments[signal].append((since, SignalSource(provenance, dataset_id, basis)))
+        self._segments[signal].append((since, SignalSource(provenance, dataset_id, basis, meta)))
 
     def current(self, signal: str) -> SignalSource:
         return self._segments[signal][-1][1]

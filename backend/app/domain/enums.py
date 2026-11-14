@@ -95,6 +95,7 @@ SIGNALS: dict[str, SignalMeta] = {
     "cabin_temp": SignalMeta("°C", "cabin", "cabin"),
     "humidity": SignalMeta("%RH", "cabin", "cabin"),
     "noise_level": SignalMeta("dBA", "cabin", "cabin"),
+    "area_dose_rate_absorbed": SignalMeta("µGy/h", "cabin", "area_dosimeter"),
     "area_dose_rate_equivalent": SignalMeta("µSv/h", "cabin", "area_dosimeter"),
     "neutron_dose_equivalent_rate": SignalMeta("µSv/h", "cabin", "neutron_spectrometer"),
 }

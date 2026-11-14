@@ -11,4 +11,88 @@
 #   files:
 #     - { path: raw/....,      sha256: "..." }
 #     - { path: derived/....,  sha256: "..." }
-datasets: []
+datasets:
+- id: msl_rad_cruise_2012
+  tier: D2
+  label: MSL/RAD cruise 2012
+  title: MSL Curiosity RAD dose rate in Mars cruise, 2012-04-10 to 2012-04-19 (quiet
+    GCR)
+  source_url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/
+  retrieved: '2026-11-14'
+  terms: 'NASA PDS / SPDF public data. Cite: Hassler et al. (2012) Space Sci Rev 170:503
+    (instrument); MSL RAD team, D. Hassler (PI), SwRI.'
+  transform: Kept START_OBS_UTC, QC, L1 counter duration and DOSIMETRY_TOTAL_DOSE_E/B
+    of every RDR observation (no averaging); QC != 0 or dose_e < 50% of the window
+    median (instrument dropout) -> quality SUSPECT. Replay holds each observation
+    until the next one (~32 min cadence) and holds the last GOOD value over SUSPECT
+    rows and gaps (marked SUSPECT). Dose equivalent = dose_e x mean quality factor
+    <Q> 3.82 (Zeitlin et al. 2013) -> NASA_DERIVED.
+  reference:
+    citation: Zeitlin et al. (2013) Science 340:1080; MSL/RAD cruise Dec 2011 - Jul
+      2012
+    dose_rate_uGy_day: 481
+    dose_equivalent_mSv_day: 1.84
+    tolerance_mSv_day: 0.33
+    quality_factor: 3.82
+    window_mean_dose_e_uGy_day: 449.2
+  raw_sources:
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_101_00_16_C136_V00.TXT
+    bytes: 20152551
+    sha256: 85479b7f1286b80eedfa0808e3a72719f5060ca2980820229e400483e4240e06
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_102_00_24_C137_V00.TXT
+    bytes: 20571432
+    sha256: 9daea01d9268c531626d01d7a3196fff2f8e89598662aeec985f9ae8faf9473b
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_103_00_26_C138_V00.TXT
+    bytes: 20585725
+    sha256: 187119fc44946ef12924362c123b5101683d714c8b90a9dfe7d2dbab58efdff3
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_104_00_25_C139_V00.TXT
+    bytes: 20603774
+    sha256: f097babeaa259daa567d967a23ec7d3717bdf93268e26b30c95b758e32bb846a
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_105_00_25_C140_V00.TXT
+    bytes: 20590240
+    sha256: 120f0e84f081e8d0f89578bb8f781316d98cbefbc8a097f2bce25125bc0e4e92
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_106_00_25_C141_V00.TXT
+    bytes: 20592494
+    sha256: f68a640cb5c78a0031a846a7ed40c91816de1da2f78ed312bc3bf2bd8d45342b
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_107_00_25_C142_V00.TXT
+    bytes: 20136015
+    sha256: 276853adfdfce0cd614e186ee583b90baa910d7920b79469a37d1f018b20211e
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_108_00_25_C143_V00.TXT
+    bytes: 20111947
+    sha256: 1074559a0b6f4c736ecaa2d4376eb868cc8a8b5940119e9d3d73ff2e6645fe6f
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_109_00_32_C144_V00.TXT
+    bytes: 18751807
+    sha256: 03f582ccf24b5edd1a70dc3edc9bb976aded3619f12341c2bae1a90d680642b8
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_110_04_36_C145_V00.TXT
+    bytes: 16425586
+    sha256: c4fd7472dc75421f26818e71fd77999f59e7852332b09fe04344a80ad755c637
+  files:
+  - path: derived/msl_rad_cruise_2012.csv
+    sha256: 46038ac11a340e477be9f33c9cf20b311963353515d1f9b1a5849d85c8ca9ab9
+- id: msl_rad_gale_2013
+  tier: D2
+  label: MSL/RAD Gale crater 2013
+  title: MSL Curiosity RAD dose rate on the Mars surface (Gale crater), 2013-03-23
+    to 2013-04-01
+  source_url: https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/MSL_RAD_OBS-L2/data/20130323T000000Z,20130402T000000Z/DOSIMETRY_TOTAL,ALIVE_TIME,FLAGGED_DATA?format=text
+  retrieved: '2026-11-14'
+  terms: 'NASA PDS / SPDF public data. Cite: Hassler et al. (2012) Space Sci Rev 170:503
+    (instrument); MSL RAD team, D. Hassler (PI), SwRI.'
+  transform: CDAWeb text listing (raw/, as downloaded) -> one row per observation;
+    uGy/day / 24 -> uGy/h; FLAGGED_DATA set or dose_e < 50% of the window median ->
+    quality SUSPECT. Replay holds each observation until the next one (~1 h cadence).
+    Dose equivalent = dose_e x mean quality factor <Q> 3.05 (Hassler et al. 2014)
+    -> NASA_DERIVED.
+  reference:
+    citation: Hassler et al. (2014) Science 343:1244797; Gale crater Aug 2012 - Jun
+      2013
+    dose_rate_uGy_day: 210
+    dose_equivalent_mSv_day: 0.64
+    tolerance_mSv_day: 0.12
+    quality_factor: 3.05
+    window_mean_dose_e_uGy_day: 210.6
+  files:
+  - path: raw/msl_rad_obs-l2_20130323_20130401.txt
+    sha256: 80744740630ab14b165502d597249f1802d80b805ba687f404c450ce9bf86d68
+  - path: derived/msl_rad_gale_2013.csv
+    sha256: c76e7e24672fcdf28fd7336f1167e609fdf5b799287d1635912460fa0f4774c3
