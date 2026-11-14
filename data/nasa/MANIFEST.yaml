@@ -148,3 +148,66 @@ datasets:
   files:
   - path: derived/donki_sep_2012_03.json
     sha256: 98425182c35e7e06c95a7f0b25ae76b978363c475fbf71e3f9c65359f7729861
+- id: horizons_earth_mars_2026
+  tier: D4
+  label: JPL Horizons Earth-Mars
+  title: JPL Horizons Earth-Mars range and one-way light time, daily, 2026-08-01 to
+    2027-08-01
+  source_url: https://ssd.jpl.nasa.gov/api/horizons.api?format=text&COMMAND='499'&OBJ_DATA='NO'&MAKE_EPHEM='YES'&EPHEM_TYPE='OBSERVER'&CENTER='500@399'&START_TIME='2026-08-01'&STOP_TIME='2027-08-01'&STEP_SIZE='1
+    d'&QUANTITIES='20,21'
+  retrieved: '2026-11-14'
+  terms: NASA/JPL Solar System Dynamics, Horizons system (public). Ephemerides DE441
+    / mar099.
+  transform: 'Horizons text reply (raw/, as downloaded) -> rows between $$SOE and
+    $$EOE: date, delta (au), 1-way down-leg light time (min) x 60 -> seconds. The
+    link uses the light time linearly interpolated between the daily ephemeris points
+    (smooth orbit geometry, not a data gap) -> NASA_DERIVED. Earth-Mars range stands
+    in for the spacecraft range in MARS_TRANSIT/RETURN.'
+  reference:
+    citation: Giorgini et al., JPL Horizons On-Line Ephemeris System
+    rows: 366
+    min_lt_s: 338.285
+    max_lt_s: 996.768
+  files:
+  - path: raw/horizons_earth_mars_20260801_20270801.txt
+    sha256: 2a26eeee67afbefd2ed947374bc7b60ba6038d7ea457273d6e339db3be98a0e8
+  - path: derived/horizons_earth_mars_lt.csv
+    sha256: 87e34f260a0042a4732c6438949da9022831699d9148235f033eb1438aa729e9
+- id: donki_flr_cme_2012_03
+  tier: D3
+  label: NASA DONKI FLR/CME Mar 2012
+  title: NASA CCMC DONKI solar flare (FLR) and CME records, 2012-03-06 to 2012-03-10
+  source_url: https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR?startDate=2012-03-06&endDate=2012-03-10
+    ; https://ccmc.gsfc.nasa.gov/DONKI/WS/get/CME?startDate=2012-03-06&endDate=2012-03-10
+  retrieved: '2026-11-14'
+  terms: NASA CCMC DONKI public space weather database (ccmc.gsfc.nasa.gov).
+  transform: DONKI FLR and CME JSON from the CCMC DONKI web service; kept id, times,
+    class, source location, linked activity ids, link; CME keeps only the analysis
+    marked isMostAccurate (speed, type, half angle).
+  reference:
+    event_date: '2012-03-07'
+    flares: 6
+    cmes: 12
+  files:
+  - path: derived/donki_flr_cme_2012_03.json
+    sha256: 865bfff46024b39e9dbca1ec0bfd9798e3fa8eda1bed9380d29f11e577ff57b4
+- id: omni2_proton_flux_2012_03
+  tier: D3
+  label: NASA OMNI2 proton flux Mar 2012
+  title: OMNI2 hourly near-Earth >10/>30/>60 MeV proton flux, 2012-03-05 to 2012-03-12
+  source_url: https://cdaweb.gsfc.nasa.gov/WS/cdasr/1/dataviews/sp_phys/datasets/OMNI2_H0_MRG1HR/data/20120305T000000Z,20120313T000000Z/PR-FLX_101800,PR-FLX_301800,PR-FLX_601800?format=text
+  retrieved: '2026-11-14'
+  terms: NASA GSFC SPDF OMNIWeb / CDAWeb public data (J.H. King, N. Papitashvili).
+    Proton fluxes are GOES-sourced.
+  transform: 'CDAWeb text listing (raw/, as downloaded) -> one row per hour: >10,
+    >30, >60 MeV integral proton flux (pfu); OMNI fill values -> empty, row quality
+    SUSPECT. No interpolation.'
+  reference:
+    event_date: '2012-03-07'
+    peak_gt10MeV_pfu: 4559.95
+    peak_utc: '2012-03-08T11:30:00Z'
+  files:
+  - path: raw/omni2_h0_mrg1hr_20120305_20120312.txt
+    sha256: 3738fcf44a80f4fd36df17d904547e20776f6f187105687e9be6639a4a573b6d
+  - path: derived/omni2_proton_flux_2012_03.csv
+    sha256: 7303f40a3eb573493f371345da1a00886862b3347a6c777797912b37f910e065

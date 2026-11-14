@@ -10,7 +10,10 @@ default_provenance: SYNTHETIC
 signals:
   bmd_estimate:
     provenance: SYNTHETIC_CALIBRATED
-    basis: "Loss rate 1-1.5 %/month in 0 g, NASA HRP Gravity Fields hazard page (limits.yaml bone.bmd_loss_pct_per_month_expected_0g, verified)"
+    basis: "Loss rate 1-1.5 %/month in 0 g, NASA HRP Gravity Fields hazard page (limits.yaml bone.bmd_loss_pct_per_month_expected_0g, HRP reference rate, not a STD-3001 limit)"
+  ppco2:
+    provenance: SYNTHETIC_CALIBRATED
+    basis: "Nominal 2.0 mmHg (OCHMO-TB-004 Rev D: ISS 24-h average at or below 3.00 mmHg since 2016; CDRA sized for 2.0-3.9 mmHg). Scrubber-degradation peaks 3.7-3.8 mmHg sit in the TB-004 headache band (2.8-4.5 mmHg)."
 
 # Replays of bundled NASA data. Each entry must point at a file listed under its dataset in
 # data/nasa/MANIFEST.yaml with a matching sha256; otherwise it is inactive and the synthetic generator is used.
@@ -71,3 +74,22 @@ replays:
     max_hold: 4h
     quality_factor: 3.05
     quality_factor_ref: "Hassler et al. (2014) Science 343:1244797, Gale crater mean <Q>"
+  # R-4: comm delay. adapter horizons -> backend/app/datasets/horizons.py. The link's one-way delay in these
+  # phases is the Earth-Mars light time for the simulated date (NASA_DERIVED). The scenario start date is fixed
+  # (mission.yaml start_ts), so demo timing stays rehearsable. Outside the window: mission.yaml comm_delay_s.
+  - id: light_time
+    adapter: horizons
+    dataset_id: horizons_earth_mars_2026
+    file: derived/horizons_earth_mars_lt.csv
+    signals: []
+    phases: [MARS_TRANSIT, MARS_SURFACE, RETURN]
+
+# R-5: space-weather context for the replayed SPE (ground console card; the ground can forward it to the crew
+# through the delayed link). Every file is checked against MANIFEST.yaml like a replay; if one fails, the card
+# says which source is missing instead of showing it.
+space_weather:
+  event_date: "2012-03-07"
+  title: "Solar particle event of 7-10 March 2012"
+  sep:    { dataset_id: donki_sep_2012_03,         file: derived/donki_sep_2012_03.json }
+  events: { dataset_id: donki_flr_cme_2012_03,     file: derived/donki_flr_cme_2012_03.json }
+  flux:   { dataset_id: omni2_proton_flux_2012_03, file: derived/omni2_proton_flux_2012_03.csv }

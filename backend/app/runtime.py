@@ -53,7 +53,9 @@ class Runtime:
     # ---- views ---------------------------------------------------------------------------
     def link_status(self) -> dict[str, Any]:
         w = self.world
-        status = w.link.status(w.delay_s)
+        source = w.delay_source()
+        status = w.link.status(source.delay_s)
+        status["delay_source"] = source.as_dict()
         as_of = w.ground.as_of or w.start_ts
         status["ground_as_of"] = as_of.isoformat().replace("+00:00", "Z")
         status["ground_age_s"] = (w.clock.now() - as_of).total_seconds()

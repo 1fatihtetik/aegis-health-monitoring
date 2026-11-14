@@ -16,6 +16,7 @@ import {
   CrewBaseline,
   CrewId,
   CrewMemberSummary,
+  DelaySource,
   CrewRole,
   DatasetMeta,
   EnvironmentState,
@@ -35,6 +36,7 @@ import {
   Severity,
   SignalSource,
   SleepNightRecord,
+  SpaceWeatherEvent,
   TimeSeriesPoint,
 } from './types';
 import { LimitsTree, flattenLimits } from './limits';
@@ -177,6 +179,7 @@ export interface BackendLink {
   last_delivery_ts?: string | null;
   ground_as_of: string;
   ground_age_s: number;
+  delay_source?: DelaySource;
 }
 
 export interface BackendSim {
@@ -270,6 +273,10 @@ export const backendApi = {
   async alerts(node: 'onboard' | 'ground'): Promise<BackendAlert[]> {
     const res = await getJson<{ alerts: BackendAlert[] }>(`/alerts?node=${node}`);
     return res?.alerts ?? [];
+  },
+  async spaceWeather(): Promise<SpaceWeatherEvent | null> {
+    const res = await getJson<{ event: SpaceWeatherEvent }>('/spaceweather/event?node=ground');
+    return res?.event ?? null;
   },
   async recommendations(node: 'onboard' | 'ground'): Promise<BackendRecommendation[]> {
     const res = await getJson<{ recommendations: BackendRecommendation[] }>(
@@ -847,6 +854,7 @@ function mapLink(snap: BackendSnapshot, pending: LinkStatus['pending_packets'], 
   const l = snap.link;
   return {
     one_way_delay_s: l.delay_s,
+    delay_source: l.delay_source ?? null,
     queue_depth: l.queue_down + l.queue_up,
     blackout: l.blackout,
     bandwidth_kbps: prev.bandwidth_kbps,

@@ -1,4 +1,5 @@
 # Four synthetic crew members. No real personal or health data.
+# R-6: every number has an entry under `sources` (bottom); tests/test_calibration.py checks it.
 crew:
   - id: C1
     callsign: "Vega"
@@ -36,3 +37,13 @@ crew:
     exercise_hours: [11.0, 15.0]
     exercise_adherence: 0.8
     career_dose_prior_mSv: 0
+
+# Where each number comes from (R-6). Keys are dotted paths; * matches one level.
+# Public in-flight astronaut vitals do not exist (AGENTS.md rule 5), so crew physiology is a labelled heuristic.
+sources:
+  crew.*.baseline.*: >-
+    heuristic: synthetic healthy-adult resting values (HR, HRV, BP, mass, VO2max proxy); not any real person's data
+  crew.*.sleep_start_h: "heuristic: planned 8 h sleep block"
+  crew.*.exercise_hours: "heuristic: two planned exercise sessions a day (AGENTS.md section 5)"
+  crew.*.exercise_adherence: "heuristic: share of planned sessions done; scales the NASA HRP bone-loss rate"
+  crew.*.career_dose_prior_mSv: "heuristic: synthetic prior career dose, well under the [V1 4030] 600 mSv limit"

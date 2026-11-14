@@ -10,6 +10,7 @@ import {
 } from '../api/types';
 import { DataSourceBadge } from './DataSourceBadge';
 import { AutonomyNotice } from './AutonomyNotice';
+import { ReplayLine } from './ReplayLine';
 import { signalLabel } from '../api/backend';
 
 export interface EmergencyTakeoverProps {
@@ -47,6 +48,8 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
     return null;
   }
 
+  // F-009: show the rule's own value and unit; µSv/h is only the fallback for radiation rules without one.
+  const evidenceUnit = alert.evidence.unit ?? 'µSv/h';
   const shelteredCount = crew.filter((c) => c.in_shelter).length;
   const allSheltered = shelteredCount === crew.length;
   const checklist = alert.checklist ?? [
@@ -159,12 +162,14 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
               </div>
               <p className="text-sm font-mono text-white">
                 Signal: <strong>{signalLabel(alert.evidence.signal)}</strong> ={' '}
-                <strong className="text-red-300">
-                  {radiation.dose_rate_equivalent_uSv_h} µSv/h
+                <strong className="text-red-300" data-testid="takeover-evidence-value">
+                  {alert.evidence.value ?? radiation.dose_rate_equivalent_uSv_h} {evidenceUnit}
                 </strong>{' '}
-                (Threshold {alert.evidence.op ?? '>'} {alert.evidence.limit} µSv/h over{' '}
-                {alert.evidence.window})
+                (Threshold {alert.evidence.op ? `${alert.evidence.op} ` : ''}
+                {alert.evidence.limit} {evidenceUnit}
+                {alert.evidence.window ? ` over ${alert.evidence.window}` : ''})
               </p>
+              <ReplayLine replay={radiation.replay} />
             </div>
 
             {/* Live SPE Radiation & CANS Neutron Counters */}

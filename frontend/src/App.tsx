@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { formatDurationSeconds } from './api/client';
+import { formatDurationSeconds, formatOneWayDelay } from './api/client';
 import { CrewId, STATUS_DISPLAY } from './api/types';
 import { AegisProvider, useAegis } from './api/useLiveSocket';
 import { AlertBanner } from './components/AlertBanner';
@@ -139,7 +139,7 @@ const AegisShell: React.FC = () => {
               >
                 {link.blackout
                   ? '⚡ LINK BLACKOUT (ONBOARD AUTONOMOUS)'
-                  : `One-Way Delay: ${formatDurationSeconds(sim.comm_delay_s)}`}
+                  : `One-Way Delay: ${formatOneWayDelay(sim.comm_delay_s, link.delay_source)}`}
               </span>
               <button
                 type="button"

@@ -108,6 +108,8 @@ interface AegisContextValue {
     checklist: string[];
   }) => void;
   acknowledgeRecommendationOnboard: (recId: string) => void;
+  /** R-5: ground forwards the bundled space-weather brief to the crew through the delayed link. Backend only. */
+  forwardSpaceWeather: () => Promise<boolean>;
   /** Crew self-report, 0-3. Sent to POST /observations; resolves false when it was not accepted. */
   reportHeadache: (crewId: CrewId, level: number) => Promise<boolean>;
 }
@@ -1135,6 +1137,13 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setState((prev) => ({ ...prev, link: { ...prev.link, blackout: !prev.link.blackout } }));
   }, [state.link.blackout]);
 
+  const forwardSpaceWeather = useCallback(async (): Promise<boolean> => {
+    if (!connectedRef.current) return false;
+    const rec = await backendApi.postJson<BackendRecommendation>('/spaceweather/forward', { crew_id: null });
+    if (rec) linkRef.current.sentGround.push(rec);
+    return rec !== null;
+  }, []);
+
   const sendGroundRecommendation = useCallback(
     (input: {
       crew_id: CrewId | 'ALL';
@@ -1262,6 +1271,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         evacuateAllToShelter,
         toggleLinkBlackout,
         sendGroundRecommendation,
+        forwardSpaceWeather,
         acknowledgeRecommendationOnboard,
         reportHeadache,
       },

@@ -10,6 +10,8 @@ events:
   # 2. Fast-forward through a bad night for C1 and a slow CO2 rise the next day.
   - { at: 1h, type: speed, params: { speed: 3600 } }
   - { at: 1h, type: insomnia, duration: 30h, params: { crew: C1, sleep_fraction: 0.45 } }
+  # Peak ~3.7 mmHg (2.0 nominal + 1.7): above the [V2 6004] 3 mmHg 1-h limit and inside the 2.8-4.5 mmHg
+  # headache band of OCHMO-TB-004 Rev D, the level where ISS crews reported headaches.
   - { at: 10h, type: co2_ramp, duration: 11h30m, params: { rate_per_h: 0.15, max_rise: 1.7 } }
   - { at: 19h, type: speed, params: { speed: 60 } }
   # While CO2 is high, C2 reports a headache with a raised heart rate -> the CO2 branch of the
@@ -17,9 +19,10 @@ events:
   - { at: 19h05m, type: symptom, duration: 1h, params: { crew: C2, headache: 2, hr_rise: 45 } }
   # 3. Solar particle event. Ground sees it one comm delay later.
   - { at: 20h, type: spe, duration: 3h, params: { peak_factor: 80, ramp_s: 600 } }
-  # Comm blackout while the crew is sheltering: onboard keeps working, the ground falls behind. It starts after
-  # 20h33m so a ground recommendation sent once the ground sees the SPE (~20h15m-20h33m) still arrives.
-  # The rad.dose.24h WARNINGs (onboard 20h37m) are due on the ground at 20h49m and wait for the link.
+  # Comm blackout while the crew is sheltering: onboard keeps working, the ground falls behind.
+  # R-6 re-rehearsal (one-way delay = JPL Horizons light time, ~10m54s at 20h): onboard EMERGENCY 20h09m, ground
+  # sees it 20h20m; a recommendation or space-weather brief sent 20h20m-20h33m arrives before the blackout.
+  # The rad.dose.24h WARNINGs (onboard 21h09m, from the real RAD SPE replay) reach the ground at 21h20m.
   - { at: 20h45m, type: blackout, params: { active: true } }
   - { at: 21h10m, type: blackout, params: { active: false } }
   - { at: 21h10m, type: speed, params: { speed: 3600 } }

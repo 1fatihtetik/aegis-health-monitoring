@@ -1,4 +1,5 @@
-description: "Solar particle event: dose rate rises about 80x for 6 hours."
+description: "Solar particle event: replays the MSL/RAD measurement of the March 7-10, 2012 SPE (x20) for 6 hours."
+# peak_factor/ramp_s only shape the synthetic fallback profile, used if the rad_spe replay file is missing.
 phase: MARS_TRANSIT
 speed: 60
 events:

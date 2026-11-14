@@ -4,6 +4,7 @@ import {
   AlertState,
   CrewId,
   CrewMemberSummary,
+  DelaySource,
   EnvironmentState,
   LongTermTrendPoint,
   OperationalStatus,
@@ -484,6 +485,12 @@ export function formatDurationSeconds(totalSeconds: number): string {
   const mins = Math.floor(s / 60);
   const secs = s % 60;
   return `${mins}m ${String(secs).padStart(2, '0')}s`;
+}
+
+/** "10m 58s (JPL Horizons, 2026-11-14)" when the delay is the ephemeris light time, else just the duration. */
+export function formatOneWayDelay(totalSeconds: number, source?: DelaySource | null): string {
+  const base = formatDurationSeconds(totalSeconds);
+  return source?.provenance === 'NASA_DERIVED' && source.date ? `${base} (JPL Horizons, ${source.date})` : base;
 }
 
 export type { AlertState };

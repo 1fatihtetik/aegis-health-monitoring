@@ -117,10 +117,20 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
           <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs font-mono text-slate-200">
             <span className="rounded bg-space-950/80 border border-slate-700/80 px-2 py-1">
-              Evidence: <strong>{signalLabel(top.evidence.signal)}</strong> = {top.evidence.value}
-              {top.evidence.unit ? ` ${top.evidence.unit}` : ''} ({top.evidence.op ?? '>'}{' '}
-              limit {top.evidence.limit}
-              {top.evidence.unit ? ` ${top.evidence.unit}` : ''} over {top.evidence.window})
+              {top.evidence.signal === 'compound' ? (
+                <span data-testid="banner-compound-evidence">
+                  Combined indicators: <strong>{top.evidence.value}</strong> of <strong>{top.evidence.limit}</strong>{' '}
+                  conditions met
+                </span>
+              ) : (
+                <>
+                  Evidence: <strong>{signalLabel(top.evidence.signal)}</strong> = {top.evidence.value}
+                  {top.evidence.unit ? ` ${top.evidence.unit}` : ''} (limit {top.evidence.op ? `${top.evidence.op} ` : ''}
+                  {top.evidence.limit}
+                  {top.evidence.unit ? ` ${top.evidence.unit}` : ''}
+                  {top.evidence.window ? ` over ${top.evidence.window}` : ''})
+                </>
+              )}
             </span>
 
             <DataSourceBadge

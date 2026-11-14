@@ -1,6 +1,8 @@
 description: "CO2 scrubber degrades: cabin ppCO2 rises over several hours."
 phase: MARS_TRANSIT
 speed: 600
+# Peak ~3.8 mmHg (2.0 nominal + 1.8): above the [V2 6004] 3 mmHg 1-h limit, inside the OCHMO-TB-004 Rev D
+# headache band (2.8-4.5 mmHg) and within the 2.0-3.9 mmHg CDRA design range, i.e. a degraded, not failed, scrubber.
 events:
   - { at: 0, type: co2_ramp, duration: 24h, params: { rate_per_h: 0.25, max_rise: 1.8 } }
 expected:

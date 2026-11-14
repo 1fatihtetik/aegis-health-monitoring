@@ -389,6 +389,27 @@ async def link_recommendations(request: Request, node: Node = "onboard") -> dict
     return _envelope(rt, node, recommendations=list(reversed(items)))
 
 
+# ---- space weather (R-5) ---------------------------------------------------------------------
+@router.get("/spaceweather/event")
+async def spaceweather_event(request: Request, node: Node = "ground") -> dict[str, Any]:
+    """Bundled DONKI SEP/FLR/CME + OMNI2 proton flux for the replayed SPE. Offline; never fetched at runtime."""
+    rt = _rt(request)
+    return _envelope(rt, node, event=rt.world.space_weather.event)
+
+
+class ForwardBody(BaseModel):
+    crew_id: str | None = None
+
+
+@router.post("/spaceweather/forward")
+async def spaceweather_forward(body: ForwardBody, request: Request) -> dict[str, Any]:
+    """Ground -> crew: sends the space-weather brief as a recommendation through the delayed link."""
+    w = _rt(request).world
+    if not w.space_weather.event["available"]:
+        raise HTTPException(409, "No bundled space-weather record is available")
+    return w.forward_space_weather(body.crew_id)
+
+
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
 async def observations(items: list[Observation], request: Request) -> dict[str, int]:

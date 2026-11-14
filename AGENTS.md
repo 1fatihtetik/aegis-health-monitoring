@@ -38,7 +38,8 @@ backend/            Python 3.11+, FastAPI, Pydantic v2, in-memory store
     link/           store-and-forward delay queue, priority, blackout; the ground store
     db/             in-memory ring buffers per signal (1-min resolution)
     datasets/       (Block R) manifest + sha256 check, replay adapters: rad.py (MSL/RAD),
-                    donki.py, omni.py, horizons.py; pure functions of (dataset, offset, seed)
+                    horizons.py (R-4 light time), spaceweather.py (R-5 DONKI + OMNI2 card);
+                    pure functions of (dataset, offset, seed)
   tests/
 data/nasa/          (Block R) bundled NASA snapshots, read-only, checked in
   MANIFEST.yaml     one entry per file: id, tier, source_url, retrieved, sha256, terms, transform

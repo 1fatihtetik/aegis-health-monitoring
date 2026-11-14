@@ -20,7 +20,14 @@ Usage (from the repo root):
         R-2: MSL/RAD Gale crater dosimetry (SPDF CDAWeb MSL_RAD_OBS-L2, 2013-03-23..04-01). Bundles the
         CDAWeb text listing in raw/ and writes derived/msl_rad_gale_2013.csv.
 
-Further fetchers (DONKI, OMNI2, Horizons) are added per work item, R-3 onwards.
+    python -P scripts/fetch_nasa_data.py rad-spe
+        R-3: MSL/RAD March 2012 SPE (PDS cruise RDRs, DOY 067-070) + DONKI SEP records.
+    python -P scripts/fetch_nasa_data.py horizons
+        R-4: JPL Horizons daily Earth-Mars range + one-way light time (2026-08-01..2027-08-01).
+    python -P scripts/fetch_nasa_data.py space-weather
+        R-5: DONKI FLR + CME records (2012-03-06..10) and OMNI2 hourly >10/30/60 MeV proton flux.
+    rad-spe fetches DONKI SEP via api.nasa.gov: set NASA_API_KEY (defaults to DEMO_KEY); the key is never written
+    to disk. space-weather uses the CCMC DONKI web service, which needs no key.
 """
 
 import argparse
@@ -30,6 +37,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -379,6 +387,165 @@ def cmd_rad_spe(_: argparse.Namespace) -> int:
     return 0
 
 
+# ---- JPL Horizons light time (R-4) -----------------------------------------------------------
+HORIZONS_API = "https://ssd.jpl.nasa.gov/api/horizons.api"
+HORIZONS_RANGE = ("2026-08-01", "2027-08-01")  # covers start_ts 2026-11-14, its 180-day history and the demo
+LT_HEADER = ["date_utc", "delta_au", "one_way_lt_s"]
+HORIZONS_ROW = re.compile(r"^\s*(\d{4}-[A-Za-z]{3}-\d\d) (\d\d:\d\d)\s+(\S+)\s+(\S+)\s+(\S+)\s*$")
+
+
+def parse_horizons(text: str) -> list[dict[str, Any]]:
+    """Rows between $$SOE and $$EOE of a Horizons OBSERVER table with quantities 20 (delta, deldot) and 21 (1-way LT)."""
+    if "$$SOE" not in text or "$$EOE" not in text:
+        sys.exit("Horizons reply has no $$SOE/$$EOE table")
+    body = text.split("$$SOE", 1)[1].split("$$EOE", 1)[0]
+    out = []
+    for line in body.splitlines():
+        m = HORIZONS_ROW.match(line)
+        if not m:
+            continue
+        ts = datetime.strptime(f"{m.group(1)} {m.group(2)}", "%Y-%b-%d %H:%M").replace(tzinfo=UTC)
+        delta_au, lt_min = float(m.group(3)), float(m.group(5))
+        out.append({"date_utc": ts.strftime("%Y-%m-%dT%H:%M:%SZ"), "delta_au": f"{delta_au:.10f}",
+                    "one_way_lt_s": f"{lt_min * 60:.3f}"})
+    return out
+
+
+def cmd_horizons(_: argparse.Namespace) -> int:
+    params = {
+        "format": "text", "COMMAND": "'499'", "OBJ_DATA": "'NO'", "MAKE_EPHEM": "'YES'", "EPHEM_TYPE": "'OBSERVER'",
+        "CENTER": "'500@399'", "START_TIME": f"'{HORIZONS_RANGE[0]}'", "STOP_TIME": f"'{HORIZONS_RANGE[1]}'",
+        "STEP_SIZE": "'1%20d'", "QUANTITIES": "'20,21'",
+    }
+    url = HORIZONS_API + "?" + "&".join(f"{k}={v}" for k, v in params.items())
+    blob = _get(url)
+    raw_rel = "raw/horizons_earth_mars_20260801_20270801.txt"
+    (DATA / raw_rel).parent.mkdir(parents=True, exist_ok=True)
+    (DATA / raw_rel).write_bytes(blob)
+    rows = parse_horizons(blob.decode("utf-8", "replace"))
+    rel = "derived/horizons_earth_mars_lt.csv"
+    (DATA / rel).parent.mkdir(parents=True, exist_ok=True)
+    with (DATA / rel).open("w", encoding="utf-8", newline="") as fh:
+        fh.write("# JPL Horizons OBSERVER table, target Mars (499), center Earth geocenter (500@399), daily at 00:00 UT; "
+                 "delta = Earth-Mars range (au), one_way_lt_s = 1-way down-leg light time (Horizons quantity 21) x 60\n")
+        writer = csv.DictWriter(fh, fieldnames=LT_HEADER, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    _upsert({
+        "id": "horizons_earth_mars_2026", "tier": "D4", "label": "JPL Horizons Earth-Mars",
+        "title": f"JPL Horizons Earth-Mars range and one-way light time, daily, {HORIZONS_RANGE[0]} to {HORIZONS_RANGE[1]}",
+        "source_url": url.replace("%20", " "), "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": "NASA/JPL Solar System Dynamics, Horizons system (public). Ephemerides DE441 / mar099.",
+        "transform": ("Horizons text reply (raw/, as downloaded) -> rows between $$SOE and $$EOE: date, delta (au), "
+                      "1-way down-leg light time (min) x 60 -> seconds. The link uses the light time linearly "
+                      "interpolated between the daily ephemeris points (smooth orbit geometry, not a data gap) -> "
+                      "NASA_DERIVED. Earth-Mars range stands in for the spacecraft range in MARS_TRANSIT/RETURN."),
+        "reference": {"citation": "Giorgini et al., JPL Horizons On-Line Ephemeris System",
+                      "rows": len(rows), "min_lt_s": min(float(r["one_way_lt_s"]) for r in rows),
+                      "max_lt_s": max(float(r["one_way_lt_s"]) for r in rows)},
+        "files": [{"path": raw_rel, "sha256": sha256(DATA / raw_rel)}, {"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(rows)} daily rows -> {rel}")
+    return 0
+
+
+# ---- Space weather context (R-5) -------------------------------------------------------------
+DONKI_BASE = "https://ccmc.gsfc.nasa.gov/DONKI/WS/get/"  # CCMC's own DONKI web service; no API key needed
+SW_DAYS = ("2012-03-06", "2012-03-10")
+OMNI_RANGE = ("20120305T000000Z", "20120313T000000Z")
+OMNI_VARS = "PR-FLX_101800,PR-FLX_301800,PR-FLX_601800"
+OMNI_HEADER = ["utc", "flux_gt10MeV_pfu", "flux_gt30MeV_pfu", "flux_gt60MeV_pfu", "quality"]
+OMNI_FILL = 99999.0  # OMNI2 fill values are 99999.99 / 9999.99 style; anything at or above this is missing
+
+
+def parse_omni_text(text: str) -> list[dict[str, Any]]:
+    """CDAWeb text listing of OMNI2_H0_MRG1HR: EPOCH_1800 then the >10, >30, >60 MeV proton fluxes."""
+    out = []
+    stamp = re.compile(r"^(\d\d)-(\d\d)-(\d{4}) (\d\d:\d\d:\d\d)\.\S+\s+(.*)$")
+    for line in text.splitlines():
+        m = stamp.match(line)
+        if not m:
+            continue
+        nums = [c for c in m.group(5).split() if NUMBER.fullmatch(c)]
+        if len(nums) < 3:
+            continue
+        vals = [float(x) for x in nums[:3]]
+        ok = all(0 <= v < OMNI_FILL for v in vals)
+        out.append({
+            "utc": f"{m.group(3)}-{m.group(2)}-{m.group(1)}T{m.group(4)}Z",
+            **{k: (f"{v:g}" if 0 <= v < OMNI_FILL else "") for k, v in zip(OMNI_HEADER[1:4], vals, strict=True)},
+            "quality": "GOOD" if ok else "SUSPECT",
+        })
+    return out
+
+
+def _keep(record: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
+    return {k: record.get(k) for k in keys}
+
+
+def cmd_space_weather(_: argparse.Namespace) -> int:
+    window = f"startDate={SW_DAYS[0]}&endDate={SW_DAYS[1]}"
+    cme = json.loads(_get(f"{DONKI_BASE}CME?{window}", accept="application/json"))
+    flr_note = ""
+    try:
+        flr = json.loads(_get(f"{DONKI_BASE}FLR?{window}", accept="application/json"))
+    except urllib.error.HTTPError as exc:
+        flr, flr_note = [], f" FLR endpoint returned HTTP {exc.code}; flare ids come from SEP/CME linkedEvents only."
+    # Keep the fields the ground card shows; CME analyses keep only the most accurate one (speed, type).
+    cmes = []
+    for c in cme:
+        best = next((a for a in c.get("cmeAnalyses") or [] if a.get("isMostAccurate")), None)
+        cmes.append({**_keep(c, ("activityID", "startTime", "sourceLocation", "note", "link")),
+                     "linked": [e.get("activityID") for e in c.get("linkedEvents") or []],
+                     "analysis": _keep(best, ("speed", "type", "halfAngle", "latitude", "longitude")) if best else None})
+    flares = [_keep(f, ("flrID", "beginTime", "peakTime", "endTime", "classType", "sourceLocation", "activeRegionNum",
+                        "link")) for f in flr]
+    rel_events = "derived/donki_flr_cme_2012_03.json"
+    (DATA / rel_events).write_text(json.dumps({"flr": flares, "cme": cmes}, indent=2) + "\n", encoding="utf-8")
+    _upsert({
+        "id": "donki_flr_cme_2012_03", "tier": "D3", "label": "NASA DONKI FLR/CME Mar 2012",
+        "title": f"NASA CCMC DONKI solar flare (FLR) and CME records, {SW_DAYS[0]} to {SW_DAYS[1]}",
+        "source_url": f"{DONKI_BASE}FLR?{window} ; {DONKI_BASE}CME?{window}",
+        "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": "NASA CCMC DONKI public space weather database (ccmc.gsfc.nasa.gov).",
+        "transform": ("DONKI FLR and CME JSON from the CCMC DONKI web service; kept id, times, class, source "
+                      "location, linked activity ids, link; CME keeps only the analysis marked isMostAccurate "
+                      "(speed, type, half angle)." + flr_note),
+        "reference": {"event_date": "2012-03-07", "flares": len(flares), "cmes": len(cmes)},
+        "files": [{"path": rel_events, "sha256": sha256(DATA / rel_events)}],
+    })
+
+    query = f"{CDAWEB.replace('MSL_RAD_OBS-L2', 'OMNI2_H0_MRG1HR')}{OMNI_RANGE[0]},{OMNI_RANGE[1]}/{OMNI_VARS}?format=text"
+    meta = json.loads(_get(query, accept="application/json"))
+    blob = _get(str(meta["FileDescription"][0]["Name"]))
+    raw_rel = "raw/omni2_h0_mrg1hr_20120305_20120312.txt"
+    (DATA / raw_rel).write_bytes(blob)
+    rows = parse_omni_text(blob.decode("ascii", "replace"))
+    rel = "derived/omni2_proton_flux_2012_03.csv"
+    with (DATA / rel).open("w", encoding="utf-8", newline="") as fh:
+        fh.write("# OMNI2 hourly near-Earth (1 AU) integral proton flux from SPDF CDAWeb OMNI2_H0_MRG1HR; "
+                 "pfu = protons/(cm2 sr s); timestamps are hour midpoints\n")
+        writer = csv.DictWriter(fh, fieldnames=OMNI_HEADER, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    peak = max(rows, key=lambda r: float(r["flux_gt10MeV_pfu"] or 0))
+    _upsert({
+        "id": "omni2_proton_flux_2012_03", "tier": "D3", "label": "NASA OMNI2 proton flux Mar 2012",
+        "title": "OMNI2 hourly near-Earth >10/>30/>60 MeV proton flux, 2012-03-05 to 2012-03-12",
+        "source_url": query, "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": "NASA GSFC SPDF OMNIWeb / CDAWeb public data (J.H. King, N. Papitashvili). Proton fluxes are "
+                 "GOES-sourced.",
+        "transform": ("CDAWeb text listing (raw/, as downloaded) -> one row per hour: >10, >30, >60 MeV integral "
+                      "proton flux (pfu); OMNI fill values -> empty, row quality SUSPECT. No interpolation."),
+        "reference": {"event_date": "2012-03-07", "peak_gt10MeV_pfu": float(peak["flux_gt10MeV_pfu"]),
+                      "peak_utc": peak["utc"]},
+        "files": [{"path": raw_rel, "sha256": sha256(DATA / raw_rel)}, {"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(flares)} flares, {len(cmes)} CMEs -> {rel_events}; {len(rows)} OMNI2 rows, peak >10 MeV "
+          f"{peak['flux_gt10MeV_pfu']} pfu at {peak['utc']} -> {rel}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -401,6 +568,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("rad-cruise").set_defaults(fn=cmd_rad_cruise)
     sub.add_parser("rad-surface").set_defaults(fn=cmd_rad_surface)
     sub.add_parser("rad-spe").set_defaults(fn=cmd_rad_spe)
+    sub.add_parser("horizons").set_defaults(fn=cmd_horizons)
+    sub.add_parser("space-weather").set_defaults(fn=cmd_space_weather)
     args = parser.parse_args(argv)
     return int(args.fn(args))
 

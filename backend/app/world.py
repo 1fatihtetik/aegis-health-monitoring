@@ -11,8 +11,10 @@ from typing import Any
 from app.alerts.manager import AlertManager
 from app.clock import SimClock
 from app.config import Config
+from app.datasets.horizons import CommDelay, LightTime
 from app.datasets.provenance import ProvenanceTracker
 from app.datasets.rad import RadiationReplays
+from app.datasets.spaceweather import SpaceWeather
 from app.db.store import SeriesStore
 from app.domain.enums import SIGNALS, Hazard, Provenance, Quality, Severity
 from app.domain.models import Alert, Observation
@@ -59,6 +61,8 @@ class World:
         self.store = SeriesStore()
         self.provenance = ProvenanceTracker(cfg.datasets)
         self.radiation = RadiationReplays(cfg.datasets, self.start_ts)
+        self.comm = CommDelay(cfg.datasets, mission["phases"])  # R-4: JPL Horizons light time by date
+        self.space_weather = SpaceWeather(cfg)  # R-5: ground-side DONKI/OMNI2 context, reaches the crew via link
         self.suspect: list[list[datetime]] = []  # [from, to] spans where a RAD gap was filled by holding (SUSPECT)
         self.sim = Simulator(cfg, self.clock, seed, self.scenario.get("phase", mission["default_phase"]), self.start_ts,
                              self.radiation)
@@ -88,9 +92,14 @@ class World:
     # ---- time ----------------------------------------------------------------------------
     @property
     def delay_s(self) -> float:
+        return self.delay_source().delay_s
+
+    def delay_source(self) -> LightTime:
+        """One-way comm delay now and where it comes from (operator override > JPL Horizons > phase constant)."""
         if self.delay_override is not None:
-            return self.delay_override
-        return float(self.sim.phase_cfg["comm_delay_s"])
+            return LightTime(self.delay_override, Provenance.SYNTHETIC, None,
+                             "Set by an operator (POST /link/delay), not ephemeris.", None)
+        return self.comm.at(self.sim.phase, self.clock.now())
 
     def _ingest(self, samples: list[tuple[str | None, str, float]]) -> None:
         now = self.clock.now()
@@ -246,6 +255,11 @@ class World:
         self.ground.sent_recommendations.append(payload)
         return payload
 
+    def forward_space_weather(self, crew_id: str | None = None) -> dict[str, Any]:
+        """R-5: the ground forwards the bundled space-weather brief to the crew through the delayed link."""
+        text, checklist = self.space_weather.crew_brief()
+        return self.send_recommendation(text, checklist, crew_id)
+
     # ---- snapshot ------------------------------------------------------------------------
     def _build_snapshot(self) -> dict[str, Any]:
         now = self.clock.now()
@@ -302,7 +316,8 @@ class World:
             "phase": {
                 "name": self.sim.phase,
                 "gravity_g": self.sim.phase_cfg["gravity_g"],
-                "comm_delay_s": self.sim.phase_cfg["comm_delay_s"],
+                "comm_delay_s": self.delay_s,
+                "comm_delay_source": self.delay_source().as_dict(),
             },
             "crew": crew,
             "environment": environment,

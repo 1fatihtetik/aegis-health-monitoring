@@ -1,5 +1,7 @@
 """API smoke tests. The background loop is off; tests advance the world by hand."""
 
+import math
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -70,7 +72,10 @@ def test_ground_view_is_delayed(client):
     advance(client, 40)
     assert client.get("/api/v1/alerts", params={"node": "ground"}).json()["alerts"] == []
     ground = client.get("/api/v1/crew", params={"node": "ground"}).json()
-    assert ground["age_s"] == 720 and ground["crew"][0]["status"] == "NOMINAL"
+    link = client.get("/api/v1/link/status").json()
+    assert link["delay_source"]["provenance"] == "NASA_DERIVED" and 650 < link["delay_s"] < 662  # JPL Horizons
+    # Snapshots go out once a minute, so the ground sees data at the first tick after the light time.
+    assert ground["age_s"] == math.ceil(link["delay_s"] / 60) * 60 and ground["crew"][0]["status"] == "NOMINAL"
     advance(client, 12)
     assert client.get("/api/v1/alerts", params={"node": "ground"}).json()["alerts"][0]["severity"] == "EMERGENCY"
 

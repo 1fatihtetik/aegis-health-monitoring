@@ -184,19 +184,27 @@ class Simulator:
             area = self.phase_cfg["radiation_uSv_h"] * factor * (1 + area_noise)
             q = self.params["quality_factor"]
             area_absorbed = area / q
-        co2 = 2.0 + 0.15 * math.sin(2 * math.pi * (h - 14) / 24) + g(0, 0.03)
+        cab = self.params["cabin"]  # mission.yaml sim.cabin; sources in mission.yaml `sources` (R-6)
+
+        def diurnal(c: dict[str, Any]) -> float:  # peaks at c["peak_h"]
+            return float(c["diurnal_amp"]) * math.sin(2 * math.pi * (h - (c["peak_h"] - 6)) / 24)
+
+        co2c = cab["ppco2_mmHg"]
+        co2 = co2c["mean"] + diurnal(co2c) + g(0, co2c["sd"])
         ramp = self._effect("co2_ramp", t)
         if ramp:
             hours = (t - ramp.start).total_seconds() / 3600
             co2 += min(float(ramp.params.get("max_rise", 1.5)), float(ramp.params.get("rate_per_h", 0.2)) * hours)
-        day_shift = 6 <= h < 22
+        noise = cab["noise_dBA"]
+        day_shift = noise["day_start_h"] <= h < noise["day_end_h"]
+        temp = cab["temp_C"]
         out += [
             (None, "ppco2", co2),
-            (None, "ppo2", 21.2 + g(0, 0.05)),
-            (None, "cabin_pressure", 101.3 + g(0, 0.05)),
-            (None, "cabin_temp", 22.5 + 0.5 * math.sin(2 * math.pi * (h - 15) / 24) + g(0, 0.05)),
-            (None, "humidity", 45 + g(0, 0.5)),
-            (None, "noise_level", (58 if day_shift else 46) + g(0, 1.0)),
+            (None, "ppo2", cab["ppo2_kPa"]["mean"] + g(0, cab["ppo2_kPa"]["sd"])),
+            (None, "cabin_pressure", cab["pressure_kPa"]["mean"] + g(0, cab["pressure_kPa"]["sd"])),
+            (None, "cabin_temp", temp["mean"] + diurnal(temp) + g(0, temp["sd"])),
+            (None, "humidity", cab["humidity_pct"]["mean"] + g(0, cab["humidity_pct"]["sd"])),
+            (None, "noise_level", (noise["day"] if day_shift else noise["night"]) + g(0, noise["sd"])),
             (None, "area_dose_rate_absorbed", area_absorbed),
             (None, "area_dose_rate_equivalent", area),
             # Neutron share: fixed fraction of the area dose equivalent (CSA LEO ~30%, heuristic). Its noise is drawn

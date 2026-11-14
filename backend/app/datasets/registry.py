@@ -84,6 +84,18 @@ class DatasetRegistry:
             for f in entry["files"]:
                 self.file_ok[f["path"]] = self._check_file(entry["id"], f)
         self.replays = [self._check_replay(r) for r in (spec.get("replays") or [])]
+        # R-5 space-weather sources: {part: (dataset_id, file, reason)}; reason "" means the file is usable.
+        self.space_weather_spec: dict[str, Any] = dict(spec.get("space_weather") or {})
+        self.space_weather_files: dict[str, tuple[str, str, str]] = {}
+        for part in ("sep", "events", "flux"):
+            src = self.space_weather_spec.get(part)
+            if not src:
+                continue
+            did, rel = str(src["dataset_id"]), str(src["file"])
+            reason = self.file_problem(did, rel)
+            if reason:
+                self.problems.append(f"space_weather {part} unavailable: {reason}")
+            self.space_weather_files[part] = (did, rel, reason)
         for problem in self.problems:
             log.warning("NASA data: %s", problem)
 
@@ -123,20 +135,24 @@ class DatasetRegistry:
             return False
         return True
 
+    def file_problem(self, dataset_id: str, rel: str | None) -> str:
+        """Why a datasets.yaml file reference is unusable, or "" if it is listed and matches its sha256."""
+        entry = self.manifest.get(dataset_id)
+        if entry is None:
+            return f"dataset '{dataset_id}' is not in MANIFEST.yaml"
+        if rel not in {f["path"] for f in entry["files"]}:
+            return f"file '{rel}' is not listed under dataset '{dataset_id}'"
+        if not self.file_ok.get(str(rel), False):
+            return f"file '{rel}' is missing or fails its sha256 check"
+        return ""
+
     def _check_replay(self, r: dict[str, Any]) -> ReplayStatus:
         rid, did = str(r["id"]), str(r["dataset_id"])
         signals = [str(s) for s in r.get("signals", [])]
         for s in signals:
             if s not in SIGNALS:
                 raise ValueError(f"datasets.yaml replay {rid}: unknown signal '{s}'")
-        entry = self.manifest.get(did)
-        reason = ""
-        if entry is None:
-            reason = f"dataset '{did}' is not in MANIFEST.yaml"
-        elif r.get("file") not in {f["path"] for f in entry["files"]}:
-            reason = f"file '{r.get('file')}' is not listed under dataset '{did}'"
-        elif not self.file_ok.get(str(r["file"]), False):
-            reason = f"file '{r['file']}' is missing or fails its sha256 check"
+        reason = self.file_problem(did, r.get("file"))
         if reason:
             self.problems.append(f"replay {rid} inactive, synthetic fallback: {reason}")
         return ReplayStatus(rid, did, signals, not reason, reason, r)

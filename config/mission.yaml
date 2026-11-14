@@ -1,7 +1,10 @@
 # Mission timeline and simulator inputs. These are simulation parameters, not medical limits.
+# R-6: every number here has an entry under `sources` (bottom): a NASA citation, a physical value, or the word
+# "heuristic" / "setting". tests/test_calibration.py fails if a number has no source.
 # radiation_uSv_h is the synthetic fallback only. In TRANSIT/MARS_TRANSIT/RETURN and MARS_SURFACE the radiation
 # signals are replayed from MSL/RAD (config/datasets.yaml); these constants are used when that replay is inactive
-# (missing/tampered file) and for the other phases. heuristic; the MARS_* values sit within ~6% of the RAD means.
+# (missing/tampered file) and for the other phases.
+# comm_delay_s for MARS_* is the fallback only: the link uses the JPL Horizons light time (datasets.yaml light_time).
 start_ts: "2026-11-14T20:00:00Z"
 mission_day: 142
 default_phase: MARS_TRANSIT
@@ -24,6 +27,15 @@ sim:
   shelter_dose_factor: 0.2     # fraction of the area dose a sheltered crew member receives
   quality_factor: 2.5          # dose equivalent / absorbed dose, synthetic fallback only (RAD replay uses the published <Q>)
   exercise_bmd_protection: 0.6 # share of bone loss prevented at 100% exercise adherence
+  # Cabin atmosphere generator: value = mean + diurnal_amp x sin(2 pi (h - peak_h) / 24) + N(0, sd).
+  # Scenario effects (co2_ramp) add on top; see the scenario files for where their peaks sit.
+  cabin:
+    ppco2_mmHg:     { mean: 2.0,  diurnal_amp: 0.15, peak_h: 20, sd: 0.03 }
+    ppo2_kPa:       { mean: 21.2, sd: 0.05 }
+    pressure_kPa:   { mean: 101.3, sd: 0.05 }
+    temp_C:         { mean: 22.5, diurnal_amp: 0.5, peak_h: 21, sd: 0.05 }
+    humidity_pct:   { mean: 45,   sd: 0.5 }
+    noise_dBA:      { day: 58, night: 46, day_start_h: 6, day_end_h: 22, sd: 1.0 }
   # Neutron energy spectrum (CANS-style bins). Synthetic split of the neutron dose rate, simulator only (unverified).
   neutron_spectrum:
     - { energy_range: "Thermal (<0.5 eV)",           fraction: 0.12, quality_factor: 2.5 }
@@ -31,3 +43,41 @@ sim:
     - { energy_range: "Fast (0.1-2 MeV)",            fraction: 0.34, quality_factor: 20.0 }
     - { energy_range: "Relativistic (2-20 MeV)",     fraction: 0.23, quality_factor: 10.0 }
     - { energy_range: "High-energy (>20 MeV)",       fraction: 0.12, quality_factor: 5.0 }
+
+# Where each number comes from (R-6, ROADMAP section 0.3). Keys are dotted paths; * matches one level.
+sources:
+  mission_day: "setting: scenario day 142 of the Mars transit (no physical meaning)"
+  tick_s: "setting: simulator resolution, matches the 1-min store"
+  prewarm_h: "setting: fills the 48 h baseline window before T0"
+  sleep_report_hour: "setting"
+  history_days: "setting: length of the long-term trend charts"
+  link.max_msgs_per_tick: "setting: link bandwidth cap (heuristic)"
+  phases.*.gravity_g: >-
+    Surface gravity / 9.81 m/s2: Moon 1.62 m/s2 -> 0.16 g, Mars 3.71 m/s2 -> 0.38 g (NASA NSSDCA Planetary Fact
+    Sheets); 0 g in free fall; 1 g after landing
+  phases.*.comm_delay_s: >-
+    LEO and POST_LANDING 0 s (setting); TRANSIT/LUNAR_SURFACE 1.3 s = Earth-Moon light time (384,400 km / c,
+    NASA NSSDCA Moon Fact Sheet); MARS_* 720 s is the fallback only, a Horizons-typical value: the link uses the JPL
+    Horizons light time by date (data/nasa horizons_earth_mars_2026, 657 s at T0)
+  phases.*.radiation_uSv_h: >-
+    heuristic synthetic fallback; MARS_* values within ~6% of the MSL/RAD replay means (Zeitlin 2013, Hassler 2014),
+    LEO/lunar/post-landing values are round heuristics
+  phases.*.neutron_fraction: "heuristic: CSA's ~30% neutron share of the LEO dose, applied to every phase"
+  sim.shelter_dose_factor: "heuristic: storm-shelter dose reduction, not a measured shielding value"
+  sim.quality_factor: "heuristic: synthetic fallback only; the RAD replays use the published <Q> (datasets.yaml)"
+  sim.exercise_bmd_protection: "heuristic: share of the NASA HRP bone-loss rate prevented by full exercise adherence"
+  sim.cabin.ppco2_mmHg.mean: >-
+    OCHMO-TB-004 Rev D: ISS 24-h average ppCO2 has stayed at or below 3.00 mmHg since 2016 (p. 7); CDRA sized for
+    2.0-3.9 mmHg (p. 8); a 7-day mean below 2.5 mmHg keeps headache risk below 1% (p. 5). 2.0 mmHg = a well-run
+    scrubber, below all three
+  sim.cabin.ppco2_mmHg.diurnal_amp: "heuristic: small daily swing with crew activity (TB-004 notes node-to-node variation)"
+  sim.cabin.ppco2_mmHg.peak_h: "heuristic"
+  sim.cabin.ppco2_mmHg.sd: "heuristic sensor noise"
+  sim.cabin.ppo2_kPa.*: "physical: sea-level air (20.95% O2 x 101.3 kPa = 21.2 kPa); sd heuristic"
+  sim.cabin.pressure_kPa.*: >-
+    heuristic: sea-level cabin as on ISS (101.3 kPa = 14.7 psia), inside the NASA-STD-3001 [V2 6006] 34.5-103 kPa
+    range; sd heuristic
+  sim.cabin.temp_C.*: "heuristic: inside the NASA-STD-3001 [V2 6012] 18-27 C envelope (OCHMO-TB-002 Rev B)"
+  sim.cabin.humidity_pct.*: "heuristic: inside the NASA-STD-3001 [V2 6012] 25-75 %RH envelope (OCHMO-TB-002 Rev B)"
+  sim.cabin.noise_dBA.*: "heuristic: below the [V2 6077] 85 dBA hazard limit; day/night levels are not measured"
+  sim.neutron_spectrum.*.*: "heuristic: CANS-style bin split and per-bin quality factors, simulator only (unverified)"

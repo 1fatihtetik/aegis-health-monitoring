@@ -1,19 +1,35 @@
-import React, { useState } from 'react';
-import { formatDurationSeconds } from '../api/client';
+import React, { useEffect, useState } from 'react';
+import { formatDurationSeconds, formatOneWayDelay } from '../api/client';
 import {
   CrewId,
   STATUS_DISPLAY,
   Severity,
+  SpaceWeatherEvent,
   severityToStatus,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
-import { signalLabel } from '../api/backend';
+import { backendApi, signalLabel } from '../api/backend';
 import { StatusRing } from '../components/StatusRing';
+import { DataSourceBadge } from '../components/DataSourceBadge';
+import { SpaceWeatherCard } from '../components/SpaceWeatherCard';
 
 export const GroundConsole: React.FC = () => {
-  const { state, sendGroundRecommendation, toggleLinkBlackout } = useAegis();
+  const { state, sendGroundRecommendation, toggleLinkBlackout, forwardSpaceWeather } = useAegis();
   const { groundSnapshot, link, sim, recommendations, alerts: onboardAlerts, radiation: onboardRad } =
     state;
+
+  // R-5: bundled DONKI + OMNI2 record; static for a backend run, so fetch once while connected.
+  const [spaceWeather, setSpaceWeather] = useState<SpaceWeatherEvent | null>(null);
+  useEffect(() => {
+    if (!sim.backend_connected || spaceWeather) return;
+    let live = true;
+    void backendApi.spaceWeather().then((ev) => {
+      if (live) setSpaceWeather(ev);
+    });
+    return () => {
+      live = false;
+    };
+  }, [sim.backend_connected, spaceWeather]);
 
   const [targetCrew, setTargetCrew] = useState<CrewId | 'ALL'>('C1');
   const [priority, setPriority] = useState<Severity>('CAUTION');
@@ -76,6 +92,14 @@ export const GroundConsole: React.FC = () => {
                 {sim.sim_ts.slice(11, 19)})
               </span>
 
+              <span
+                data-testid="ground-light-time"
+                className="inline-flex items-center gap-1.5 rounded bg-space-950 border border-slate-700 px-2.5 py-1 text-xs font-mono text-teal-200"
+              >
+                One-way delay {formatOneWayDelay(link.one_way_delay_s, link.delay_source)}
+                {link.delay_source && <DataSourceBadge source={link.delay_source} compact />}
+              </span>
+
               <span className="rounded bg-space-950 border border-slate-700 px-2.5 py-1 text-xs font-mono text-purple-300">
                 Queue Depth: {link.queue_depth} packets
               </span>
@@ -125,6 +149,15 @@ export const GroundConsole: React.FC = () => {
           </div>
         )}
       </div>
+
+      <SpaceWeatherCard
+        event={spaceWeather}
+        connected={sim.backend_connected}
+        replay={groundSnapshot.radiation.replay}
+        delaySeconds={link.one_way_delay_s}
+        blackout={link.blackout}
+        onForward={forwardSpaceWeather}
+      />
 
       {/* Delayed Ground Crew Cards & Delayed Radiation/Environment Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

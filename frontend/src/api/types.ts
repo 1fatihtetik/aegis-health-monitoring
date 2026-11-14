@@ -298,6 +298,17 @@ export interface SignalSource {
   dataset?: DatasetMeta | null;
 }
 
+/** Where the one-way comm delay comes from (R-4): JPL Horizons light time by date, or a fixed value. */
+export interface DelaySource {
+  delay_s: number;
+  provenance: Provenance;
+  dataset_id: string | null;
+  basis: string;
+  /** Ephemeris date (UTC) for NASA_DERIVED values, e.g. "2026-11-14". */
+  date: string | null;
+  dataset?: DatasetMeta | null;
+}
+
 /** One bundled NASA dataset, as listed in data/nasa/MANIFEST.yaml. */
 export interface DatasetMeta {
   id: string;
@@ -328,6 +339,67 @@ export interface RadReplayInfo {
   synthetic_spe_overlay: boolean;
   event_date?: string | null;
   donki_id?: string | null;
+}
+
+/** R-5: bundled DONKI + OMNI2 record for the replayed SPE (GET /api/v1/spaceweather/event). */
+export interface SpaceWeatherFlare {
+  id: string;
+  class: string;
+  begin: string | null;
+  peak: string | null;
+  location: string | null;
+  region: number | null;
+  link: string | null;
+}
+
+export interface SpaceWeatherCme {
+  id: string;
+  start: string | null;
+  speed_km_s: number | null;
+  type: string | null;
+  half_angle_deg: number | null;
+  linked: string[];
+  link: string | null;
+}
+
+export interface SpaceWeatherSep {
+  id: string;
+  time: string | null;
+  instruments: string[];
+  linked: string[];
+  link: string | null;
+}
+
+export interface SpaceWeatherScaleLevel {
+  level: string;
+  ref: string;
+  value: number;
+  source_ref: string;
+  verified: boolean;
+}
+
+export interface SpaceWeatherEvent {
+  available: boolean;
+  event_date: string | null;
+  title: string;
+  provenance: Provenance;
+  sep: SpaceWeatherSep[];
+  flares: SpaceWeatherFlare[];
+  cmes: SpaceWeatherCme[];
+  flux: {
+    label: string;
+    unit: string;
+    /** [utc, pfu | null] hourly points. */
+    points: Array<[string, number | null]>;
+    suspect: string[];
+    peak_pfu: number | null;
+    peak_utc: string | null;
+    peak_level: string | null;
+  } | null;
+  s_scale: SpaceWeatherScaleLevel[];
+  sources: Partial<Record<'sep' | 'events' | 'flux', DatasetMeta | null>>;
+  problems: string[];
+  primary?: { sep: SpaceWeatherSep | null; flare: SpaceWeatherFlare | null; cme: SpaceWeatherCme | null };
 }
 
 export interface AlertEvidenceClause {
@@ -582,6 +654,8 @@ export interface RecommendationMessage {
 
 export interface LinkStatus {
   one_way_delay_s: number;
+  /** Source of one_way_delay_s; null in the browser-only fallback. */
+  delay_source?: DelaySource | null;
   queue_depth: number;
   blackout: boolean;
   bandwidth_kbps: number;
