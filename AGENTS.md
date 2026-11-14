@@ -43,7 +43,8 @@ backend/            Python 3.11+, FastAPI, Pydantic v2, in-memory store
                     pure functions of (dataset, offset, seed)
   tests/
 data/nasa/          (Block R) bundled NASA snapshots, read-only, checked in
-  MANIFEST.yaml     one entry per file: id, tier, source_url, retrieved, sha256, terms, transform
+  MANIFEST.yaml     one entry per file: id, tier, source_url, retrieved, sha256, terms, transform;
+                    `agency` only for non-NASA data (e.g. EPA; missing = NASA)
   raw/              files exactly as downloaded (untrusted input; parse with python -P (keeps the script dir off sys.path), never execute)
   derived/          small normalized CSV/JSON produced by the fetch script from raw/
 scripts/
@@ -84,7 +85,7 @@ Keep this layout unless there is a strong reason to change it. If you change it,
 | D7 (Block P, non-NASA) | US EPA RadNet gamma exposure rate (one station window) | area dose rate in `POST_LANDING` (P-3), mR/h × 10 → µSv/h | `MEASURED_OTHER` |
 
 Rules:
-- **Provenance enum:** `NASA_MEASURED` (a replayed value from a NASA archive), `NASA_DERIVED` (computed from NASA data by a formula named in the manifest), `MEASURED_OTHER` (Block P: a replayed measurement from a non-NASA agency such as EPA; needs a `dataset_id`; the badge names the agency and never says NASA), `SYNTHETIC_CALIBRATED` (simulated; parameters cite a NASA source), `SYNTHETIC` (simulated; heuristic parameters).
+- **Provenance enum:** `NASA_MEASURED` (a replayed value from a NASA archive), `NASA_DERIVED` (computed from NASA data by a formula named in the manifest), `MEASURED_OTHER` (Block P: a replayed measurement from a non-NASA agency such as EPA; needs a `dataset_id` whose manifest entry has `agency`; the badge names the agency and never says NASA; ranks below `NASA_DERIVED`, so a compound with a non-NASA member is never labelled NASA; the tracker and `POST /observations` reject a label that does not match the dataset's agency), `SYNTHETIC_CALIBRATED` (simulated; parameters cite a NASA source), `SYNTHETIC` (simulated; heuristic parameters).
 - **Replay through the same path.** Replay adapters emit `Observation`s into the same tick → store → rules path as the simulator. The engine does not know or care where a value came from; the UI does.
 - **Time mapping.** `config/datasets.yaml` maps the simulated clock onto a dataset window (start, compression factor, loop or hold). Mapping is deterministic. If compression is used, label it in the UI ("2012-03-07 event, replayed ×N").
 - **Gaps.** RAD data has gaps. Fill only by holding the last value for a time set in `datasets.yaml`, then mark points `quality: SUSPECT`. Never interpolate across a gap silently.

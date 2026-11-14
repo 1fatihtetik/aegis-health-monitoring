@@ -1,4 +1,4 @@
-"""Block R, R-0: NASA data layer (PRD section 6 M0, AGENTS.md sections 2a and 7)."""
+"""Block R, R-0: NASA data layer, and Block P, P-0: MEASURED_OTHER (PRD section 6 M0, AGENTS.md sections 2a and 7)."""
 
 import socket
 from datetime import UTC, datetime, timedelta
@@ -9,7 +9,7 @@ import yaml
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.datasets.provenance import ProvenanceTracker, weakest
+from app.datasets.provenance import ProvenanceTracker, check_agency, weakest
 from app.datasets.registry import DATA_DIR, DatasetRegistry, sha256_file
 from app.domain.enums import SIGNALS, Provenance
 from app.domain.models import Observation
@@ -21,7 +21,7 @@ PROVENANCES = {p.value for p in Provenance}
 
 
 def write_setup(tmp: Path, *, file_bytes: bytes | None = b"ts,value\n", manifest_sha: str | None = None,
-                replay: bool = True, manifest: bool = True) -> DatasetRegistry:
+                replay: bool = True, manifest: bool = True, agency: str | None = None) -> DatasetRegistry:
     """A tiny data dir with one dataset file and one replay pointing at it."""
     data = tmp / "nasa"
     (data / "derived").mkdir(parents=True)
@@ -30,11 +30,14 @@ def write_setup(tmp: Path, *, file_bytes: bytes | None = b"ts,value\n", manifest
         (data / rel).write_bytes(file_bytes)
     sha = manifest_sha or (sha256_file(data / rel) if file_bytes is not None else "0" * 64)
     if manifest:
-        (data / "MANIFEST.yaml").write_text(yaml.safe_dump({"datasets": [{
+        entry = {
             "id": "sample_ds", "tier": "D2", "title": "Sample", "source_url": "https://example.invalid/",
             "retrieved": "2026-11-14", "terms": "test", "transform": "none",
             "files": [{"path": rel, "sha256": sha}],
-        }]}), encoding="utf-8")
+        }
+        if agency:
+            entry["agency"] = agency
+        (data / "MANIFEST.yaml").write_text(yaml.safe_dump({"datasets": [entry]}), encoding="utf-8")
     spec = {
         "default_provenance": "SYNTHETIC",
         "signals": {"bmd_estimate": {"provenance": "SYNTHETIC_CALIBRATED", "basis": "test basis"}},
@@ -81,6 +84,7 @@ def test_missing_file_and_missing_manifest_never_crash(tmp_path):
 
 @pytest.mark.parametrize("entry, message", [
     ({"provenance": "NASA_MEASURED"}, "only from an active replay"),
+    ({"provenance": "MEASURED_OTHER"}, "only from an active replay"),
     ({"provenance": "SYNTHETIC_CALIBRATED"}, "needs a 'basis'"),
 ])
 def test_defaults_cannot_claim_nasa_or_skip_basis(tmp_path, entry, message):
@@ -158,6 +162,51 @@ def test_ingested_observation_sets_provenance(client):
     assert w.provenance.current("ppco2").dataset_id == "test_ds"
     bad = {**obs, "id": "obs-nasa-2", "dataset_id": None}
     assert client.post("/api/v1/observations", json=[bad]).status_code == 422
+
+
+# ---- P-0: MEASURED_OTHER (non-NASA measured data, e.g. EPA RadNet) -------------------------------
+def test_measured_other_ranks_below_nasa_labels():
+    # A group with a non-NASA member must never be labelled NASA (compound evidence uses weakest()).
+    assert weakest(["NASA_DERIVED", "MEASURED_OTHER", "NASA_MEASURED"]) == "MEASURED_OTHER"
+    assert weakest(["MEASURED_OTHER", "SYNTHETIC_CALIBRATED"]) == "SYNTHETIC_CALIBRATED"
+    assert Provenance.MEASURED_OTHER.needs_dataset and not Provenance.SYNTHETIC_CALIBRATED.needs_dataset
+
+
+def test_measured_other_observation_needs_dataset_id():
+    base = {"id": "x", "ts": T0, "device_id": "d", "signal": "area_dose_rate_absorbed", "value": 0.1, "unit": "µGy/h"}
+    with pytest.raises(ValidationError, match="dataset_id"):
+        Observation(**base, provenance="MEASURED_OTHER")
+    assert Observation(**base, provenance="MEASURED_OTHER", dataset_id="radnet").dataset_id == "radnet"
+
+
+def test_manifest_agency_defaults_to_nasa(tmp_path):
+    assert write_setup(tmp_path / "a").dataset_meta("sample_ds")["agency"] == "NASA"
+    reg = write_setup(tmp_path / "b", agency="EPA")
+    assert reg.dataset_meta("sample_ds")["agency"] == "EPA"
+    assert reg.datasets()[0]["agency"] == "EPA"
+
+
+def test_label_must_match_the_measuring_agency(tmp_path):
+    epa = ProvenanceTracker(write_setup(tmp_path / "epa", agency="EPA"))
+    epa.set("area_dose_rate_absorbed", Provenance.MEASURED_OTHER, "sample_ds", T0)
+    src = epa.current("area_dose_rate_absorbed")
+    assert src.provenance == Provenance.MEASURED_OTHER and src.dataset["agency"] == "EPA"
+    with pytest.raises(ValueError, match="needs a NASA dataset"):
+        epa.set("area_dose_rate_equivalent", Provenance.NASA_MEASURED, "sample_ds", T0)
+    nasa = ProvenanceTracker(write_setup(tmp_path / "nasa"))
+    with pytest.raises(ValueError, match="non-NASA"):
+        nasa.set("area_dose_rate_absorbed", Provenance.MEASURED_OTHER, "sample_ds", T0)
+    check_agency(Provenance.SYNTHETIC, "EPA", None)  # synthetic values carry no agency claim
+
+
+def test_ingest_rejects_measured_other_on_a_nasa_dataset(client):
+    w = client.rt.world
+    obs = {"id": "obs-other-1", "ts": w.clock.now().isoformat(), "device_id": "replay",
+           "signal": "area_dose_rate_absorbed", "value": 0.1, "unit": "µGy/h",
+           "provenance": "MEASURED_OTHER", "dataset_id": "msl_rad_cruise_2012"}
+    res = client.post("/api/v1/observations", json=[obs])
+    assert res.status_code == 422 and "NASA dataset" in res.json()["detail"]
+    assert w.provenance.current("area_dose_rate_absorbed").provenance != Provenance.MEASURED_OTHER
 
 
 # ---- offline: the full demo runs with outbound networking blocked --------------------------------

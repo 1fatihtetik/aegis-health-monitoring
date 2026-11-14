@@ -24,7 +24,7 @@ class Observation(BaseModel):
 
     @model_validator(mode="after")
     def _nasa_needs_dataset(self) -> "Observation":
-        if self.provenance in (Provenance.NASA_MEASURED, Provenance.NASA_DERIVED) and not self.dataset_id:
+        if self.provenance.needs_dataset and not self.dataset_id:
             raise ValueError(f"provenance {self.provenance} needs a dataset_id (data/nasa/MANIFEST.yaml)")
         return self
 

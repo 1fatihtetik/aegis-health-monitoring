@@ -57,6 +57,11 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def agency(entry: dict[str, Any]) -> str:
+    """Who measured the data (P-0). Manifest entries without an `agency` field are NASA archives."""
+    return str(entry.get("agency") or "NASA")
+
+
 def _load_yaml(path: Path) -> Any:
     with path.open(encoding="utf-8") as fh:
         return yaml.safe_load(fh)
@@ -73,7 +78,7 @@ class DatasetRegistry:
             if name not in SIGNALS:
                 raise ValueError(f"datasets.yaml: unknown signal '{name}'")
             prov = Provenance(entry["provenance"])
-            if prov in (Provenance.NASA_MEASURED, Provenance.NASA_DERIVED):
+            if prov.needs_dataset:
                 raise ValueError(f"datasets.yaml {name}: {prov} comes only from an active replay, not a default")
             if prov == Provenance.SYNTHETIC_CALIBRATED and not entry.get("basis"):
                 raise ValueError(f"datasets.yaml {name}: SYNTHETIC_CALIBRATED needs a 'basis' citing its NASA source")
@@ -169,7 +174,7 @@ class DatasetRegistry:
         return {
             "id": entry["id"], "label": str(entry.get("label") or entry["title"]), "title": entry["title"],
             "source_url": entry["source_url"], "retrieved": str(entry["retrieved"]), "terms": entry["terms"],
-            "transform": entry["transform"],
+            "transform": entry["transform"], "agency": agency(entry),
         }
 
     def replay(self, replay_id: str) -> ReplayStatus | None:
@@ -181,7 +186,7 @@ class DatasetRegistry:
             files = [{"path": f["path"], "sha256_ok": self.file_ok.get(f["path"], False)} for f in entry["files"]]
             out.append({
                 "id": entry["id"], "tier": entry["tier"], "label": str(entry.get("label") or entry["title"]),
-                "title": entry["title"], "reference": entry.get("reference"),
+                "title": entry["title"], "reference": entry.get("reference"), "agency": agency(entry),
                 "source_url": entry["source_url"], "retrieved": str(entry["retrieved"]),
                 "terms": entry["terms"], "transform": entry["transform"],
                 "files": files, "sha256_ok": all(f["sha256_ok"] for f in files),

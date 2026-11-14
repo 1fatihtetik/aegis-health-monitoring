@@ -11,6 +11,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
+from app.datasets.provenance import check_agency
 from app.domain.enums import SIGNALS, Signal
 from app.domain.models import Observation
 from app.rules.models import Predicate
@@ -417,5 +418,13 @@ async def observations(items: list[Observation], request: Request) -> dict[str, 
     for obs in items:
         if obs.unit != SIGNALS[obs.signal.value].unit:
             raise HTTPException(422, f"{obs.signal.value}: unit must be '{SIGNALS[obs.signal.value].unit}'")
-    accepted, duplicates = _rt(request).world.ingest_observations(items)
+    world = _rt(request).world
+    for obs in items:  # P-0: the label must match who measured the dataset
+        meta = world.provenance.registry.dataset_meta(obs.dataset_id)
+        if meta:
+            try:
+                check_agency(obs.provenance, meta["agency"], obs.dataset_id)
+            except ValueError as exc:
+                raise HTTPException(422, str(exc)) from exc
+    accepted, duplicates = world.ingest_observations(items)
     return {"accepted": accepted, "duplicates": duplicates}

@@ -287,7 +287,7 @@ export function severityToStatus(severity: Severity): OperationalStatus {
 }
 
 /** Where a value comes from (PRD §6 M0). Ordered from least to most real. */
-export type Provenance = 'SYNTHETIC' | 'SYNTHETIC_CALIBRATED' | 'NASA_DERIVED' | 'NASA_MEASURED';
+export type Provenance = 'SYNTHETIC' | 'SYNTHETIC_CALIBRATED' | 'MEASURED_OTHER' | 'NASA_DERIVED' | 'NASA_MEASURED';
 
 /** Current source of one signal, from snapshot.provenance (GET /api/v1/datasets has the full list). */
 export interface SignalSource {
@@ -318,6 +318,8 @@ export interface DatasetMeta {
   retrieved: string;
   terms: string;
   transform: string;
+  /** Who measured the data (P-0): "NASA", or e.g. "EPA" for MEASURED_OTHER datasets. Older payloads omit it. */
+  agency?: string;
 }
 
 /** The MSL/RAD replay feeding the radiation signals right now (R-2). */

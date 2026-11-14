@@ -15,6 +15,16 @@ from app.util import iso
 Segment = tuple[datetime | None, SignalSource]  # (since, source); since None = from the start
 
 
+def check_agency(provenance: Provenance, agency: str, dataset_id: str | None) -> None:
+    """P-0: NASA_* labels need a NASA dataset and MEASURED_OTHER a non-NASA one, so a badge never
+    calls another agency's data NASA (or the other way round)."""
+    nasa = agency.upper() == "NASA"
+    if provenance in (Provenance.NASA_MEASURED, Provenance.NASA_DERIVED) and not nasa:
+        raise ValueError(f"{provenance} needs a NASA dataset; {dataset_id} was measured by {agency}")
+    if provenance == Provenance.MEASURED_OTHER and nasa:
+        raise ValueError(f"MEASURED_OTHER is for non-NASA data; {dataset_id} is a NASA dataset")
+
+
 class ProvenanceTracker:
     def __init__(self, registry: DatasetRegistry) -> None:
         self.registry = registry
@@ -25,6 +35,8 @@ class ProvenanceTracker:
         """Start a new segment if the source changed. A known dataset_id brings its manifest details, and
         stands in for an empty basis, so tapping any badge shows where the value came from (F-006)."""
         meta = self.registry.dataset_meta(dataset_id)
+        if meta:
+            check_agency(provenance, meta["agency"], dataset_id)
         if not basis and meta:
             basis = f"{meta['title']}. {meta['transform']}"
         current = self.current(signal)

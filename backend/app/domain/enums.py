@@ -46,12 +46,20 @@ class Provenance(StrEnum):
 
     SYNTHETIC = "SYNTHETIC"  # simulated, heuristic parameters
     SYNTHETIC_CALIBRATED = "SYNTHETIC_CALIBRATED"  # simulated, parameters cite a NASA source
+    # Block P, P-0: replayed measurement from a non-NASA agency (e.g. EPA RadNet). It ranks below the NASA
+    # labels so a group with a non-NASA member (weakest(), compound evidence) is never labelled NASA.
+    MEASURED_OTHER = "MEASURED_OTHER"
     NASA_DERIVED = "NASA_DERIVED"  # computed from NASA data by a formula named in the manifest
     NASA_MEASURED = "NASA_MEASURED"  # replayed value from a NASA archive
 
     @property
     def rank(self) -> int:
         return list(Provenance).index(self)
+
+    @property
+    def needs_dataset(self) -> bool:
+        """Measured or derived values must name the bundled dataset they come from."""
+        return self in (Provenance.MEASURED_OTHER, Provenance.NASA_DERIVED, Provenance.NASA_MEASURED)
 
 
 class Quality(StrEnum):

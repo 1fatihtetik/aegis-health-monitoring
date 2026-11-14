@@ -1,7 +1,7 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-14 (Block P planned)
-State: 30-hour MVP (Gates 1–4, D-1, D-2), Block R (R-0..R-6, Gate R) and the D-3 freeze APPROVED; tag `demo-ready`. F-001..F-009 CLOSED. Checks at the freeze: pytest 88, ruff clean (backend + scripts), manifest verify clean, tsc clean, vitest 34.
-Next: Block P (ROADMAP.md §0): P-0 `MEASURED_OTHER` label -> P-1 LEO radiation (RadLab) -> P-2 lunar radiation (CRaTER) -> P-3 Earth radiation (RadNet) -> P-4 partial-gravity research (user decides the model) -> P-5 gravity physiology -> P-6 Inspiration4 panel -> P-7 extended demo -> Gate P -> D-4 re-freeze (`demo-ready-v2`).
+Last updated: 2026-11-14 (P-0 READY FOR REVIEW)
+State: 30-hour MVP (Gates 1–4, D-1, D-2), Block R (R-0..R-6, Gate R) and the D-3 freeze APPROVED; tag `demo-ready`. F-001..F-009 CLOSED. P-0 READY FOR REVIEW. Checks: pytest 94, ruff clean (backend + scripts), manifest verify clean, tsc clean, vitest 38.
+Next: Antigravity reviews P-0; Claude continues with P-1. Block P (ROADMAP.md §0): P-0 `MEASURED_OTHER` label -> P-1 LEO radiation (RadLab) -> P-2 lunar radiation (CRaTER) -> P-3 Earth radiation (RadNet) -> P-4 partial-gravity research (user decides the model) -> P-5 gravity physiology -> P-6 Inspiration4 panel -> P-7 extended demo -> Gate P -> D-4 re-freeze (`demo-ready-v2`).
 
 Read order: this file -> ROADMAP.md §0 -> AGENTS.md -> PRD.md (§1.8, §6 M0/M2, §9, then only needed sections).
 User directives:
@@ -40,6 +40,7 @@ User directives:
 - Open findings: none.
 
 5. RECENT LOG (Claude)
+- 2026-11-14 P-0 `MEASURED_OTHER` (PRD §6 M0; AGENTS.md §2a, §8). Backend: `Provenance.MEASURED_OTHER` ranked between SYNTHETIC_CALIBRATED and NASA_DERIVED (so `weakest()` never labels a group with a non-NASA member as NASA); `Provenance.needs_dataset` (MEASURED_OTHER + NASA_*) used by `Observation` validation and the registry's default-signal check; manifest entries may carry `agency` (missing = NASA), exposed as `agency` in `dataset_meta()` and `GET /datasets`; `check_agency()` (NASA_* needs a NASA dataset, MEASURED_OTHER a non-NASA one) runs in `ProvenanceTracker.set` and in `POST /observations` (422). Frontend: `Provenance` type + `DatasetMeta.agency`; `DataSourceBadge` MEASURED_OTHER style (▣, amber, >=44 px) reading "Measured · <agency> · <label>", "non-NASA" when the agency is missing or says NASA; footer adds "Non-NASA measurements: <agency> <label>." apart from the NASA list. Tests: backend +6 (`test_datasets.py`: ranking, dataset_id, default ban, agency default, label/agency match both ways, ingest 422), frontend +4 (`blockP.test.tsx`). Browser check: app loads, footer unchanged, `/datasets` reports agency NASA for all 8 entries, no console errors. No MEASURED_OTHER data is bundled yet (that is P-3).
 - 2026-11-14 Block P planned (user): ROADMAP.md rewritten (Block P = §0, Block R moved to "Done"), PRD.md, AGENTS.md and README.md updated for the new goals; this file trimmed. No code changed.
 - 2026-11-14 D-3 freeze: all checks green, README run steps and `demo_5min` timings re-checked live in the browser; tag `demo-ready` (`de359bf`) pushed.
 - 2026-11-14 R-4..R-6 + F-009 (`fb90aee`), R-3 + F-008 (`b2b5080`), R-2 + F-006 (`10b23de`), R-1 + F-007 (`2098023`), R-0 (`f697367`). Details: commit messages and section 2.
@@ -47,7 +48,7 @@ User directives:
 6. WORK QUEUE
 Done: 30-hour MVP, Block R, D-3 (all APPROVED).
 Block P: phases and gravity (PRIORITY 1, ROADMAP.md §0.3):
-- P-0 TODO: `MEASURED_OTHER` provenance label (enum, `weakest()`, badge "Measured · <agency>", footer, AGENTS.md §2a).
+- P-0 READY FOR REVIEW (2026-11-14): `MEASURED_OTHER` provenance label (enum + ranking, `needs_dataset`, manifest `agency`, `check_agency` in tracker and ingest, badge "Measured · <agency>", footer line, AGENTS.md §2a).
 - P-1 TODO: LEO radiation from NASA OSDR RadLab (ISS-RAD/REM/TEPC window) -> `LEO`, NASA_MEASURED; fidelity test vs the published ISS value for the window.
 - P-2 TODO: Lunar-surface radiation from LRO CRaTER (hourly, surface-corrected) -> `LUNAR_SURFACE`, NASA_DERIVED; reference check vs Chang'e-4 LND 1,369 uSv/day (Zhang 2020).
 - P-3 TODO: Earth radiation from EPA RadNet (one station window, mR/h x 10 -> uSv/h) -> `POST_LANDING`, MEASURED_OTHER.
@@ -61,8 +62,8 @@ Stretch (only if the user asks, after Gate P): S-2 reaction-time self-test -> CO
 7. API & WS QUICK REFERENCE (`/api/v1`, `?node=onboard|ground`)
 - GETs return `{ node, now, as_of, age_s, ...data }`.
 - Endpoints: `GET /health`, `GET /crew`, `GET /crew/{id}/summary`, `GET /crew/{id}/timeseries?signal=&from=&to=&max_points=`, `GET /crew/{id}/baselines?window=48h`, `GET /environment/current`, `GET /environment/timeseries?signal=`, `GET /radiation/summary`, `POST /radiation/shelter {crew_id, sheltered}`, `GET /readiness?kind=`, `GET /alerts?state=&severity=`, `POST /alerts/{id}/ack|/treat|/resolve|/note {text}`, `GET /rules`, `GET /limits`, `GET /sim/status`, `POST /sim/scenario {name, seed?, speed?}`, `POST /sim/control {action: pause|resume|speed, speed?}`, `GET /link/status`, `POST /link/blackout {on}`, `POST /link/delay {delay_s|null}`, `POST /link/recommendation {text, checklist?, crew_id?}`, `GET /link/recommendations`, `POST /observations [Observation]`, `GET /datasets`, `GET /spaceweather/event`, `POST /spaceweather/forward {crew_id?}`.
-- Provenance objects (snapshot `provenance` map, timeseries `provenance`, alert `evidence`): `{provenance, dataset_id, basis, dataset: {id, label, title, source_url, retrieved, terms, transform} | null}`; timeseries add `segments[]` and `suspect: [[from, to]]`. Observation accepts `provenance` (default SYNTHETIC) + `dataset_id` (required for NASA_*; also for MEASURED_OTHER after P-0).
-- `GET /datasets` -> `{datasets: [{id, tier, title, label, source_url, retrieved, terms, transform, reference, files[{path, sha256_ok}], sha256_ok}], replays: [{id, dataset_id, signals, active, reason}], problems: [], signals: {signal: {provenance, dataset_id, basis}}}`.
+- Provenance objects (snapshot `provenance` map, timeseries `provenance`, alert `evidence`): `{provenance, dataset_id, basis, dataset: {id, label, title, source_url, retrieved, terms, transform, agency} | null}`; timeseries add `segments[]` and `suspect: [[from, to]]`. Observation accepts `provenance` (default SYNTHETIC) + `dataset_id` (required for NASA_* and MEASURED_OTHER); 422 if the label does not match the dataset's manifest `agency`.
+- `GET /datasets` -> `{datasets: [{id, tier, title, label, agency, source_url, retrieved, terms, transform, reference, files[{path, sha256_ok}], sha256_ok}], replays: [{id, dataset_id, signals, active, reason}], problems: [], signals: {signal: {provenance, dataset_id, basis}}}`.
 - Radiation summary: `replay` {label, dataset_ts, observation_ts, compression, quality, quality_factor, synthetic_spe_overlay} (null when synthetic), `area.dose_rate_absorbed_uGy_h`.
 - Link status + WS `link`: `delay_source: {delay_s, provenance, dataset_id, basis, date, dataset}`; snapshot `phase.comm_delay_s` is the live delay, `phase.comm_delay_source` the same object.
 - `GET /spaceweather/event` -> `event: {available, event_date, title, provenance, sep[], flares[], cmes[], flux{label, unit, points, suspect, peak_pfu, peak_utc, peak_level}, s_scale[], sources{}, problems[], primary{sep, flare, cme}}`; `POST /spaceweather/forward` -> recommendation payload; 409 if no record.
