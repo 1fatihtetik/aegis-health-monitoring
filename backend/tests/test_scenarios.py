@@ -75,6 +75,9 @@ def test_spe_radiation_summary_and_shelter(cfg):
     crew = world.snapshot["radiation"]["crew"]
     assert crew["C1"]["sheltered"] and crew["C1"]["dose_rate_uSv_h"] < 0.5 * crew["C2"]["dose_rate_uSv_h"]
     assert crew["C1"]["event_dose_mSv"] < crew["C2"]["event_dose_mSv"]
+    # Sheltering avoids dose: C1 saved a real amount, unsheltered C2 saved next to nothing.
+    assert crew["C1"]["event_dose_saved_mSv"] > 10 * crew["C2"]["event_dose_saved_mSv"]
+    assert crew["C1"]["event_dose_saved_mSv"] > 0
 
 
 def test_demo_script_controls_speed_and_pauses(cfg):

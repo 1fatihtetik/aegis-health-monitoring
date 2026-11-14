@@ -136,7 +136,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
               </p>
             </div>
             <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
-              ⚠ unverified limit: |z| &gt; {limits['physiology.baseline_z_alert']?.value ?? 3.0}σ (
+              ⚠ unverified limit: |z| &gt; {limits['physiology.baseline_z_alert']?.value ?? '?'}σ (
               {limits['physiology.baseline_z_alert']?.source_ref})
             </span>
           </div>

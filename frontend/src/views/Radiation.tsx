@@ -2,6 +2,7 @@ import React from 'react';
 import { formatDurationSeconds } from '../api/client';
 import { STATUS_DISPLAY } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { formatLimit } from '../api/limits';
 import { LimitBandChart } from '../components/LimitBandChart';
 
 export interface RadiationProps {
@@ -13,7 +14,6 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
   const { radiation, crew, limits } = state;
 
   const careerLimit = limits['radiation.career_effective_dose_mSv'];
-  const missionLimit = limits['radiation.mission_dose_mSv'];
   const speLimit = limits['radiation.spe_alert_dose_rate_uSv_h'];
   const statusMeta = STATUS_DISPLAY[radiation.status];
   const shelteredCount = crew.filter((c) => c.in_shelter).length;
@@ -68,7 +68,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
         <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Total Dose-Equivalent Rate</span>
-            <span className="text-amber-300 font-mono text-[10px]">⚠ unverified limit</span>
+            {speLimit && !speLimit.verified && (
+              <span className="text-amber-300 font-mono text-[10px]">⚠ unverified limit</span>
+            )}
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span
@@ -81,7 +83,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             <span className="text-xs text-slate-400">µSv/h</span>
           </div>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
-            SPE Trigger: &gt; {speLimit?.value} µSv/h ({speLimit?.source_ref})
+            SPE trigger: &gt; {formatLimit(speLimit)} ({speLimit?.source_ref ?? 'no limit configured'})
           </div>
         </div>
 
@@ -121,16 +123,13 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
 
         <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Cumulative Mission Dose</span>
-            <span className="text-amber-300 font-mono text-[10px]">⚠ unverified limit</span>
+            <span>Highest Crew Mission Dose</span>
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-2xl font-black font-mono text-emerald-300">
               {radiation.cumulative_mission_mSv}
             </span>
-            <span className="text-xs text-slate-400">
-              / {missionLimit?.value ?? 250} mSv
-            </span>
+            <span className="text-xs text-slate-400">mSv</span>
           </div>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
             24h: {radiation.cumulative_24h_mSv} mSv · 30d: {radiation.cumulative_30d_mSv} mSv
@@ -191,7 +190,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           </div>
 
           <div className="mt-4 rounded-lg border border-slate-800 bg-space-950/90 p-3 text-xs text-slate-300">
-            <strong>Storm Shelter Shielding Status:</strong> {shelteredCount}/4 crew currently in Aft Water-Wall Shelter (Dose saved: {radiation.shelter_dose_saved_mSv} mSv).
+            <strong>Storm Shelter Shielding Status:</strong> {shelteredCount}/4 crew currently in Aft Water-Wall Shelter (dose avoided by sheltering this event: {radiation.shelter_dose_saved_mSv} mSv, all crew).
           </div>
         </div>
       </div>
@@ -209,7 +208,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           </div>
 
           <div className="flex items-center gap-2">
-            {careerLimit && (
+            {careerLimit && !careerLimit.verified && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 text-xs font-semibold text-amber-200">
                 ⚠ unverified limit: {careerLimit.value} {careerLimit.unit} ({careerLimit.source_ref})
               </span>
@@ -226,11 +225,13 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {crew.map((member) => {
+            // Each crew member's own mission dose (F-001): sheltering makes them diverge during an SPE.
             const totalCareer = Number(
-              (member.career_dose_prior_mSv + radiation.cumulative_mission_mSv).toFixed(1)
+              (member.career_dose_prior_mSv + member.mission_dose_mSv).toFixed(1)
             );
-            const limitVal = careerLimit?.value ?? 600;
-            const pct = Number(((totalCareer / limitVal) * 100).toFixed(1));
+            const limitVal = careerLimit?.value;
+            const pct =
+              limitVal !== undefined ? Number(((totalCareer / limitVal) * 100).toFixed(1)) : null;
 
             return (
               <div
@@ -244,7 +245,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
                   <button
                     type="button"
                     onClick={() => toggleCrewShelter(member.id)}
-                    className={`min-h-[36px] rounded-md border px-2.5 py-1 text-[11px] font-bold ${
+                    className={`min-h-[44px] rounded-md border px-3 py-1 text-xs font-bold ${
                       member.in_shelter
                         ? 'border-emerald-400/60 bg-emerald-950/70 text-emerald-200'
                         : 'border-slate-700 bg-space-900 text-slate-300'
@@ -260,18 +261,19 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
                   <div className="flex justify-between text-xs font-mono">
                     <span className="text-slate-400">Career Total:</span>
                     <span className="text-slate-100 font-bold">
-                      {totalCareer} / {limitVal} mSv ({pct}%)
+                      {totalCareer}
+                      {limitVal !== undefined ? ` / ${limitVal} mSv (${pct}%)` : ' mSv (no limit configured)'}
                     </span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-space-900 border border-slate-800">
                     <div
                       className="h-full rounded-full bg-cyan-400"
-                      style={{ width: `${Math.min(100, pct)}%` }}
+                      style={{ width: `${Math.min(100, pct ?? 0)}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-[11px] text-slate-400 font-mono">
                     <span>Prior: {member.career_dose_prior_mSv} mSv</span>
-                    <span>Mission: +{radiation.cumulative_mission_mSv} mSv</span>
+                    <span>Mission: +{member.mission_dose_mSv} mSv</span>
                   </div>
                 </div>
               </div>

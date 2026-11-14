@@ -30,6 +30,24 @@ import {
   mapRecommendation,
   pendingUplinks,
 } from './backend';
+import { BUNDLED_LIMITS, formatLimit } from './limits';
+
+/** Offline fallback only: evidence limit fields read from config/limits.yaml (never hardcoded). */
+function lim(key: string, pick: 'value' | 'min' | 'max' = 'value', sign = 1) {
+  const l = BUNDLED_LIMITS[key];
+  const v = l?.[pick];
+  return {
+    limit: v === undefined ? Number.NaN : sign * v,
+    limit_verified: l?.verified ?? false,
+    source_ref: l?.source_ref ?? key,
+  };
+}
+
+const limValue = (key: string): number => BUNDLED_LIMITS[key]?.value ?? Number.NaN;
+
+/** Offline SPE peak: a simulator parameter set relative to the configured alert threshold. */
+const OFFLINE_SPE_RATE = Number((limValue('radiation.spe_alert_dose_rate_uSv_h') * 1.6).toFixed(1));
+const OFFLINE_SPE_NEUTRON = Number((OFFLINE_SPE_RATE * 0.32).toFixed(1));
 
 /** Everything received from the backend, kept outside React state and mapped into it on each frame. */
 interface BackendLinkState {
@@ -277,6 +295,9 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return ws;
       });
       setConnected(true);
+      // Thresholds come from the backend's config/limits.yaml (AGENTS.md ground rule 2).
+      const limits = await backendApi.limits();
+      if (limits && !cancelled) setState((prev) => ({ ...prev, limits }));
     };
 
     void connect();
@@ -347,9 +368,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             value: 3.85,
             unit: 'mmHg',
             op: '>',
-            limit: 3.0,
-            limit_verified: false,
-            source_ref: 'NASA-STD-3001 Vol 2, VERIFY',
+            ...lim('environment.ppco2_mmHg_1h_max'),
             window: '1h mean',
           },
           rationale:
@@ -392,22 +411,22 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               score: 46,
               weight: 0.3,
               rawValue: '4.4 h (4-night deficit)',
-              limitLabel: '≥ 6.0 h/24h',
-              limitVerified: false,
-              sourceRef: 'Project heuristic',
+              limitLabel: formatLimit(BUNDLED_LIMITS['sleep.min_sleep_h_24h'], '>='),
+              limitVerified: lim('sleep.min_sleep_h_24h').limit_verified,
+              sourceRef: lim('sleep.min_sleep_h_24h').source_ref,
               status: 'WARNING' as const,
             },
             {
               id: 'co2',
               label: 'Cabin ppCO₂ Cognitive Margin',
-              score: next.environment.ppco2_mmHg > 3.0 ? 52 : 88,
+              score: next.environment.ppco2_mmHg > limValue('environment.ppco2_mmHg_1h_max') ? 52 : 88,
               weight: 0.25,
               rawValue: `${next.environment.ppco2_mmHg.toFixed(2)} mmHg`,
-              limitLabel: '≤ 3.0 mmHg (1h)',
-              limitVerified: false,
-              sourceRef: 'NASA-STD-3001 Vol 2, VERIFY',
+              limitLabel: `${formatLimit(BUNDLED_LIMITS['environment.ppco2_mmHg_1h_max'], '<=')} (1 h)`,
+              limitVerified: lim('environment.ppco2_mmHg_1h_max').limit_verified,
+              sourceRef: lim('environment.ppco2_mmHg_1h_max').source_ref,
               status:
-                next.environment.ppco2_mmHg > 3.0 ? ('CAUTION' as const) : ('NOMINAL' as const),
+                next.environment.ppco2_mmHg > limValue('environment.ppco2_mmHg_1h_max') ? ('CAUTION' as const) : ('NOMINAL' as const),
             },
             {
               id: 'cardio',
@@ -415,9 +434,9 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               score: 61,
               weight: 0.25,
               rawValue: '34 ms (-3.6σ baseline)',
-              limitLabel: 'Within ±3.0σ personal baseline',
-              limitVerified: false,
-              sourceRef: 'Project heuristic',
+              limitLabel: `within ±${limValue('physiology.baseline_z_alert')}σ of personal baseline`,
+              limitVerified: lim('physiology.baseline_z_alert').limit_verified,
+              sourceRef: lim('physiology.baseline_z_alert').source_ref,
               status: 'CAUTION' as const,
             },
             {
@@ -426,9 +445,9 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               score: 88,
               weight: 0.2,
               rawValue: `${next.radiation.dose_rate_equivalent_uSv_h.toFixed(1)} µSv/h`,
-              limitLabel: '< 100 µSv/h SPE limit',
-              limitVerified: false,
-              sourceRef: 'Project heuristic',
+              limitLabel: `< ${formatLimit(BUNDLED_LIMITS['radiation.spe_alert_dose_rate_uSv_h'])} SPE threshold`,
+              limitVerified: lim('radiation.spe_alert_dose_rate_uSv_h').limit_verified,
+              sourceRef: lim('radiation.spe_alert_dose_rate_uSv_h').source_ref,
               status: 'NOMINAL' as const,
             },
           ];
@@ -475,9 +494,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             value: 4.4,
             unit: 'h sleep',
             op: '<',
-            limit: 6.0,
-            limit_verified: false,
-            source_ref: 'NASA-STD-3001 Vol 1/2 Compound Rule, VERIFY',
+            ...lim('sleep.min_sleep_h_24h'),
             window: '72h rolling',
             clauses: [
               {
@@ -486,9 +503,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 value: 4.4,
                 unit: 'h',
                 op: '<',
-                limit: 6.0,
-                limit_verified: false,
-                source_ref: 'Project heuristic',
+                ...lim('sleep.min_sleep_h_24h'),
               },
               {
                 signal: 'ppco2',
@@ -496,9 +511,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 value: next.environment.ppco2_mmHg,
                 unit: 'mmHg',
                 op: '>',
-                limit: 3.0,
-                limit_verified: false,
-                source_ref: 'NASA-STD-3001 Vol 2, VERIFY',
+                ...lim('environment.ppco2_mmHg_1h_max'),
               },
               {
                 signal: 'hrv_rmssd',
@@ -506,9 +519,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 value: -3.6,
                 unit: 'σ',
                 op: '<',
-                limit: -3.0,
-                limit_verified: false,
-                source_ref: 'Project heuristic (14d baseline)',
+                ...lim('physiology.baseline_z_alert', 'value', -1),
               },
             ],
           },
@@ -569,9 +580,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             value: 86,
             unit: 'mmHg',
             op: '<',
-            limit: 95,
-            limit_verified: false,
-            source_ref: 'CSA BP Reg / Clinical Heuristic, VERIFY',
+            ...lim('physiology.bp_systolic_mmHg', 'min'),
             window: '15m post-transition',
             z_score: 4.1,
             clauses: [
@@ -581,9 +590,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 value: 86,
                 unit: 'mmHg',
                 op: '<',
-                limit: 95,
-                limit_verified: false,
-                source_ref: 'Clinical heuristic',
+                ...lim('physiology.bp_systolic_mmHg', 'min'),
               },
               {
                 signal: 'heart_rate',
@@ -591,9 +598,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 value: 128,
                 unit: 'bpm',
                 op: '>',
-                limit: 115,
-                limit_verified: false,
-                source_ref: 'Personal baseline z-score > 3.0σ',
+                ...lim('physiology.hr_orthostatic_bpm'),
               },
             ],
           },
@@ -618,21 +623,21 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         next.radiation.spe_elapsed_s = 12;
         next.radiation.status = 'EMERGENCY';
         next.radiation.dose_rate_absorbed_uGy_h = 74.2;
-        next.radiation.dose_rate_equivalent_uSv_h = 215.0;
-        next.radiation.neutron_dose_equivalent_rate_uSv_h = 68.8;
+        next.radiation.dose_rate_equivalent_uSv_h = OFFLINE_SPE_RATE;
+        next.radiation.neutron_dose_equivalent_rate_uSv_h = OFFLINE_SPE_NEUTRON;
         next.radiation.neutron_fraction_pct = 32.0;
         next.radiation.history.push({
           ts: simTs,
           label: makeTimeLabel(simTs),
-          value: 215.0,
-          secondaryValue: 68.8,
+          value: OFFLINE_SPE_RATE,
+          secondaryValue: OFFLINE_SPE_NEUTRON,
         });
         next.radiation.history = next.radiation.history.slice(-24);
 
         next.crew.forEach((c) => {
-          c.vitals.dose_rate_uSv_h = 215.0;
-          c.vitals.neutron_dose_uSv_h = 68.8;
-          c.sparklines.dose_rate_uSv_h = [...c.sparklines.dose_rate_uSv_h.slice(-13), 215.0];
+          c.vitals.dose_rate_uSv_h = OFFLINE_SPE_RATE;
+          c.vitals.neutron_dose_uSv_h = OFFLINE_SPE_NEUTRON;
+          c.sparklines.dose_rate_uSv_h = [...c.sparklines.dose_rate_uSv_h.slice(-13), OFFLINE_SPE_RATE];
         });
 
         upsertAlert({
@@ -647,33 +652,19 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           hrp_risks: ['HRP-17', 'HRP-01', 'HRP-03', 'HRP-12'],
           evidence: {
             signal: 'dose_rate_equivalent',
-            value: 215.0,
+            value: OFFLINE_SPE_RATE,
             unit: 'µSv/h',
             op: '>',
-            limit: 100.0,
-            limit_verified: false,
-            source_ref: 'Project heuristic (SPE Shelter Trigger)',
+            ...lim('radiation.spe_alert_dose_rate_uSv_h'),
             window: '5m rolling',
             clauses: [
               {
                 signal: 'dose_rate_equivalent',
                 label: 'Total Equivalent Dose Rate',
-                value: 215.0,
+                value: OFFLINE_SPE_RATE,
                 unit: 'µSv/h',
                 op: '>',
-                limit: 100.0,
-                limit_verified: false,
-                source_ref: 'Project heuristic (SPE Shelter Trigger)',
-              },
-              {
-                signal: 'neutron_dose_equivalent_rate',
-                label: 'CANS Secondary Neutron Dose Rate (32.0%)',
-                value: 68.8,
-                unit: 'µSv/h',
-                op: '>',
-                limit: 30.0,
-                limit_verified: false,
-                source_ref: 'CSA CANS Neutron Spectrometer Reference',
+                ...lim('radiation.spe_alert_dose_rate_uSv_h'),
               },
             ],
           },
@@ -772,7 +763,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           next.radiation.spe_elapsed_s += deltaSimSec;
           const shelteredCount = next.crew.filter((c) => c.in_shelter).length;
           const shieldingFactor = shelteredCount === 4 ? 0.35 : 1 - shelteredCount * 0.14;
-          const rawSpeRate = 215 + (rng() - 0.5) * 18;
+          const rawSpeRate = OFFLINE_SPE_RATE * (1 + (rng() - 0.5) * 0.08);
           const effectiveRate = Number((rawSpeRate * shieldingFactor).toFixed(1));
           const neutronRate = Number((effectiveRate * 0.32).toFixed(1));
           next.radiation.dose_rate_equivalent_uSv_h = effectiveRate;
@@ -824,6 +815,9 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           c.vitals.heart_rate = nextHr;
           c.vitals.dose_rate_uSv_h = next.radiation.dose_rate_equivalent_uSv_h;
           c.vitals.neutron_dose_uSv_h = next.radiation.neutron_dose_equivalent_rate_uSv_h;
+          c.mission_dose_mSv = Number(
+            (c.mission_dose_mSv + ((c.vitals.dose_rate_uSv_h / 1000) * deltaSimSec) / 3600).toFixed(3)
+          );
           c.sparklines.heart_rate = [...c.sparklines.heart_rate.slice(-13), nextHr];
           c.sparklines.dose_rate_uSv_h = [
             ...c.sparklines.dose_rate_uSv_h.slice(-13),

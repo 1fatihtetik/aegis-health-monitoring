@@ -51,8 +51,16 @@ def radiation_summary(
             # Dose received between the SPE alert being raised and resolved (or now).
             values = store.window(cid, "dose_rate_equivalent", last.raised_ts)
             if last.resolved_ts:
-                values = values[len(store.window(cid, "dose_rate_equivalent", last.resolved_ts)):]
+                values = values[: len(values) - len(store.window(cid, "dose_rate_equivalent", last.resolved_ts))]
             entry["event_dose_mSv"] = round(sum(values) * tick_h / 1000, 3)
+            # Dose avoided by sheltering: the area (unshielded) dose over the same ticks minus the personal dose.
+            area_values = store.window(None, "area_dose_rate_equivalent", last.raised_ts)
+            if last.resolved_ts:
+                area_values = area_values[
+                    : len(area_values) - len(store.window(None, "area_dose_rate_equivalent", last.resolved_ts))
+                ]
+            area_event = sum(area_values) * tick_h / 1000
+            entry["event_dose_saved_mSv"] = round(max(0.0, area_event - entry["event_dose_mSv"]), 3)
         crew[cid] = entry
 
     area = store.latest(None, "area_dose_rate_equivalent")

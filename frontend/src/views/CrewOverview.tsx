@@ -9,6 +9,8 @@ import {
   STATUS_DISPLAY,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { formatLimit } from '../api/limits';
+import { LimitBadge } from '../components/LimitBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { Sparkline } from '../components/Sparkline';
 import { StatusRing } from '../components/StatusRing';
@@ -234,83 +236,83 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div
               className={`rounded-xl border p-3 ${
-                environment.ppco2_mmHg > (limits['environment.ppco2_mmHg_1h_max']?.value ?? 3.0)
+                environment.ppco2_mmHg > (limits['environment.ppco2_mmHg_1h_max']?.value ?? Infinity)
                   ? 'border-amber-400 bg-amber-950/30'
                   : 'border-slate-800 bg-space-950/80'
               }`}
             >
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Cabin ppCO₂</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                <LimitBadge limit={limits['environment.ppco2_mmHg_1h_max']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.ppco2_mmHg} <span className="text-xs font-normal">mmHg</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                1h Max: ≤ {limits['environment.ppco2_mmHg_1h_max']?.value} mmHg
+                1 h max: {formatLimit(limits['environment.ppco2_mmHg_1h_max'], '<=') || 'no limit configured'}
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Cabin ppO₂</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                <LimitBadge limit={limits['environment.ppo2_kPa_min']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.ppo2_kPa} <span className="text-xs font-normal">kPa</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                Min: ≥ {limits['environment.ppo2_kPa_min']?.value} kPa
+                Min: {formatLimit(limits['environment.ppo2_kPa_min'], '>=') || 'no limit configured'}
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Total Pressure</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.cabin_pressure_kPa} <span className="text-xs font-normal">kPa</span>
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">Nominal: 101.3 kPa</div>
+              <div className="text-[10px] text-slate-400 font-mono">No limit configured</div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Temperature</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                <LimitBadge limit={limits['environment.cabin_temp_C']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.cabin_temp_c} <span className="text-xs font-normal">°C</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                Band: {limits['environment.cabin_temp_C']?.min}–{limits['environment.cabin_temp_C']?.max} °C
+                Band: {formatLimit(limits['environment.cabin_temp_C']) || 'no limit configured'}
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Rel. Humidity</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                <LimitBadge limit={limits['environment.humidity_pct']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.humidity_pct} <span className="text-xs font-normal">%RH</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                Band: {limits['environment.humidity_pct']?.min}–{limits['environment.humidity_pct']?.max} %RH
+                Band: {formatLimit(limits['environment.humidity_pct']) || 'no limit configured'}
               </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Acoustic Noise</span>
-                <span className="text-amber-300 font-mono">⚠ unverified</span>
+                <LimitBadge limit={limits['environment.noise_dBA_sleep_max']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.noise_dBA} <span className="text-xs font-normal">dBA</span>
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
-                Sleep Max: ≤ {limits['environment.noise_dBA_sleep_max']?.value} dBA
+                Sleep max: {formatLimit(limits['environment.noise_dBA_sleep_max'], '<=') || 'no limit configured'}
               </div>
             </div>
           </div>
@@ -393,6 +395,8 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                   <div className="grid grid-cols-3 gap-1.5 text-center">
                     {(['EVA', 'COGNITIVE', 'PHYSICAL'] as const).map((k) => {
                       const r = member.readiness[k];
+                      // Same GO threshold as the backend (config/limits.yaml readiness.eva_go_min).
+                      const low = r.value < (limits['readiness.eva_go_min']?.value ?? -Infinity);
                       return (
                         <div
                           key={k}
@@ -403,10 +407,10 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                           </div>
                           <div
                             className={`text-xs font-bold font-mono ${
-                              r.value < 75 ? 'text-amber-300' : 'text-emerald-300'
+                              low ? 'text-amber-300' : 'text-emerald-300'
                             }`}
                           >
-                            {r.value}% {r.value < 75 ? '▲' : '✓'}
+                            {r.value}% {low ? '▲' : '✓'}
                           </div>
                         </div>
                       );
@@ -423,7 +427,10 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                       limitMin={limits['physiology.hr_bpm']?.min}
                       limitMax={limits['physiology.hr_bpm']?.max}
                       limitVerified={limits['physiology.hr_bpm']?.verified}
-                      warn={member.vitals.heart_rate > 110}
+                      warn={
+                        member.vitals.heart_rate > (limits['physiology.hr_bpm']?.max ?? Infinity) ||
+                        member.vitals.heart_rate < (limits['physiology.hr_bpm']?.min ?? -Infinity)
+                      }
                     />
                     <Sparkline
                       label="HRV (RMSSD)"
@@ -431,7 +438,9 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                       currentValue={member.vitals.hrv_rmssd}
                       data={member.sparklines.hrv_rmssd}
                       color="#a855f7"
-                      warn={member.vitals.hrv_rmssd < 38}
+                      limitMin={limits['physiology.hrv_rmssd_ms_min']?.value}
+                      limitVerified={limits['physiology.hrv_rmssd_ms_min']?.verified}
+                      warn={member.vitals.hrv_rmssd < (limits['physiology.hrv_rmssd_ms_min']?.value ?? -Infinity)}
                     />
                     <Sparkline
                       label="SpO₂"

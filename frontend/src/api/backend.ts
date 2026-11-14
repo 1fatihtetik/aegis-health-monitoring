@@ -11,6 +11,7 @@ import {
   AlertEvidenceClause,
   AlertItem,
   AlertState,
+  ConfigLimit,
   CrewBaseline,
   CrewId,
   CrewMemberSummary,
@@ -31,6 +32,7 @@ import {
   SleepNightRecord,
   TimeSeriesPoint,
 } from './types';
+import { LimitsTree, flattenLimits } from './limits';
 
 // ---- wire types ------------------------------------------------------------------------------
 
@@ -126,6 +128,7 @@ export interface BackendRadiationCrew {
   career_pct_of_limit: number;
   sheltered: boolean;
   event_dose_mSv: number;
+  event_dose_saved_mSv?: number;
 }
 
 export interface BackendRadiation {
@@ -287,6 +290,11 @@ export const backendApi = {
       `/crew/${crewId}/baselines`
     );
     return res?.baselines ?? {};
+  },
+  /** GET /limits: the config/limits.yaml tree as the backend loaded it (null if unreachable). */
+  async limits(): Promise<Record<string, ConfigLimit> | null> {
+    const res = await getJson<{ limits: LimitsTree }>('/limits');
+    return res?.limits ? flattenLimits(res.limits) : null;
   },
 };
 
@@ -775,8 +783,8 @@ function mapRadiation(snap: BackendSnapshot, history: BackendHistory): Radiation
     spe_active: r?.spe.active ?? false,
     spe_started_ts: r?.spe.since ?? null,
     spe_elapsed_s: r?.spe.elapsed_s ?? 0,
-    // No backend field yet (work queue G3-5).
-    shelter_dose_saved_mSv: 0,
+    // Crew total of (area dose - personal dose) since the last SPE was raised.
+    shelter_dose_saved_mSv: round(crew.reduce((sum, c) => sum + (c.event_dose_saved_mSv ?? 0), 0), 3),
     spectrum_bins: (r?.area.neutron_spectrum ?? []).map((b) => ({
       energyRange: b.energy_range,
       fluxPct: round(b.flux_fraction * 100),
