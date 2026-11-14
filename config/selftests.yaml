@@ -1,0 +1,30 @@
+# Crew self-test catalog (Block T, PRD section 6 M11, ROADMAP section 0). Every test explains itself from here;
+# no test text is hardcoded in a component.
+# Per test: why (RIDGE hazard + HRP risk), numbered steps, normal band (limit_refs into limits.yaml, so the UI shows
+# the "unverified" marker where it applies), escalation (onboard steps and the CMO first: the ground may be minutes
+# away or blacked out), optional schedule (T-1) and protocol source.
+# fields: what the crew enters. input_min/input_max is a typing plausibility range (rejects typos such as 980 for
+# 98), NOT a medical limit; medical limits stay in limits.yaml.
+# Results are Observations on the normal path (POST /api/v1/observations): UI entries are CREW_ENTERED, scripted
+# results for the synthetic crew stay SYNTHETIC. No points, streaks, badges, levels or scores (user decision).
+settings:
+  manual_override:
+    value: 30m
+    source_ref: "Project setting: a value the crew measures by hand replaces the continuous wearable stream of that crew member and signal for this long, so the rules judge the hand measurement"
+
+tests:
+  - id: headache
+    title: "Headache check"
+    kind: report
+    entry_method: tap
+    fields:
+      - { signal: symptom_headache, label: "Headache right now (0 none, 1 mild, 2 moderate, 3 severe)", input_min: 0, input_max: 3, step: 1 }
+    why: "Headache is an early sign of high cabin CO2 and of low fluid intake. AEGIS compares it with heart rate and cabin CO2 to suggest the likely cause."
+    hazards: [HOSTILE_CLOSED_ENV, GRAVITY_FIELDS]
+    hrp_risks: [HRP-12, HRP-14, HRP-07]
+    steps:
+      - "Stop what you are doing for a moment"
+      - "Rate the headache you feel right now: 0 none, 1 mild, 2 moderate, 3 severe"
+      - "Tap the rating"
+    limit_refs: [symptoms.headache_report_min]
+    escalation: "Severe headache, or headache with vision changes, confusion or vomiting: stop work, tell the crew medical officer (CMO) now. The CMO informs the ground when the link allows."

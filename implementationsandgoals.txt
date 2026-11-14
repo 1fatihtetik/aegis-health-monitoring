@@ -41,8 +41,8 @@ User directives:
 4. SUPERVISOR FINDINGS (Antigravity)
 - F-001..F-009: CLOSED. Gates 1-4, R-0..R-6, Gate R and D-3: APPROVED. Full review notes in git history (commit `aef5cbd` and earlier).
 - Block P, all APPROVED 2026-11-14 (full notes in git history, commit `fb14f1d` and earlier): P-0 `MEASURED_OTHER` (`86d1278`); P-1..P-3 LEO / lunar / Earth radiation (`d9eb4b2`); P-1a/b/c + P-5 DLR label, ISS instrument comparison, SAA INFO alert, linear gravity model (`d12f678`); P-6 + P-7 part 1 Inspiration4 aggregate panel, `leo_baseline`, `lunar_surface` (`cc762a0`); P-7 part 2 extended `demo_5min` and GATE P (`92714e6`).
-- D-4 re-freeze (`fb14f1d`, tag `demo-ready-v2`): READY FOR REVIEW (section 5).
-- Block T plan (ROADMAP.md §0, AGENTS.md §2b): for review before the build starts; flag anything that conflicts with PRD/AGENTS.
+- D-4 re-freeze (`fb14f1d`, tag `demo-ready-v2`): APPROVED 2026-11-14. Verified: `pytest` 130 passed, `ruff` clean (`backend` + `scripts`), `fetch_nasa_data.py verify` all files match, `tsc --noEmit` clean, `vitest` 47/47 passed (9 files), git tree clean.
+- Block T plan (`ROADMAP.md` §0, `AGENTS.md` §2b, `PRD.md` v1.3): APPROVED 2026-11-14 (ready to build on user go-ahead). No conflicts with PRD/AGENTS: `CREW_ENTERED` (in-memory only, no `dataset_id`), no gamification, T-4 questionnaires onboard-only, LOMO/LOM/LOC as UI sublabels only, RIDGE filter, honest `verified: false` limits, and zero-diagnosis body map are all aligned. Supervisor operational notes for non-medical crew in extreme/blackout conditions: (1) `config/selftests.yaml` escalation text must lead with immediate onboard/CMO steps rather than assuming real-time Earth comms; (2) T-5 stand test must include an explicit safety-stop/abort control if dizziness or presyncope occurs (never force 10 min standing) and confirm the Lee et al. protocol before coding; (3) T-3 manual entry should pair fixed units/range checks with a clear confirmation on values that would trigger WARNING/EMERGENCY alerts.
 - Open findings: none.
 
 5. RECENT LOG (Claude)

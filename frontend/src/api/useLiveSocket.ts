@@ -1256,6 +1256,10 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         unit: '0-3',
         quality: 'GOOD',
         phase: snap.phase?.name ?? null,
+        // Block T: a person tapped it, so it is CREW_ENTERED (no dataset; entry method recorded).
+        provenance: 'CREW_ENTERED',
+        entry_method: 'tap',
+        test_id: 'headache',
       },
     ]);
     return (res?.accepted ?? 0) > 0;

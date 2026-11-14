@@ -46,6 +46,10 @@ class Provenance(StrEnum):
 
     SYNTHETIC = "SYNTHETIC"  # simulated, heuristic parameters
     SYNTHETIC_CALIBRATED = "SYNTHETIC_CALIBRATED"  # simulated, parameters cite a NASA source
+    # Block T, T-0: a value a person typed or tapped in the onboard UI (self-test, questionnaire, headache report).
+    # No dataset; the entry method is recorded. Kept in memory only. Ranks above the simulated labels (a person
+    # really entered it) and below every replayed measurement (it is not an instrument record from an archive).
+    CREW_ENTERED = "CREW_ENTERED"
     # Block P, P-0: replayed measurement from a non-NASA agency (e.g. EPA RadNet). It ranks below the NASA
     # labels so a group with a non-NASA member (weakest(), compound evidence) is never labelled NASA.
     MEASURED_OTHER = "MEASURED_OTHER"
@@ -74,6 +78,8 @@ class SignalMeta:
     scope: str  # "crew" or "cabin"
     device: str
     daily: bool = False  # emitted once per day (long-term trend signals)
+    entry_only: bool = False  # Block T: only crew entries or scripted self-test results produce it (never the simulator)
+    onboard_only: bool = False  # Block T, T-4: never leaves the spacecraft (link/ strips it, also from alert evidence)
 
 
 # Canonical units per signal (PRD section 7.3). Adapters convert; the engine never converts.

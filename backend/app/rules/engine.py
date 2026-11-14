@@ -25,11 +25,16 @@ BASELINE_REFRESH_TICKS = 60
 
 Subject = str | None
 Result = tuple[bool, dict[str, Any] | None]
-ProvenanceLookup = Callable[[str], dict[str, Any]]
+ProvenanceLookup = Callable[[str, Subject], dict[str, Any]]
+OverrideLookup = Callable[[Subject, str, datetime], list[float] | None]
 
 
-def _no_provenance(_: str) -> dict[str, Any]:
+def _no_provenance(_: str, __: Subject = None) -> dict[str, Any]:
     return {"provenance": "SYNTHETIC", "dataset_id": None}
+
+
+def _no_override(_: Subject, __: str, ___: datetime) -> list[float] | None:
+    return None
 
 
 @dataclass
@@ -53,7 +58,9 @@ class RuleEngine:
         self._active: dict[tuple[str, Subject], bool] = {}
         self._baseline: dict[tuple[str, Subject], tuple[int, float, float]] = {}
         self._ticks = 0
-        self.provenance: ProvenanceLookup = _no_provenance  # World sets the live lookup
+        self.provenance: ProvenanceLookup = _no_provenance  # World sets the live lookup (per signal and crew)
+        # Block T: hand-measured values that replace the wearable stream for (crew, signal) right now, or None
+        self.override: OverrideLookup = _no_override
 
     def scope(self, rule: Rule) -> str:
         if rule.type != RuleType.COMPOUND:
@@ -82,7 +89,8 @@ class RuleEngine:
         self._active[key] = firing
         return firing
 
-    def _evidence(self, spec: Rule | Predicate, value: float, agg: str, unit: str | None = None) -> dict[str, Any]:
+    def _evidence(self, spec: Rule | Predicate, value: float, agg: str, unit: str | None = None,
+                  subject: Subject = None) -> dict[str, Any]:
         limit = self.cfg.limit(str(spec.limit_ref))
         return {
             "signal": str(spec.signal),
@@ -95,16 +103,20 @@ class RuleEngine:
             "limit_source_ref": limit.source_ref,
             "window": spec.window,
             "agg": agg,
-            **self._source(str(spec.signal)),
+            **self._source(str(spec.signal), subject),
         }
 
-    def _source(self, signal: str) -> dict[str, Any]:
-        src = self.provenance(signal)
+    def _source(self, signal: str, subject: Subject = None) -> dict[str, Any]:
+        subj = subject if SIGNALS[signal].scope == "crew" else None
+        src = self.provenance(signal, subj)
         return {"provenance": src["provenance"], "dataset_id": src["dataset_id"], "basis": src.get("basis", ""),
                 "dataset": src.get("dataset")}
 
     def _values(self, spec: Rule | Predicate, subject: Subject, window: str, now: datetime) -> list[float]:
         subj = subject if SIGNALS[str(spec.signal)].scope == "crew" else None
+        manual = self.override(subj, str(spec.signal), now)
+        if manual is not None:  # Block T: the hand measurement replaces the wearable stream (selftests.yaml setting)
+            return manual
         return self.store.window(subj, str(spec.signal), now - parse_duration(window))
 
     def _threshold(self, key: tuple[str, Subject], spec: Rule | Predicate, subject: Subject, now: datetime,
@@ -116,7 +128,8 @@ class RuleEngine:
         value = AGGS[spec.agg](values)
         limit = self.cfg.limit(str(spec.limit_ref)).value
         firing = self._compare(key, spec.op, value, limit, margin)
-        return firing, self._mark_hold(self._evidence(spec, value, spec.agg), firing, spec.op, value, limit)
+        evidence = self._evidence(spec, value, spec.agg, subject=subject)
+        return firing, self._mark_hold(evidence, firing, spec.op, value, limit)
 
     def _baseline_rule(self, key: tuple[str, Subject], rule: Rule, subject: Subject, now: datetime) -> Result:
         recent = self._values(rule, subject, rule.window, now)
@@ -134,7 +147,7 @@ class RuleEngine:
             return False, None
         current = statistics.fmean(recent)
         z = (current - mean) / sd
-        evidence = self._evidence(rule, z, "z_score", unit="z")
+        evidence = self._evidence(rule, z, "z_score", unit="z", subject=subject)
         evidence |= {
             "current": round(current, 3),
             "baseline_mean": round(mean, 3),
@@ -154,7 +167,7 @@ class RuleEngine:
         total = sum(values) * self.tick_h * rule.scale
         limit = self.cfg.limit(str(rule.limit_ref)).value
         firing = self._compare(key, rule.op, total, limit, rule.clear_margin)
-        evidence = self._evidence(rule, total, "integral", unit=rule.unit)
+        evidence = self._evidence(rule, total, "integral", unit=rule.unit, subject=subject)
         return firing, self._mark_hold(evidence, firing, rule.op, total, limit)
 
     def _compound(self, rule: Rule, subject: Subject, now: datetime, results: dict[tuple[str, Subject], Result]) -> Result:
@@ -207,7 +220,7 @@ class RuleEngine:
             value = AGGS[pred.agg](values)
             limit = self.cfg.limit(str(pred.limit_ref)).value
             if OPS[pred.op](value, limit):
-                held.append(self._evidence(pred, value, pred.agg) | {"unless_index": i})
+                held.append(self._evidence(pred, value, pred.agg, subject=subject) | {"unless_index": i})
         if not held:
             return result
         self._active[key] = False  # a stood-down rule restarts from the plain limit, not the hysteresis band

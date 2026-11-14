@@ -21,6 +21,12 @@ const META: Record<Provenance, { icon: string; label: string; className: string;
     className: 'border-teal-400/70 bg-teal-950/40 text-teal-100',
     help: 'Computed from NASA data by a documented formula.',
   },
+  CREW_ENTERED: {
+    icon: '✎',
+    label: 'Crew-entered',
+    className: 'border-violet-400/70 bg-violet-950/40 text-violet-100',
+    help: 'Typed or tapped by a crew member on the onboard tablet. Not an instrument record; kept in memory only.',
+  },
   SYNTHETIC_CALIBRATED: {
     icon: '○',
     label: 'Synthetic · NASA-calibrated',
@@ -128,8 +134,10 @@ export function dataSourcesLine(provenance: AegisSystemState['provenance']): str
     ...new Set(other.map((v) => `${otherAgency(v.dataset ?? null)} ${v.dataset?.label ?? v.dataset_id ?? ''}`.trim())),
   ];
   const parts: string[] = [];
+  const crewEntered = values.some((v) => v.provenance === 'CREW_ENTERED');
   if (labels.length) parts.push(`Radiation: NASA data (${labels.join(', ')}).`);
   if (otherLabels.length) parts.push(`Non-NASA measurements: ${otherLabels.join(', ')}.`);
+  if (crewEntered) parts.push('Self-test entries: crew-entered.');
   if (parts.length === 0) {
     return 'Data: synthetic simulator (no NASA replay active). Limits: NASA-STD-3001 where marked ✓. Each value shows its source.';
   }

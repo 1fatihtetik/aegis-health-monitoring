@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SeveritySublabel } from '../components/SeveritySublabel';
 import {
   HAZARD_CATALOG,
   HRP_RISK_CATALOG,
@@ -150,6 +151,7 @@ export const AlertCenter: React.FC = () => {
                     >
                       {stMeta.label}
                     </span>
+                    <SeveritySublabel severity={alert.severity} />
 
                     <span className="rounded bg-slate-800 px-2.5 py-1 text-xs font-mono font-bold text-slate-200">
                       Lifecycle: {alert.state}

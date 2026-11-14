@@ -288,8 +288,25 @@ export function severityToStatus(severity: Severity): OperationalStatus {
   return severity;
 }
 
-/** Where a value comes from (PRD §6 M0). Ordered from least to most real. */
-export type Provenance = 'SYNTHETIC' | 'SYNTHETIC_CALIBRATED' | 'MEASURED_OTHER' | 'NASA_DERIVED' | 'NASA_MEASURED';
+/** NASA loss category per severity (PRD §7.4, Block T): shown as a small sublabel, never changes the engine. */
+export const SEVERITY_LOSS_CATEGORY: Record<Severity, { code: string; meaning: string } | null> = {
+  INFO: null,
+  CAUTION: { code: 'LOMO', meaning: 'Loss of mission objectives' },
+  WARNING: { code: 'LOM', meaning: 'Loss of mission' },
+  EMERGENCY: { code: 'LOC', meaning: 'Loss of crew' },
+};
+
+/**
+ * Where a value comes from (PRD §6 M0). Ordered from least to most real. Block T adds CREW_ENTERED:
+ * typed or tapped by a person on the tablet, no dataset, kept in memory only.
+ */
+export type Provenance =
+  | 'SYNTHETIC'
+  | 'SYNTHETIC_CALIBRATED'
+  | 'CREW_ENTERED'
+  | 'MEASURED_OTHER'
+  | 'NASA_DERIVED'
+  | 'NASA_MEASURED';
 
 /** Current source of one signal, from snapshot.provenance (GET /api/v1/datasets has the full list). */
 export interface SignalSource {

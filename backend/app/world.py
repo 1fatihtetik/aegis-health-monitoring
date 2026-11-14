@@ -32,6 +32,7 @@ from app.link.link import (
 from app.rules.engine import RuleEngine
 from app.scores.radiation import radiation_summary
 from app.scores.readiness import compute_readiness
+from app.selftests.entries import EntryLog
 from app.sim.core import EFFECT_TYPES, Simulator
 from app.sim.scenario import load_scenario
 from app.util import iso, parse_duration, parse_ts
@@ -73,6 +74,8 @@ class World:
             key=lambda x: (x[0], x[1]),
         )
         self._seen_ids: set[str] = set()
+        # Block T: crew-entered values and scripted self-test results (in memory only)
+        self.entries = EntryLog(parse_duration(cfg.selftests.setting("manual_override")))
 
         # History + prewarm: fills the buffers and baselines before the scenario starts. No rules run here.
         for ts, crew_id, signal, value in self.sim.history():
@@ -82,7 +85,8 @@ class World:
             self._ingest(self.sim.step())
 
         self.engine = RuleEngine(cfg.rules, cfg, self.store, self.crew_ids, mission["tick_s"])
-        self.engine.provenance = lambda signal: self.provenance.current(signal).as_dict()
+        self.engine.provenance = self.source_for
+        self.engine.override = self.entries.override_values
         self.alerts = AlertManager()
         self.link = Link(mission["link"]["max_msgs_per_tick"])
         self.delay_override: float | None = None
@@ -103,9 +107,19 @@ class World:
                              "Set by an operator (POST /link/delay), not ephemeris.", None)
         return self.comm.at(self.sim.phase, self.clock.now())
 
+    def source_for(self, signal: str, crew_id: str | None = None) -> dict[str, Any]:
+        """Provenance of a signal for one crew member: a crew entry or scripted self-test result while it is the
+        value being judged (Block T), else the signal's current source."""
+        now = self.clock.now()
+        latest = self.store.latest(crew_id, signal)
+        entry = self.entries.source(crew_id, signal, now, latest[0] if latest else None)
+        return (entry or self.provenance.current(signal)).as_dict()
+
     def _ingest(self, samples: list[tuple[str | None, str, float]]) -> None:
         now = self.clock.now()
         for crew_id, signal, value in samples:
+            if self.entries.override_start(crew_id, signal, now) is not None:
+                continue  # Block T: a hand measurement replaces this crew member's wearable stream for a while
             self.store.add(crew_id, signal, now, value)
         self._track_radiation_source(now)
 
@@ -201,6 +215,8 @@ class World:
                 result.speed = float(params["speed"])
             elif kind == "pause" and not prewarm:
                 result.pause = True
+            elif kind == "selftest":
+                self._scripted_selftest(ts, params)
 
     def tick(self) -> TickResult:
         result = TickResult(self.clock.now())
@@ -255,16 +271,33 @@ class World:
         self.snapshot = self._build_snapshot()
 
     def ingest_observations(self, observations: list[Observation]) -> tuple[int, int]:
-        """Idempotent on Observation.id. Returns (accepted, duplicates)."""
+        """Idempotent on Observation.id. Returns (accepted, duplicates). Crew entries and self-test results are
+        remembered per crew member (Block T), so they never relabel the same signal of the other crew."""
         accepted = 0
         for obs in observations:
             if obs.id in self._seen_ids:
                 continue
             self._seen_ids.add(obs.id)
             self.store.add(obs.crew_id, obs.signal.value, obs.ts, obs.value)
-            self.provenance.set(obs.signal.value, obs.provenance, obs.dataset_id, obs.ts)
+            if self.entries.record(obs, self.scenario["name"]) is None:
+                self.provenance.set(obs.signal.value, obs.provenance, obs.dataset_id, obs.ts)
             accepted += 1
         return accepted, len(observations) - accepted
+
+    def _scripted_selftest(self, ts: datetime, params: dict[str, Any]) -> None:
+        """Scenario event `selftest` {crew, test, values: {signal: value}}: a scripted result for the synthetic crew.
+        Labelled SYNTHETIC ("scripted self-test result"), never CREW_ENTERED (AGENTS.md section 2b)."""
+        test = self.cfg.selftests.test(params["test"])
+        crew_id = str(params["crew"])
+        obs = [
+            Observation(
+                id=f"scripted:{self.scenario['name']}:{self.seed}:{crew_id}:{test.id}:{signal}:{iso(ts)}",
+                ts=ts, crew_id=crew_id, device_id=f"scripted-{crew_id}", signal=signal, value=float(value),
+                unit=SIGNALS[signal].unit, phase=self.sim.phase, provenance=Provenance.SYNTHETIC, test_id=test.id,
+            )
+            for signal, value in params["values"].items()
+        ]
+        self.ingest_observations(obs)
 
     # ---- ground actions (only through the link) ------------------------------------------
     def send_recommendation(self, text: str, checklist: list[str], crew_id: str | None) -> dict[str, Any]:

@@ -9,6 +9,8 @@ import yaml
 
 from app.datasets.registry import DATA_DIR, DatasetRegistry
 from app.rules.models import Rule
+from app.selftests.catalog import Catalog
+from app.util import parse_duration
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 # A verified limit must name a NASA-STD-3001 clause, e.g. "[V2 6004]" (AGENTS.md section 2a).
@@ -39,6 +41,7 @@ class Config:
         self.readiness: dict[str, Any] = _load(config_dir / "readiness.yaml")
         self.rules: list[Rule] = [Rule(**r) for r in _load(config_dir / "rules.yaml")["rules"]]
         self.datasets = DatasetRegistry(config_dir / "datasets.yaml", data_dir)
+        self.selftests = Catalog(**_load(config_dir / "selftests.yaml"))  # Block T
         self._validate()
 
     def limit(self, ref: str) -> Limit:
@@ -67,6 +70,13 @@ class Config:
             for member in rule.members:
                 if isinstance(member, str) and member not in ids:
                     raise ValueError(f"{rule.id}: unknown member rule '{member}'")
+        for test in self.selftests.tests:  # Block T: every normal band must exist in limits.yaml
+            for ref in test.limit_refs:
+                try:
+                    self.limit(ref)
+                except KeyError as exc:
+                    raise ValueError(f"selftests.yaml {test.id}: {exc.args[0]}") from exc
+        parse_duration(self.selftests.setting("manual_override"))
         for kind, spec in self.readiness["kinds"].items():
             if not spec.get("hazards") or not spec.get("hrp_risks"):
                 raise ValueError(f"readiness.yaml {kind} needs hazards and hrp_risks")

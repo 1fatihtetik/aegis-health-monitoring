@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { SeveritySublabel } from './SeveritySublabel';
 import {
   AlertItem,
   HAZARD_CATALOG,
@@ -71,6 +72,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
             >
               {statusMeta.label}
             </span>
+            <SeveritySublabel severity={top.severity} />
 
             <span className="rounded bg-slate-800 px-2 py-0.5 text-xs font-mono text-slate-300">
               State: {top.state}

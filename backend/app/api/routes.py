@@ -419,6 +419,40 @@ async def reference_inspiration4(request: Request, node: Node = "onboard") -> di
     return _envelope(rt, node, panel=rt.world.inspiration4)
 
 
+# ---- crew self-tests (Block T, PRD section 6 M11) ----------------------------------------------
+def _selftest_catalog(rt: Runtime) -> list[dict[str, Any]]:
+    """Catalog entries with their normal bands resolved from limits.yaml and, per field, the rule limits that the
+    value is judged against (the form asks for confirmation before sending a WARNING/EMERGENCY value)."""
+    cfg = rt.cfg
+    by_signal = _limits_by_signal(rt)
+    out = []
+    for test in cfg.selftests.tests:
+        entry = test.model_dump(mode="json")
+        entry["limits"] = [cfg.limit(ref).as_dict() for ref in test.limit_refs]
+        for f in entry["fields"]:
+            f["unit"] = SIGNALS[f["signal"]].unit
+            f["rule_limits"] = by_signal.get(f["signal"], [])
+        out.append(entry)
+    return out
+
+
+@router.get("/selftests")
+async def selftests(request: Request, node: Node = "onboard") -> dict[str, Any]:
+    """Self-test catalog: why / steps / normal band / escalation per test (config/selftests.yaml)."""
+    rt = _rt(request)
+    settings = {k: v.model_dump() for k, v in rt.cfg.selftests.settings.items()}
+    return _envelope(rt, node, tests=_selftest_catalog(rt), settings=settings)
+
+
+@router.get("/selftests/results")
+async def selftest_results(request: Request, crew_id: str | None = None) -> dict[str, Any]:
+    """Onboard only: self-test results so far (crew-entered and scripted), oldest first. In memory only."""
+    rt = _rt(request)
+    if crew_id is not None and crew_id not in rt.world.crew_ids:
+        raise HTTPException(404, f"Unknown crew member '{crew_id}'")
+    return _envelope(rt, "onboard", results=rt.world.entries.results_for(crew_id))
+
+
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
 async def observations(items: list[Observation], request: Request) -> dict[str, int]:
@@ -427,6 +461,20 @@ async def observations(items: list[Observation], request: Request) -> dict[str, 
         if obs.unit != SIGNALS[obs.signal.value].unit:
             raise HTTPException(422, f"{obs.signal.value}: unit must be '{SIGNALS[obs.signal.value].unit}'")
     world = _rt(request).world
+    for obs in items:  # Block T: an entry names a real crew member and, if given, a catalog test
+        if obs.crew_id is not None and SIGNALS[obs.signal.value].scope == "crew" and obs.crew_id not in world.crew_ids:
+            raise HTTPException(422, f"Unknown crew member '{obs.crew_id}'")
+        if obs.test_id is not None:
+            try:
+                test = world.cfg.selftests.test(obs.test_id)
+            except KeyError as exc:
+                raise HTTPException(422, str(exc)) from exc
+            field = next((f for f in test.fields if f.signal == obs.signal.value), None)
+            if field is None:
+                raise HTTPException(422, f"{obs.signal.value} is not a field of self-test '{test.id}'")
+            if not field.input_min <= obs.value <= field.input_max:
+                raise HTTPException(422, f"{field.label}: {obs.value:g} is outside {field.input_min:g}-"
+                                         f"{field.input_max:g} {SIGNALS[field.signal].unit}; check the reading")
     for obs in items:  # P-0: the label must match who measured the dataset
         meta = world.provenance.registry.dataset_meta(obs.dataset_id)
         if meta:

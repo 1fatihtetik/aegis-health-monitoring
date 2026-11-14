@@ -10,6 +10,7 @@ import {
 } from '../api/types';
 import { DataSourceBadge } from './DataSourceBadge';
 import { AutonomyNotice } from './AutonomyNotice';
+import { SeveritySublabel } from './SeveritySublabel';
 import { ReplayLine } from './ReplayLine';
 import { signalLabel } from '../api/backend';
 
@@ -77,6 +78,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3.5 py-2 text-sm font-black uppercase tracking-wider text-white shadow-lg animate-pulse">
             ✖ EMERGENCY — LEVEL 1 (LOSS OF CREW THREAT)
           </span>
+          <SeveritySublabel severity={alert.severity} />
           <span className="rounded-md bg-red-900/70 border border-red-400/50 px-3 py-1.5 text-xs font-mono text-red-100">
             AUTONOMOUS ONBOARD TRIGGER · MCC-HOUSTON LAGS BY{' '}
             {formatDurationSeconds(groundLagSeconds ?? commDelaySeconds)}
