@@ -1,0 +1,1544 @@
+{
+ "snapshot": {
+  "type": "snapshot",
+  "node": "onboard",
+  "now": "2026-11-15T00:32:00Z",
+  "as_of": "2026-11-15T00:32:00Z",
+  "age_s": 0.0,
+  "sim": {
+   "scenario": "spe_event",
+   "description": "Solar particle event: dose rate rises about 80x for 6 hours.",
+   "seed": 42,
+   "speed": 2000.0,
+   "paused": false,
+   "tick_s": 60
+  },
+  "link": {
+   "delay_s": 720.0,
+   "blackout": false,
+   "queue_down": 12,
+   "queue_up": 0,
+   "last_delivery_ts": "2026-11-15T00:32:00Z",
+   "ground_as_of": "2026-11-15T00:20:00Z",
+   "ground_age_s": 720.0
+  },
+  "ts": "2026-11-15T00:32:00Z",
+  "scenario": "spe_event",
+  "seed": 42,
+  "mission_day": 142,
+  "phase": {
+   "name": "MARS_TRANSIT",
+   "gravity_g": 0.0,
+   "comm_delay_s": 720
+  },
+  "crew": [
+   {
+    "id": "C1",
+    "callsign": "Vega",
+    "role": "CDR",
+    "status": "EMERGENCY",
+    "top_alert": {
+     "id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+     "title": "Solar particle event: dose rate above SPE threshold",
+     "severity": "EMERGENCY"
+    },
+    "alert_count": 2,
+    "vitals": {
+     "heart_rate": 58.25,
+     "hrv_rmssd": 58.679,
+     "spo2": 97.196,
+     "resp_rate": 12.495,
+     "skin_temp": 36.82,
+     "bp_systolic": 120.998,
+     "bp_diastolic": 75.465,
+     "activity_counts": 1.158,
+     "sleep_state": 1.0,
+     "sleep_hours_24h": 8.0,
+     "symptom_headache": 0.0,
+     "dose_rate_equivalent": 5997.745,
+     "dose_rate_absorbed": 2399.098,
+     "dose_mission": 278.888
+    },
+    "trends": {
+     "bmd_estimate": 97.24,
+     "body_mass": 76.287,
+     "vo2max_proxy": 45.41,
+     "sleep_night_h": 8.0,
+     "exercise_adherence_pct": 50.0
+    },
+    "readiness": {
+     "EVA": 0.0,
+     "COGNITIVE": 0.0,
+     "OVERALL": 0.0,
+     "PHYSICAL": 0.0
+    },
+    "eva_go": false
+   },
+   {
+    "id": "C2",
+    "callsign": "Lyra",
+    "role": "CMO",
+    "status": "EMERGENCY",
+    "top_alert": {
+     "id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+     "title": "Solar particle event: dose rate above SPE threshold",
+     "severity": "EMERGENCY"
+    },
+    "alert_count": 2,
+    "vitals": {
+     "heart_rate": 57.549,
+     "hrv_rmssd": 54.128,
+     "spo2": 97.959,
+     "resp_rate": 12.832,
+     "skin_temp": 36.824,
+     "bp_systolic": 108.217,
+     "bp_diastolic": 69.003,
+     "activity_counts": 0.072,
+     "sleep_state": 1.0,
+     "sleep_hours_24h": 8.0,
+     "symptom_headache": 0.0,
+     "dose_rate_equivalent": 5947.611,
+     "dose_rate_absorbed": 2379.044,
+     "dose_mission": 278.917
+    },
+    "trends": {
+     "bmd_estimate": 97.481,
+     "body_mass": 61.97,
+     "vo2max_proxy": 42.021,
+     "sleep_night_h": 8.0,
+     "exercise_adherence_pct": 50.0
+    },
+    "readiness": {
+     "EVA": 0.0,
+     "COGNITIVE": 0.0,
+     "OVERALL": 0.0,
+     "PHYSICAL": 0.0
+    },
+    "eva_go": false
+   },
+   {
+    "id": "C3",
+    "callsign": "Orion",
+    "role": "MS",
+    "status": "EMERGENCY",
+    "top_alert": {
+     "id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+     "title": "Solar particle event: dose rate above SPE threshold",
+     "severity": "EMERGENCY"
+    },
+    "alert_count": 2,
+    "vitals": {
+     "heart_rate": 53.469,
+     "hrv_rmssd": 68.29,
+     "spo2": 97.144,
+     "resp_rate": 12.682,
+     "skin_temp": 36.836,
+     "bp_systolic": 119.974,
+     "bp_diastolic": 77.517,
+     "activity_counts": 5.831,
+     "sleep_state": 1.0,
+     "sleep_hours_24h": 8.0,
+     "symptom_headache": 0.0,
+     "dose_rate_equivalent": 6090.821,
+     "dose_rate_absorbed": 2436.328,
+     "dose_mission": 278.856
+    },
+    "trends": {
+     "bmd_estimate": 96.242,
+     "body_mass": 82.189,
+     "vo2max_proxy": 47.912,
+     "sleep_night_h": 8.0,
+     "exercise_adherence_pct": 50.0
+    },
+    "readiness": {
+     "EVA": 0.0,
+     "COGNITIVE": 0.0,
+     "OVERALL": 0.0,
+     "PHYSICAL": 0.0
+    },
+    "eva_go": false
+   },
+   {
+    "id": "C4",
+    "callsign": "Altair",
+    "role": "PS",
+    "status": "EMERGENCY",
+    "top_alert": {
+     "id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+     "title": "Solar particle event: dose rate above SPE threshold",
+     "severity": "EMERGENCY"
+    },
+    "alert_count": 2,
+    "vitals": {
+     "heart_rate": 60.574,
+     "hrv_rmssd": 48.209,
+     "spo2": 97.607,
+     "resp_rate": 13.258,
+     "skin_temp": 36.754,
+     "bp_systolic": 109.989,
+     "bp_diastolic": 72.567,
+     "activity_counts": 0.962,
+     "sleep_state": 1.0,
+     "sleep_hours_24h": 8.0,
+     "symptom_headache": 0.0,
+     "dose_rate_equivalent": 6124.15,
+     "dose_rate_absorbed": 2449.66,
+     "dose_mission": 278.983
+    },
+    "trends": {
+     "bmd_estimate": 96.958,
+     "body_mass": 68.49,
+     "vo2max_proxy": 39.549,
+     "sleep_night_h": 8.0,
+     "exercise_adherence_pct": 100.0
+    },
+    "readiness": {
+     "EVA": 0.0,
+     "COGNITIVE": 0.0,
+     "OVERALL": 0.0,
+     "PHYSICAL": 0.0
+    },
+    "eva_go": false
+   }
+  ],
+  "environment": {
+   "ppco2": 2.024,
+   "ppo2": 21.166,
+   "cabin_pressure": 101.234,
+   "cabin_temp": 22.821,
+   "humidity": 46.007,
+   "noise_level": 47.09,
+   "area_dose_rate_equivalent": 6066.446,
+   "neutron_dose_equivalent_rate": 1823.812
+  },
+  "hazards": {
+   "RADIATION": {
+    "status": "EMERGENCY",
+    "alert_ids": [
+     "7e2ef30e-3717-5cda-90a7-fa171d365331",
+     "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c",
+     "db6a38b9-0a25-598f-a538-9a9198204fd7",
+     "1ad9218e-7e17-5988-a70b-6d2e9ded66cb",
+     "9443abad-f22a-5234-b0f6-3f731d977988"
+    ]
+   },
+   "ISOLATION_CONFINEMENT": {
+    "status": "NOMINAL",
+    "alert_ids": []
+   },
+   "DISTANCE_FROM_EARTH": {
+    "status": "NOMINAL",
+    "alert_ids": []
+   },
+   "GRAVITY_FIELDS": {
+    "status": "NOMINAL",
+    "alert_ids": []
+   },
+   "HOSTILE_CLOSED_ENV": {
+    "status": "NOMINAL",
+    "alert_ids": []
+   }
+  },
+  "readiness": {
+   "C1": {
+    "EVA": {
+     "value": 0.0,
+     "base": 99.1,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.35
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.25
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.58,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.2
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 54.96,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.2
+      }
+     },
+     "hazards": [
+      "HOSTILE_CLOSED_ENV",
+      "ISOLATION_CONFINEMENT",
+      "RADIATION"
+     ],
+     "hrp_risks": [
+      "HRP-08",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties",
+     "go": false,
+     "go_min": 70.0,
+     "go_min_verified": false
+    },
+    "COGNITIVE": {
+     "value": 0.0,
+     "base": 98.6,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.6
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.4
+      }
+     },
+     "hazards": [
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-14",
+      "HRP-12"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "OVERALL": {
+     "value": 0.0,
+     "base": 100.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.4
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.58,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 54.96,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS",
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-03",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "PHYSICAL": {
+     "value": 0.0,
+     "base": 89.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c"
+     ],
+     "components": {
+      "bone": {
+       "signal": "bmd_estimate",
+       "value": 97.24,
+       "unit": "% of baseline",
+       "good": 100.0,
+       "limit": 95.0,
+       "limit_ref": "bone.bmd_pct_of_baseline_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "2d",
+       "score": 72.4,
+       "weight": 0.4
+      },
+      "hrv": {
+       "signal": "hrv_rmssd",
+       "value": 60.75,
+       "unit": "ms",
+       "good": 60.0,
+       "limit": 20.0,
+       "limit_ref": "physiology.hrv_rmssd_ms_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "1h",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 54.96,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS"
+     ],
+     "hrp_risks": [
+      "HRP-11",
+      "HRP-09",
+      "HRP-03"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    }
+   },
+   "C2": {
+    "EVA": {
+     "value": 0.0,
+     "base": 99.1,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "db6a38b9-0a25-598f-a538-9a9198204fd7"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.35
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.25
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.27,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.2
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 59.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.2
+      }
+     },
+     "hazards": [
+      "HOSTILE_CLOSED_ENV",
+      "ISOLATION_CONFINEMENT",
+      "RADIATION"
+     ],
+     "hrp_risks": [
+      "HRP-08",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties",
+     "go": false,
+     "go_min": 70.0,
+     "go_min_verified": false
+    },
+    "COGNITIVE": {
+     "value": 0.0,
+     "base": 98.6,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "db6a38b9-0a25-598f-a538-9a9198204fd7"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.6
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.4
+      }
+     },
+     "hazards": [
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-14",
+      "HRP-12"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "OVERALL": {
+     "value": 0.0,
+     "base": 100.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "db6a38b9-0a25-598f-a538-9a9198204fd7"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.4
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.27,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 59.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS",
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-03",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "PHYSICAL": {
+     "value": 0.0,
+     "base": 87.5,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "db6a38b9-0a25-598f-a538-9a9198204fd7"
+     ],
+     "components": {
+      "bone": {
+       "signal": "bmd_estimate",
+       "value": 97.48,
+       "unit": "% of baseline",
+       "good": 100.0,
+       "limit": 95.0,
+       "limit_ref": "bone.bmd_pct_of_baseline_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "2d",
+       "score": 74.8,
+       "weight": 0.4
+      },
+      "hrv": {
+       "signal": "hrv_rmssd",
+       "value": 53.45,
+       "unit": "ms",
+       "good": 60.0,
+       "limit": 20.0,
+       "limit_ref": "physiology.hrv_rmssd_ms_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "1h",
+       "score": 91.8,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 59.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS"
+     ],
+     "hrp_risks": [
+      "HRP-11",
+      "HRP-09",
+      "HRP-03"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    }
+   },
+   "C3": {
+    "EVA": {
+     "value": 0.0,
+     "base": 99.1,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "1ad9218e-7e17-5988-a70b-6d2e9ded66cb"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.35
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.25
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.49,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.2
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 53.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.2
+      }
+     },
+     "hazards": [
+      "HOSTILE_CLOSED_ENV",
+      "ISOLATION_CONFINEMENT",
+      "RADIATION"
+     ],
+     "hrp_risks": [
+      "HRP-08",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties",
+     "go": false,
+     "go_min": 70.0,
+     "go_min_verified": false
+    },
+    "COGNITIVE": {
+     "value": 0.0,
+     "base": 98.6,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "1ad9218e-7e17-5988-a70b-6d2e9ded66cb"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.6
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.4
+      }
+     },
+     "hazards": [
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-14",
+      "HRP-12"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "OVERALL": {
+     "value": 0.0,
+     "base": 100.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "1ad9218e-7e17-5988-a70b-6d2e9ded66cb"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.4
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.49,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 53.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS",
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-03",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "PHYSICAL": {
+     "value": 0.0,
+     "base": 85.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "1ad9218e-7e17-5988-a70b-6d2e9ded66cb"
+     ],
+     "components": {
+      "bone": {
+       "signal": "bmd_estimate",
+       "value": 96.24,
+       "unit": "% of baseline",
+       "good": 100.0,
+       "limit": 95.0,
+       "limit_ref": "bone.bmd_pct_of_baseline_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "2d",
+       "score": 62.4,
+       "weight": 0.4
+      },
+      "hrv": {
+       "signal": "hrv_rmssd",
+       "value": 68.42,
+       "unit": "ms",
+       "good": 60.0,
+       "limit": 20.0,
+       "limit_ref": "physiology.hrv_rmssd_ms_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "1h",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 53.16,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS"
+     ],
+     "hrp_risks": [
+      "HRP-11",
+      "HRP-09",
+      "HRP-03"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    }
+   },
+   "C4": {
+    "EVA": {
+     "value": 0.0,
+     "base": 99.1,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "9443abad-f22a-5234-b0f6-3f731d977988"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.35
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.25
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.5,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.2
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 61.23,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.2
+      }
+     },
+     "hazards": [
+      "HOSTILE_CLOSED_ENV",
+      "ISOLATION_CONFINEMENT",
+      "RADIATION"
+     ],
+     "hrp_risks": [
+      "HRP-08",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties",
+     "go": false,
+     "go_min": 70.0,
+     "go_min_verified": false
+    },
+    "COGNITIVE": {
+     "value": 0.0,
+     "base": 98.6,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "9443abad-f22a-5234-b0f6-3f731d977988"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.6
+      },
+      "co2": {
+       "signal": "ppco2",
+       "value": 2.07,
+       "unit": "mmHg",
+       "good": 2.0,
+       "limit": 3.0,
+       "limit_ref": "environment.ppco2_mmHg_1h_max",
+       "limit_verified": false,
+       "limit_source_ref": "NASA-STD-3001 Vol 2, VERIFY",
+       "window": "1h",
+       "score": 96.5,
+       "weight": 0.4
+      }
+     },
+     "hazards": [
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-14",
+      "HRP-12"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "OVERALL": {
+     "value": 0.0,
+     "base": 100.0,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "9443abad-f22a-5234-b0f6-3f731d977988"
+     ],
+     "components": {
+      "sleep": {
+       "signal": "sleep_hours_24h",
+       "value": 8.0,
+       "unit": "h",
+       "good": 8.0,
+       "limit": 6.0,
+       "limit_ref": "sleep.min_sleep_h_24h",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.4
+      },
+      "spo2": {
+       "signal": "spo2",
+       "value": 97.5,
+       "unit": "%",
+       "good": 97.0,
+       "limit": 92.0,
+       "limit_ref": "physiology.spo2_pct_min",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "10m",
+       "score": 100.0,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 61.23,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS",
+      "ISOLATION_CONFINEMENT",
+      "HOSTILE_CLOSED_ENV"
+     ],
+     "hrp_risks": [
+      "HRP-03",
+      "HRP-14",
+      "HRP-06"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    },
+    "PHYSICAL": {
+     "value": 0.0,
+     "base": 83.8,
+     "alert_penalty": 120,
+     "alert_ids": [
+      "7e2ef30e-3717-5cda-90a7-fa171d365331",
+      "9443abad-f22a-5234-b0f6-3f731d977988"
+     ],
+     "components": {
+      "bone": {
+       "signal": "bmd_estimate",
+       "value": 96.96,
+       "unit": "% of baseline",
+       "good": 100.0,
+       "limit": 95.0,
+       "limit_ref": "bone.bmd_pct_of_baseline_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "2d",
+       "score": 69.6,
+       "weight": 0.4
+      },
+      "hrv": {
+       "signal": "hrv_rmssd",
+       "value": 49.19,
+       "unit": "ms",
+       "good": 60.0,
+       "limit": 20.0,
+       "limit_ref": "physiology.hrv_rmssd_ms_min",
+       "limit_verified": false,
+       "limit_source_ref": "Project heuristic",
+       "window": "1h",
+       "score": 86.5,
+       "weight": 0.3
+      },
+      "heart_rate": {
+       "signal": "heart_rate",
+       "value": 61.23,
+       "unit": "bpm",
+       "good": 75.0,
+       "limit": 140.0,
+       "limit_ref": "physiology.hr_bpm.max",
+       "limit_verified": false,
+       "limit_source_ref": "Clinical heuristic",
+       "window": "30m",
+       "score": 100.0,
+       "weight": 0.3
+      }
+     },
+     "hazards": [
+      "GRAVITY_FIELDS"
+     ],
+     "hrp_risks": [
+      "HRP-11",
+      "HRP-09",
+      "HRP-03"
+     ],
+     "formula": "component = 100 at good, 50 at limit, linear, clamped 0-100; score = weighted mean - alert penalties"
+    }
+   }
+  },
+  "radiation": {
+   "crew": {
+    "C1": {
+     "dose_rate_uSv_h": 5997.74,
+     "dose_24h_mSv": 24.75,
+     "dose_30d_mSv": 76.99,
+     "dose_mission_mSv": 278.89,
+     "dose_career_mSv": 363.89,
+     "career_pct_of_limit": 60.6,
+     "sheltered": false,
+     "event_dose_mSv": 23.197
+    },
+    "C2": {
+     "dose_rate_uSv_h": 5947.61,
+     "dose_24h_mSv": 24.777,
+     "dose_30d_mSv": 77.02,
+     "dose_mission_mSv": 278.92,
+     "dose_career_mSv": 318.92,
+     "career_pct_of_limit": 53.2,
+     "sheltered": false,
+     "event_dose_mSv": 23.226
+    },
+    "C3": {
+     "dose_rate_uSv_h": 6090.82,
+     "dose_24h_mSv": 24.716,
+     "dose_30d_mSv": 76.96,
+     "dose_mission_mSv": 278.86,
+     "dose_career_mSv": 398.86,
+     "career_pct_of_limit": 66.5,
+     "sheltered": false,
+     "event_dose_mSv": 23.163
+    },
+    "C4": {
+     "dose_rate_uSv_h": 6124.15,
+     "dose_24h_mSv": 24.844,
+     "dose_30d_mSv": 77.08,
+     "dose_mission_mSv": 278.98,
+     "dose_career_mSv": 278.98,
+     "career_pct_of_limit": 46.5,
+     "sheltered": false,
+     "event_dose_mSv": 23.29
+    }
+   },
+   "area": {
+    "dose_rate_uSv_h": 6066.45,
+    "neutron_rate_uSv_h": 1823.81,
+    "neutron_fraction": 0.301,
+    "neutron_spectrum": [
+     {
+      "energy_range": "Thermal (<0.5 eV)",
+      "flux_fraction": 0.12,
+      "quality_factor": 2.5,
+      "dose_rate_uSv_h": 218.857
+     },
+     {
+      "energy_range": "Epithermal (0.5 eV-100 keV)",
+      "flux_fraction": 0.19,
+      "quality_factor": 5.0,
+      "dose_rate_uSv_h": 346.524
+     },
+     {
+      "energy_range": "Fast (0.1-2 MeV)",
+      "flux_fraction": 0.34,
+      "quality_factor": 20.0,
+      "dose_rate_uSv_h": 620.096
+     },
+     {
+      "energy_range": "Relativistic (2-20 MeV)",
+      "flux_fraction": 0.23,
+      "quality_factor": 10.0,
+      "dose_rate_uSv_h": 419.477
+     },
+     {
+      "energy_range": "High-energy (>20 MeV)",
+      "flux_fraction": 0.12,
+      "quality_factor": 5.0,
+      "dose_rate_uSv_h": 218.857
+     }
+    ],
+    "neutron_spectrum_note": "Synthetic split of the neutron dose rate (simulator parameter, unverified)."
+   },
+   "limits": {
+    "career": {
+     "ref": "radiation.career_effective_dose_mSv",
+     "value": 600.0,
+     "source_ref": "NASA-STD-3001 Vol 1 (career limit), VERIFY",
+     "verified": false
+    },
+    "dose_24h": {
+     "ref": "radiation.dose_24h_mSv_max",
+     "value": 5.0,
+     "source_ref": "Project heuristic",
+     "verified": false
+    },
+    "spe_dose_rate": {
+     "ref": "radiation.spe_alert_dose_rate_uSv_h",
+     "value": 500.0,
+     "source_ref": "Project heuristic",
+     "verified": false
+    }
+   },
+   "spe": {
+    "active": true,
+    "threshold": {
+     "ref": "radiation.spe_alert_dose_rate_uSv_h",
+     "value": 500.0,
+     "source_ref": "Project heuristic",
+     "verified": false
+    },
+    "alert_id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+    "since": "2026-11-14T20:34:00Z",
+    "ended": null,
+    "elapsed_s": 14280.0,
+    "checklist": [
+     "Go to the storm shelter",
+     "Log each crew member as sheltered (headcount)",
+     "Stop any EVA preparation",
+     "Read personal dosimeters every 15 minutes",
+     "Stay sheltered until the dose rate is back under the threshold"
+    ],
+    "headcount": {
+     "C1": false,
+     "C2": false,
+     "C3": false,
+     "C4": false
+    },
+    "all_sheltered": false
+   },
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ]
+  }
+ },
+ "alerts": [
+  {
+   "id": "b6bdb2c3-cff8-5eef-b2ca-f402eb5c800c",
+   "rule_id": "rad.dose.24h",
+   "title": "24 h radiation dose above limit",
+   "crew_id": "C1",
+   "severity": "WARNING",
+   "state": "RAISED",
+   "raised_ts": "2026-11-14T21:12:00Z",
+   "ack_ts": null,
+   "resolved_ts": null,
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ],
+   "evidence": {
+    "signal": "dose_rate_equivalent",
+    "value": 30.997,
+    "unit": "mSv",
+    "op": ">",
+    "limit": 5.0,
+    "limit_ref": "radiation.dose_24h_mSv_max",
+    "limit_verified": false,
+    "limit_source_ref": "Project heuristic",
+    "window": "24h",
+    "agg": "integral"
+   },
+   "rationale": "Dose accumulated in the last 24 hours is above the configured limit.",
+   "action": "Keep time outside the shelter to a minimum; log the dose; recommend CMO review.",
+   "checklist": [],
+   "notes": [],
+   "origin": "ONBOARD"
+  },
+  {
+   "id": "db6a38b9-0a25-598f-a538-9a9198204fd7",
+   "rule_id": "rad.dose.24h",
+   "title": "24 h radiation dose above limit",
+   "crew_id": "C2",
+   "severity": "WARNING",
+   "state": "RAISED",
+   "raised_ts": "2026-11-14T21:12:00Z",
+   "ack_ts": null,
+   "resolved_ts": null,
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ],
+   "evidence": {
+    "signal": "dose_rate_equivalent",
+    "value": 31.026,
+    "unit": "mSv",
+    "op": ">",
+    "limit": 5.0,
+    "limit_ref": "radiation.dose_24h_mSv_max",
+    "limit_verified": false,
+    "limit_source_ref": "Project heuristic",
+    "window": "24h",
+    "agg": "integral"
+   },
+   "rationale": "Dose accumulated in the last 24 hours is above the configured limit.",
+   "action": "Keep time outside the shelter to a minimum; log the dose; recommend CMO review.",
+   "checklist": [],
+   "notes": [],
+   "origin": "ONBOARD"
+  },
+  {
+   "id": "1ad9218e-7e17-5988-a70b-6d2e9ded66cb",
+   "rule_id": "rad.dose.24h",
+   "title": "24 h radiation dose above limit",
+   "crew_id": "C3",
+   "severity": "WARNING",
+   "state": "RAISED",
+   "raised_ts": "2026-11-14T21:12:00Z",
+   "ack_ts": null,
+   "resolved_ts": null,
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ],
+   "evidence": {
+    "signal": "dose_rate_equivalent",
+    "value": 30.956,
+    "unit": "mSv",
+    "op": ">",
+    "limit": 5.0,
+    "limit_ref": "radiation.dose_24h_mSv_max",
+    "limit_verified": false,
+    "limit_source_ref": "Project heuristic",
+    "window": "24h",
+    "agg": "integral"
+   },
+   "rationale": "Dose accumulated in the last 24 hours is above the configured limit.",
+   "action": "Keep time outside the shelter to a minimum; log the dose; recommend CMO review.",
+   "checklist": [],
+   "notes": [],
+   "origin": "ONBOARD"
+  },
+  {
+   "id": "9443abad-f22a-5234-b0f6-3f731d977988",
+   "rule_id": "rad.dose.24h",
+   "title": "24 h radiation dose above limit",
+   "crew_id": "C4",
+   "severity": "WARNING",
+   "state": "RAISED",
+   "raised_ts": "2026-11-14T21:12:00Z",
+   "ack_ts": null,
+   "resolved_ts": null,
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ],
+   "evidence": {
+    "signal": "dose_rate_equivalent",
+    "value": 31.083,
+    "unit": "mSv",
+    "op": ">",
+    "limit": 5.0,
+    "limit_ref": "radiation.dose_24h_mSv_max",
+    "limit_verified": false,
+    "limit_source_ref": "Project heuristic",
+    "window": "24h",
+    "agg": "integral"
+   },
+   "rationale": "Dose accumulated in the last 24 hours is above the configured limit.",
+   "action": "Keep time outside the shelter to a minimum; log the dose; recommend CMO review.",
+   "checklist": [],
+   "notes": [],
+   "origin": "ONBOARD"
+  },
+  {
+   "id": "7e2ef30e-3717-5cda-90a7-fa171d365331",
+   "rule_id": "rad.spe.dose_rate",
+   "title": "Solar particle event: dose rate above SPE threshold",
+   "crew_id": null,
+   "severity": "EMERGENCY",
+   "state": "RESOLVED",
+   "raised_ts": "2026-11-14T20:34:00Z",
+   "ack_ts": null,
+   "resolved_ts": "2026-11-15T02:25:00Z",
+   "hazards": [
+    "RADIATION"
+   ],
+   "hrp_risks": [
+    "HRP-17"
+   ],
+   "evidence": {
+    "signal": "area_dose_rate_equivalent",
+    "value": 510.527,
+    "unit": "\u00b5Sv/h",
+    "op": ">",
+    "limit": 500.0,
+    "limit_ref": "radiation.spe_alert_dose_rate_uSv_h",
+    "limit_verified": false,
+    "limit_source_ref": "Project heuristic",
+    "window": "5m",
+    "agg": "mean"
+   },
+   "rationale": "Area dose rate is far above background, consistent with a solar particle event.",
+   "action": "All crew go to the storm shelter now.",
+   "checklist": [
+    "Go to the storm shelter",
+    "Log each crew member as sheltered (headcount)",
+    "Stop any EVA preparation",
+    "Read personal dosimeters every 15 minutes",
+    "Stay sheltered until the dose rate is back under the threshold"
+   ],
+   "notes": [
+    {
+     "ts": "2026-11-15T02:25:00Z",
+     "text": "Condition cleared (auto-resolved).",
+     "origin": "ONBOARD"
+    }
+   ],
+   "origin": "ONBOARD"
+  }
+ ]
+}

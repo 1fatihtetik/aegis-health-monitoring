@@ -7,13 +7,11 @@ import {
   CrewMemberSummary,
   EnvironmentState,
   LongTermTrendPoint,
-  MissionPhaseName,
   OperationalStatus,
   RadiationSummary,
   ReadinessKind,
   ReadinessScore,
   ScenarioName,
-  Severity,
   TimeSeriesPoint,
 } from './types';
 
@@ -594,7 +592,7 @@ export const aegisApi = {
     return Boolean(rootHealth);
   },
 
-  async startScenario(payload: { name: ScenarioName; speed: number; seed: number }): Promise<boolean> {
+  async startScenario(payload: { name: ScenarioName | 'nominal'; speed?: number; seed: number }): Promise<boolean> {
     const res = await tryFetchJson('/api/v1/sim/scenario', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -602,11 +600,7 @@ export const aegisApi = {
     return res !== null;
   },
 
-  async controlSim(payload: {
-    action: 'pause' | 'resume' | 'speed' | 'jump' | 'phase';
-    speed?: number;
-    phase?: MissionPhaseName;
-  }): Promise<boolean> {
+  async controlSim(payload: { action: 'pause' | 'resume' | 'speed'; speed?: number }): Promise<boolean> {
     const res = await tryFetchJson('/api/v1/sim/control', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -614,48 +608,7 @@ export const aegisApi = {
     return res !== null;
   },
 
-  async updateAlertState(
-    alertId: string,
-    action: 'ack' | 'resolve' | 'in_treatment',
-    note?: string
-  ): Promise<boolean> {
-    const endpoint = action === 'resolve' ? 'resolve' : 'ack';
-    const res = await tryFetchJson(`/api/v1/alerts/${alertId}/${endpoint}`, {
-      method: 'POST',
-      body: JSON.stringify({ state: action, note }),
-    });
-    return res !== null;
-  },
-
-  async addAlertNote(alertId: string, author: string, text: string): Promise<boolean> {
-    const res = await tryFetchJson(`/api/v1/alerts/${alertId}/note`, {
-      method: 'POST',
-      body: JSON.stringify({ author, text }),
-    });
-    return res !== null;
-  },
-
-  async sendRecommendation(payload: {
-    crew_id: CrewId | 'ALL';
-    priority: Severity;
-    title: string;
-    rationale: string;
-    checklist: string[];
-  }): Promise<boolean> {
-    const res = await tryFetchJson('/api/v1/link/recommendation', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    return res !== null;
-  },
-
-  async toggleBlackout(blackout: boolean): Promise<boolean> {
-    const res = await tryFetchJson('/api/v1/link/blackout', {
-      method: 'POST',
-      body: JSON.stringify({ blackout }),
-    });
-    return res !== null;
-  },
+  // Alert actions, notes, shelter, blackout and recommendations go through backendApi (backend.ts).
 };
 
 /**

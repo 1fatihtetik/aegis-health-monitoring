@@ -15,6 +15,48 @@ import {
   ScenarioName,
   Severity,
 } from './types';
+import {
+  BackendAlert,
+  BackendHistory,
+  BackendMessage,
+  BackendRecommendation,
+  BackendSnapshot,
+  applyGroundSnapshot,
+  applyOnboardSnapshot,
+  backendApi,
+  extendHistory,
+  fetchHistory,
+  mapAlert,
+  mapRecommendation,
+  pendingUplinks,
+} from './backend';
+
+/** Everything received from the backend, kept outside React state and mapped into it on each frame. */
+interface BackendLinkState {
+  generation: number;
+  lastSnap: { onboard?: BackendSnapshot; ground?: BackendSnapshot };
+  alerts: { onboard: Map<string, AlertItem>; ground: Map<string, AlertItem> };
+  history: { onboard: BackendHistory; ground: BackendHistory };
+  sentGround: BackendRecommendation[];
+  deliveredOnboard: BackendRecommendation[];
+  ackedRecs: Set<string>;
+}
+
+function emptyHistory(): BackendHistory {
+  return { crew: {}, environment: {}, baselines: {} };
+}
+
+function emptyLinkState(): BackendLinkState {
+  return {
+    generation: 0,
+    lastSnap: {},
+    alerts: { onboard: new Map(), ground: new Map() },
+    history: { onboard: emptyHistory(), ground: emptyHistory() },
+    sentGround: [],
+    deliveredOnboard: [],
+    ackedRecs: new Set(),
+  };
+}
 
 interface DownlinkSnapshotPacket {
   deliverSimMs: number;
@@ -82,75 +124,178 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     rngRef.current = createSeededRng(state.sim.seed);
   }, [state.sim.seed]);
 
-  // Connect to backend WebSocket /ws/live if available
-  useEffect(() => {
-    let ws: WebSocket | null = null;
-    let cancelled = false;
+  // ---- backend connection (implementaionsandgoals.txt section 8) -----------------------------
+  // When /ws/live is up, every view renders from backend snapshots and the local simulation stops.
+  const connectedRef = useRef<boolean>(false);
+  const linkRef = useRef<BackendLinkState>(emptyLinkState());
+  const selectedSeedRef = useRef<number | null>(null);
 
-    const connectWs = async () => {
-      const ok = await aegisApi.checkHealth();
-      if (cancelled) return;
-      if (ok) {
-        setState((prev) => ({
-          ...prev,
-          sim: { ...prev.sim, backend_connected: true },
-        }));
-        try {
-          const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          ws = new WebSocket(`${proto}//${window.location.host}/ws/live`);
-          ws.onmessage = (evt) => {
-            try {
-              const msg = JSON.parse(evt.data) as {
-                type?: string;
-                data?: Partial<AlertItem>;
-                alert?: AlertItem;
-              };
-              if (msg.type === 'alert' && (msg.alert || msg.data)) {
-                const incoming = (msg.alert ?? msg.data) as AlertItem;
-                if (incoming && incoming.id && incoming.rule_id) {
-                  setState((prev) => {
-                    const exists = prev.alerts.some((a) => a.id === incoming.id);
-                    if (exists) return prev;
-                    return {
-                      ...prev,
-                      alerts: [
-                        {
-                          ...incoming,
-                          title: incoming.title ?? incoming.rule_id,
-                          rationale:
-                            incoming.rationale ??
-                            'Indicators consistent with configured threshold exceedance. Recommend CMO review.',
-                          notes: incoming.notes ?? [],
-                        },
-                        ...prev.alerts,
-                      ],
-                    };
-                  });
-                }
-              }
-            } catch {
-              // ignore malformed frame
-            }
-          };
-          ws.onclose = () => {
-            if (!cancelled) {
-              setState((prev) => ({
-                ...prev,
-                sim: { ...prev.sim, backend_connected: false },
-              }));
-            }
-          };
-        } catch {
-          // fallback to onboard deterministic engine
+  useEffect(() => {
+    let cancelled = false;
+    let sockets: WebSocket[] = [];
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    const L = linkRef.current;
+
+    const sortedAlerts = (m: Map<string, AlertItem>): AlertItem[] =>
+      [...m.values()].sort((a, b) => b.raised_ts.localeCompare(a.raised_ts));
+
+    const recommendationsView = (nowIso: string): RecommendationMessage[] => {
+      const delivered = new Set(L.deliveredOnboard.map((r) => r.id));
+      const byId = new Map<string, RecommendationMessage>();
+      for (const r of L.sentGround) {
+        byId.set(r.id, mapRecommendation(r, delivered.has(r.id), nowIso, L.ackedRecs.has(r.id)));
+      }
+      for (const r of L.deliveredOnboard) {
+        byId.set(r.id, mapRecommendation(r, true, nowIso, L.ackedRecs.has(r.id)));
+      }
+      return [...byId.values()].sort((a, b) => b.sent_ts.localeCompare(a.sent_ts));
+    };
+
+    const render = (): void => {
+      const onboard = L.lastSnap.onboard;
+      if (!onboard || cancelled) return;
+      const ground = L.lastSnap.ground;
+      setState((prev) => {
+        const delivered = new Set(L.deliveredOnboard.map((r) => r.id));
+        let next = applyOnboardSnapshot({
+          prev,
+          snap: onboard,
+          history: L.history.onboard,
+          alerts: sortedAlerts(L.alerts.onboard),
+        });
+        next = {
+          ...next,
+          sim: { ...next.sim, seed: selectedSeedRef.current ?? next.sim.seed },
+          recommendations: recommendationsView(onboard.now),
+          link: { ...next.link, pending_packets: pendingUplinks(L.sentGround, delivered, onboard.now) },
+        };
+        if (ground) {
+          next = applyGroundSnapshot({
+            prev: next,
+            snap: ground,
+            history: L.history.ground,
+            alerts: sortedAlerts(L.alerts.ground),
+          });
         }
+        return next;
+      });
+    };
+
+    // A new World (scenario start, or the backend restarted): reload alerts, history, recommendations.
+    const reload = async (snap: BackendSnapshot): Promise<void> => {
+      const gen = ++L.generation;
+      L.alerts.onboard.clear();
+      L.alerts.ground.clear();
+      L.history = { onboard: emptyHistory(), ground: emptyHistory() };
+      L.sentGround = [];
+      L.deliveredOnboard = [];
+      const crewIds = (snap.crew ?? []).map((c) => c.id);
+      const [aOn, aGr, hOn, hGr, rSent, rDel] = await Promise.all([
+        backendApi.alerts('onboard'),
+        backendApi.alerts('ground'),
+        fetchHistory('onboard', crewIds, snap.now),
+        fetchHistory('ground', crewIds, snap.now),
+        backendApi.recommendations('ground'),
+        backendApi.recommendations('onboard'),
+      ]);
+      if (cancelled || gen !== L.generation) return;
+      for (const a of aOn) L.alerts.onboard.set(a.id, mapAlert(a));
+      for (const a of aGr) L.alerts.ground.set(a.id, mapAlert(a));
+      L.history = { onboard: hOn, ground: hGr };
+      L.sentGround = rSent;
+      L.deliveredOnboard = rDel;
+      render();
+    };
+
+    const onMessage = (node: 'onboard' | 'ground', raw: string): void => {
+      let msg: BackendMessage;
+      try {
+        msg = JSON.parse(raw) as BackendMessage;
+      } catch {
+        return;
+      }
+      if (msg.type === 'snapshot') {
+        if (node === 'onboard') {
+          const prev = L.lastSnap.onboard;
+          const newWorld =
+            !prev ||
+            prev.sim.scenario !== msg.sim.scenario ||
+            prev.sim.seed !== msg.sim.seed ||
+            Date.parse(msg.now) < Date.parse(prev.now);
+          L.lastSnap.onboard = msg;
+          if (newWorld) void reload(msg);
+          else extendHistory(L.history.onboard, msg);
+        } else {
+          L.lastSnap.ground = msg;
+          extendHistory(L.history.ground, msg);
+        }
+        render();
+      } else if (msg.type === 'alert') {
+        L.alerts[node].set(msg.alert.id, mapAlert(msg.alert));
+        render();
+      } else if (msg.type === 'recommendation') {
+        if (!L.deliveredOnboard.some((r) => r.id === msg.recommendation.id)) {
+          L.deliveredOnboard.push(msg.recommendation);
+        }
+        render();
       }
     };
 
-    void connectWs();
+    const setConnected = (on: boolean): void => {
+      connectedRef.current = on;
+      setState((prev) => ({ ...prev, sim: { ...prev.sim, backend_connected: on } }));
+    };
+
+    const scheduleRetry = (): void => {
+      if (cancelled || retryTimer) return;
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void connect();
+      }, 3000);
+    };
+
+    const connect = async (): Promise<void> => {
+      const ok = await aegisApi.checkHealth();
+      if (cancelled) return;
+      if (!ok) {
+        scheduleRetry();
+        return;
+      }
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const nodes: Array<'onboard' | 'ground'> = ['onboard', 'ground'];
+      sockets = nodes.map((node) => {
+        const ws = new WebSocket(`${proto}//${window.location.host}/ws/live?node=${node}`);
+        ws.onmessage = (evt: MessageEvent<string>) => onMessage(node, evt.data);
+        ws.onclose = () => {
+          if (cancelled) return;
+          sockets.forEach((s) => s.readyState === WebSocket.OPEN && s.close());
+          sockets = [];
+          L.lastSnap = {};
+          if (connectedRef.current) setConnected(false);
+          scheduleRetry();
+        };
+        return ws;
+      });
+      setConnected(true);
+    };
+
+    void connect();
     return () => {
       cancelled = true;
-      if (ws) ws.close();
+      if (retryTimer) clearTimeout(retryTimer);
+      sockets.forEach((s) => s.close());
     };
+  }, []);
+
+  /** Upserts an alert returned by a REST action so the UI does not wait for the next WS frame. */
+  const upsertBackendAlert = useCallback((a: BackendAlert | null) => {
+    if (!a) return;
+    const L = linkRef.current;
+    L.alerts.onboard.set(a.id, mapAlert(a));
+    setState((prev) => ({
+      ...prev,
+      alerts: [...L.alerts.onboard.values()].sort((x, y) => y.raised_ts.localeCompare(x.raised_ts)),
+    }));
   }, []);
 
   const applyScenarioInjection = useCallback(
@@ -595,7 +740,8 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const interval = setInterval(() => {
       setState((prev) => {
-        if (!prev.sim.running) return prev;
+        // Offline fallback only: with the backend connected, state comes from its snapshots.
+        if (!prev.sim.running || prev.sim.backend_connected) return prev;
         const rng = rngRef.current;
         const deltaSimSec = prev.sim.speed;
         const prevSimMs = Date.parse(prev.sim.sim_ts);
@@ -771,24 +917,35 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const triggerScenario = useCallback(
     (scenario: ScenarioName, customSeed?: number) => {
-      void aegisApi.startScenario({
-        name: scenario,
-        speed: state.sim.speed,
-        seed: customSeed ?? state.sim.seed,
-      });
+      if (connectedRef.current) {
+        // The scenario sets its own speed (demo_5min changes it per segment).
+        const seed = customSeed ?? selectedSeedRef.current ?? state.sim.seed;
+        selectedSeedRef.current = null;
+        void aegisApi.startScenario({ name: scenario, seed });
+        return;
+      }
       setState((prev) => applyScenarioInjection(prev, scenario, customSeed));
     },
-    [applyScenarioInjection, state.sim.seed, state.sim.speed]
+    [applyScenarioInjection, state.sim.seed]
   );
 
   const resetNominal = useCallback(() => {
+    if (connectedRef.current) {
+      const seed = selectedSeedRef.current ?? state.sim.seed;
+      selectedSeedRef.current = null;
+      void aegisApi.startScenario({ name: 'nominal', seed });
+      return;
+    }
     downlinkQueueRef.current = [];
     demoStepRef.current = 0;
     setState((prev) => buildInitialSystemState(prev.sim.seed));
-  }, []);
+  }, [state.sim.seed]);
 
   const setSimSpeed = useCallback((speed: number) => {
-    void aegisApi.controlSim({ action: 'speed', speed });
+    if (connectedRef.current) {
+      void aegisApi.controlSim({ action: 'speed', speed });
+      return;
+    }
     setState((prev) => ({
       ...prev,
       sim: { ...prev.sim, speed },
@@ -796,19 +953,17 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const toggleSimRunning = useCallback(() => {
-    setState((prev) => {
-      const nextRunning = !prev.sim.running;
-      void aegisApi.controlSim({ action: nextRunning ? 'resume' : 'pause' });
-      return {
-        ...prev,
-        sim: { ...prev.sim, running: nextRunning },
-      };
-    });
-  }, []);
+    if (connectedRef.current) {
+      void aegisApi.controlSim({ action: state.sim.running ? 'pause' : 'resume' });
+      return;
+    }
+    setState((prev) => ({ ...prev, sim: { ...prev.sim, running: !prev.sim.running } }));
+  }, [state.sim.running]);
 
   const setMissionPhase = useCallback((phase: MissionPhaseName) => {
+    // The backend has no phase endpoint: phases change only through scenario events (work queue G3-5).
+    if (connectedRef.current) return;
     const prof = PHASE_PROFILES[phase];
-    void aegisApi.controlSim({ action: 'phase', phase });
     setState((prev) => ({
       ...prev,
       sim: {
@@ -825,6 +980,8 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const setSeed = useCallback((seed: number) => {
+    // Seed for the next scenario start; while connected the snapshot would otherwise overwrite it.
+    if (connectedRef.current) selectedSeedRef.current = seed;
     setState((prev) => ({
       ...prev,
       sim: { ...prev.sim, seed },
@@ -833,13 +990,17 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const transitionAlert = useCallback(
     (alertId: string, targetState: AlertState, note?: string) => {
-      const apiAction =
-        targetState === 'RESOLVED'
-          ? 'resolve'
-          : targetState === 'IN_TREATMENT'
-          ? 'in_treatment'
-          : 'ack';
-      void aegisApi.updateAlertState(alertId, apiAction, note);
+      if (connectedRef.current) {
+        const action =
+          targetState === 'RESOLVED' ? 'resolve' : targetState === 'IN_TREATMENT' ? 'treat' : 'ack';
+        void (async () => {
+          if (note?.trim()) {
+            await backendApi.postJson<BackendAlert>(`/alerts/${alertId}/note`, { text: note.trim() });
+          }
+          upsertBackendAlert(await backendApi.postJson<BackendAlert>(`/alerts/${alertId}/${action}`));
+        })();
+        return;
+      }
 
       setState((prev) => {
         const nowTs = prev.sim.sim_ts;
@@ -885,7 +1046,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         };
       });
     },
-    []
+    [upsertBackendAlert]
   );
 
   const acknowledgeAlert = useCallback(
@@ -905,7 +1066,13 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addAlertNote = useCallback((alertId: string, author: string, text: string) => {
     if (!text.trim()) return;
-    void aegisApi.addAlertNote(alertId, author, text);
+    if (connectedRef.current) {
+      // The backend note has no author field; the author goes into the text.
+      void backendApi
+        .postJson<BackendAlert>(`/alerts/${alertId}/note`, { text: `${author}: ${text.trim()}` })
+        .then(upsertBackendAlert);
+      return;
+    }
     setState((prev) => ({
       ...prev,
       alerts: prev.alerts.map((a) =>
@@ -917,35 +1084,46 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           : a
       ),
     }));
-  }, []);
+  }, [upsertBackendAlert]);
 
-  const toggleCrewShelter = useCallback((crewId: CrewId) => {
-    setState((prev) => ({
-      ...prev,
-      crew: prev.crew.map((c) => (c.id === crewId ? { ...c, in_shelter: !c.in_shelter } : c)),
-    }));
-  }, []);
+  const toggleCrewShelter = useCallback(
+    (crewId: CrewId) => {
+      if (connectedRef.current) {
+        const member = state.crew.find((c) => c.id === crewId);
+        void backendApi.postJson('/radiation/shelter', {
+          crew_id: crewId,
+          sheltered: !(member?.in_shelter ?? false),
+        });
+        return;
+      }
+      setState((prev) => ({
+        ...prev,
+        crew: prev.crew.map((c) => (c.id === crewId ? { ...c, in_shelter: !c.in_shelter } : c)),
+      }));
+    },
+    [state.crew]
+  );
 
   const evacuateAllToShelter = useCallback(() => {
+    if (connectedRef.current) {
+      for (const c of state.crew) {
+        void backendApi.postJson('/radiation/shelter', { crew_id: c.id, sheltered: true });
+      }
+      return;
+    }
     setState((prev) => ({
       ...prev,
       crew: prev.crew.map((c) => ({ ...c, in_shelter: true })),
     }));
-  }, []);
+  }, [state.crew]);
 
   const toggleLinkBlackout = useCallback(() => {
-    setState((prev) => {
-      const nextBlackout = !prev.link.blackout;
-      void aegisApi.toggleBlackout(nextBlackout);
-      return {
-        ...prev,
-        link: {
-          ...prev.link,
-          blackout: nextBlackout,
-        },
-      };
-    });
-  }, []);
+    if (connectedRef.current) {
+      void backendApi.postJson('/link/blackout', { on: !state.link.blackout });
+      return;
+    }
+    setState((prev) => ({ ...prev, link: { ...prev.link, blackout: !prev.link.blackout } }));
+  }, [state.link.blackout]);
 
   const sendGroundRecommendation = useCallback(
     (input: {
@@ -955,7 +1133,19 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       rationale: string;
       checklist: string[];
     }) => {
-      void aegisApi.sendRecommendation(input);
+      if (connectedRef.current) {
+        const text = input.rationale.trim() ? `${input.title}: ${input.rationale.trim()}` : input.title;
+        void backendApi
+          .postJson<BackendRecommendation>('/link/recommendation', {
+            text,
+            checklist: input.checklist,
+            crew_id: input.crew_id === 'ALL' ? null : input.crew_id,
+          })
+          .then((rec) => {
+            if (rec) linkRef.current.sentGround.push(rec);
+          });
+        return;
+      }
       setState((prev) => {
         const sentSimMs = Date.parse(prev.sim.sim_ts);
         const delaySec = prev.sim.comm_delay_s;
@@ -1009,6 +1199,8 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   const acknowledgeRecommendationOnboard = useCallback((recId: string) => {
+    // No backend endpoint: the onboard acknowledgement is kept in this browser only.
+    linkRef.current.ackedRecs.add(recId);
     setState((prev) => ({
       ...prev,
       recommendations: prev.recommendations.map((r) =>

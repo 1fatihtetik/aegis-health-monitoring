@@ -286,7 +286,7 @@ export const GroundConsole: React.FC = () => {
               type="submit"
               className="min-h-[44px] w-full rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-950 hover:bg-cyan-400"
             >
-              📡 Transmit Uplink Recommendation (ETA +{lagFormatted})
+              📡 Transmit Uplink Recommendation (ETA +{formatDurationSeconds(sim.comm_delay_s)})
             </button>
           </form>
 

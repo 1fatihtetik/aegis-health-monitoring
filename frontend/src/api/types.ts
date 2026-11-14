@@ -529,7 +529,8 @@ export interface SimState {
   phase: MissionPhaseName;
   gravity_g: number;
   comm_delay_s: number;
-  active_scenario: ScenarioName | null;
+  /** Backend scenarios include some the dock has no button for (nominal, headache_branching). */
+  active_scenario: ScenarioName | string | null;
   demo_segment_label?: string;
   backend_connected: boolean;
 }

@@ -35,7 +35,7 @@ backend/            Python 3.11+, FastAPI, Pydantic v2, in-memory store
     link/           store-and-forward delay queue, priority, blackout; the ground store
     db/             in-memory ring buffers per signal (1-min resolution)
   tests/
-frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Recharts (owned by the UI agent)
+frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Recharts (implemented by Claude)
   src/
     views/          CrewOverview (includes RIDGE tiles; Environment is the Hostile-Env
                     drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole
@@ -49,7 +49,7 @@ config/
   crew.yaml         4 synthetic crew + baselines
   readiness.yaml    readiness score components, weights, alert penalties
 Makefile            dev, test, lint, demo
-implementaionsandgoals.txt   shared Claude + Gemini handoff + the API contract the UI builds against
+implementaionsandgoals.txt   handoff: Claude implements, Antigravity supervises; work queue, review findings, API contract
 ```
 
 Not in the 30-hour scope (do not build unless `ROADMAP.md` §5 is reached): docker compose, a second backend process, the TREND rule type, Countermeasures and Wellbeing views, research export, rules editor, generated API client, Playwright.
