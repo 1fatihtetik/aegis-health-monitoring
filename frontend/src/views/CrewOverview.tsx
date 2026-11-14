@@ -466,7 +466,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                     </div>
                   ) : (
                     <div className="rounded-lg border border-emerald-500/20 bg-emerald-950/15 px-2.5 py-1.5 text-xs text-emerald-300">
-                      ✓ All monitored vitals within personal 14-day baseline
+                      ✓ All monitored vitals within personal baseline
                     </div>
                   )}
                 </div>

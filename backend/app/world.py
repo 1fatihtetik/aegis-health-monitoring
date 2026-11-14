@@ -198,7 +198,7 @@ class World:
                 if point:
                     (trends if meta.daily else vitals)[name] = round(point[1], 3)
             crew.append({
-                "id": cid, "callsign": c["callsign"], "role": c["role"], "status": level,
+                "id": cid, "callsign": c["callsign"], "name": c.get("name", c["callsign"]), "role": c["role"], "status": level,
                 "top_alert": {"id": top.id, "title": top.title, "severity": top.severity.value} if top else None,
                 "alert_count": len(mine), "vitals": vitals, "trends": trends,
                 "readiness": {k: v["value"] for k, v in readiness[cid].items()},

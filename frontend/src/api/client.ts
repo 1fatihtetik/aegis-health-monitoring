@@ -115,8 +115,8 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
   }> = [
     {
       id: 'C1',
-      callsign: 'VALKYRIE',
-      name: 'Cmdr. Elena Vance',
+      callsign: 'Vega',
+      name: 'Elena Vance',
       role: 'CDR',
       career_dose_prior_mSv: 142.0,
       hr_rest: 62,
@@ -128,8 +128,8 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
     },
     {
       id: 'C2',
-      callsign: 'AESCULAPIUS',
-      name: 'Dr. Marcus Chen',
+      callsign: 'Lyra',
+      name: 'Marcus Chen',
       role: 'CMO',
       career_dose_prior_mSv: 88.5,
       hr_rest: 66,
@@ -141,7 +141,7 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
     },
     {
       id: 'C3',
-      callsign: 'ORION',
+      callsign: 'Orion',
       name: 'Tariq Al-Mansoor',
       role: 'MS',
       career_dose_prior_mSv: 110.2,
@@ -154,8 +154,8 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
     },
     {
       id: 'C4',
-      callsign: 'BOREALIS',
-      name: 'Dr. Chloe Tremblay',
+      callsign: 'Altair',
+      name: 'Chloe Tremblay',
       role: 'PS',
       career_dose_prior_mSv: 64.0,
       hr_rest: 64,

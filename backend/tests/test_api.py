@@ -28,6 +28,7 @@ def test_health(client):
 def test_crew_and_summary(client):
     body = client.get("/api/v1/crew").json()
     assert [c["id"] for c in body["crew"]] == ["C1", "C2", "C3", "C4"]
+    assert all(c["name"] and c["name"] != c["callsign"] for c in body["crew"])
     assert body["node"] == "onboard" and body["age_s"] == 0
     assert set(body["hazards"]) == {"RADIATION", "ISOLATION_CONFINEMENT", "DISTANCE_FROM_EARTH", "GRAVITY_FIELDS",
                                     "HOSTILE_CLOSED_ENV"}

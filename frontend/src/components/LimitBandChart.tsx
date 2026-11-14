@@ -25,6 +25,12 @@ export interface LimitBandChartProps {
   height?: number;
 }
 
+/** Header value: 1 decimal under 100, whole numbers above (raw backend values carry 3+ decimals). */
+function fmt(v: number): string {
+  if (!Number.isFinite(v)) return '–';
+  return Math.abs(v) >= 100 ? v.toFixed(0) : String(Number(v.toFixed(Math.abs(v) < 10 ? 2 : 1)));
+}
+
 export const LimitBandChart: React.FC<LimitBandChartProps> = ({
   title,
   subtitle,
@@ -88,8 +94,8 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
                   isOutOfBounds ? 'text-amber-300' : 'text-slate-100'
                 }`}
               >
-                {latest.value}
-                {latest.secondaryValue !== undefined ? ` / ${latest.secondaryValue}` : ''}
+                {fmt(latest.value)}
+                {latest.secondaryValue !== undefined ? ` / ${fmt(latest.secondaryValue)}` : ''}
               </span>
               <span className="text-xs text-slate-400">{unit}</span>
             </div>

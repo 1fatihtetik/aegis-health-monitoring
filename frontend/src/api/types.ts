@@ -365,6 +365,17 @@ export interface TimeSeriesPoint {
   secondaryValue?: number;
 }
 
+/** One signal's personal baseline from GET /crew/{id}/baselines (window from mission.yaml, 48 h). */
+export interface BaselineStat {
+  unit: string;
+  n: number;
+  mean: number | null;
+  sd: number | null;
+  current: number | null;
+  z: number | null;
+  outside: boolean;
+}
+
 export interface CrewBaseline {
   hr_rest: number;
   hr_std: number;
@@ -424,6 +435,8 @@ export interface CrewMemberSummary {
   career_dose_prior_mSv: number;
   mission_dose_mSv: number;
   baseline: CrewBaseline;
+  /** Backend baseline stats per signal (connected, onboard only). Offline: undefined. */
+  baseline_stats?: Record<string, BaselineStat>;
   vitals: CrewVitalsSnapshot;
   readiness: Record<ReadinessKind, ReadinessScore>;
   sparklines: {

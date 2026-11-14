@@ -21,6 +21,21 @@ import { useAegis } from '../api/useLiveSocket';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
+const BASELINE_SIGNALS: Array<{ key: string; label: string }> = [
+  { key: 'heart_rate', label: 'Heart rate' },
+  { key: 'hrv_rmssd', label: 'HRV (RMSSD)' },
+  { key: 'spo2', label: 'SpO₂' },
+  { key: 'resp_rate', label: 'Breathing rate' },
+  { key: 'skin_temp', label: 'Skin temperature' },
+  { key: 'bp_systolic', label: 'Systolic BP' },
+  { key: 'bp_diastolic', label: 'Diastolic BP' },
+];
+
+/** 1 decimal, or '–' when the backend has no value yet. */
+function num(v: number | null | undefined): string {
+  return v === null || v === undefined || !Number.isFinite(v) ? '–' : String(Number(v.toFixed(1)));
+}
+
 export interface CrewDetailProps {
   selectedCrewId: CrewId;
   onSelectCrew: (crewId: CrewId) => void;
@@ -50,6 +65,8 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
   ).toFixed(1);
 
   const bmdLimit = limits['bone.bmd_loss_pct_per_month_expected_0g'];
+  const zLimit = limits['physiology.baseline_z_alert'];
+  const stats = member.baseline_stats && Object.keys(member.baseline_stats).length ? member.baseline_stats : null;
   const sleepLimit = limits['sleep.min_sleep_h_24h'];
 
   return (
@@ -124,65 +141,99 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           />
         </div>
 
-        {/* Rolling 14-Day Personal Baseline Comparison */}
+        {/* Personal baseline comparison: z-scores from GET /crew/{id}/baselines (48 h window) */}
         <div className="lg:col-span-7 rounded-2xl border border-slate-800 bg-space-900/95 p-5 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-200">
-                14-Day Rolling Personal Baseline Deviation (Z-Score Watch)
+                48 h Personal Baseline Deviation (Z-Score Watch)
               </h2>
               <p className="text-xs text-slate-400">
-                Catches subtle physiological shifts before absolute population limits are crossed.
+                Compares the last 10 minutes with this crew member&apos;s own normal, before population limits are crossed.
               </p>
             </div>
-            <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[11px] font-semibold text-amber-200">
-              ⚠ unverified limit: |z| &gt; {limits['physiology.baseline_z_alert']?.value ?? '?'}σ (
-              {limits['physiology.baseline_z_alert']?.source_ref})
-            </span>
+            {zLimit && (
+              <span
+                className={`rounded border px-2 py-0.5 text-[11px] font-semibold ${
+                  zLimit.verified
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                }`}
+              >
+                {zLimit.verified ? '✓' : '⚠ unverified'} limit: |z| &gt; {zLimit.value}σ ({zLimit.source_ref})
+              </span>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
-              <div className="text-[11px] text-slate-400">Heart Rate vs Baseline</div>
-              <div className="mt-1 text-base font-bold font-mono text-white">
-                {member.vitals.heart_rate} <span className="text-xs text-slate-400">bpm</span>
+          {stats ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="baseline-cards">
+              {BASELINE_SIGNALS.map(({ key, label }) => {
+                const b = stats[key];
+                if (!b) return null;
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-xl border p-3 ${
+                      b.outside ? 'border-amber-400 bg-amber-950/30' : 'border-slate-800 bg-space-950/90'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>{label}</span>
+                      <span className={b.outside ? 'text-amber-300 font-bold' : 'text-emerald-300'}>
+                        {b.outside ? '▲ outside' : '✓ normal'}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-base font-bold font-mono text-white">
+                      {num(b.current)} <span className="text-xs text-slate-400">{b.unit}</span>
+                    </div>
+                    <div className="text-[11px] font-mono text-cyan-300">
+                      Base {num(b.mean)} ± {num(b.sd)} · z {b.z === null ? '–' : `${b.z >= 0 ? '+' : ''}${b.z.toFixed(1)}`}σ
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
+                <div className="text-[11px] text-slate-400">Heart Rate vs Baseline</div>
+                <div className="mt-1 text-base font-bold font-mono text-white">
+                  {member.vitals.heart_rate} <span className="text-xs text-slate-400">bpm</span>
+                </div>
+                <div className="text-[11px] font-mono text-cyan-300">
+                  Base {num(member.baseline.hr_rest)} bpm ({Number(hrZScore) >= 0 ? `+${hrZScore}` : hrZScore}σ)
+                </div>
               </div>
-              <div className="text-[11px] font-mono text-cyan-300">
-                Base {member.baseline.hr_rest} bpm ({Number(hrZScore) >= 0 ? `+${hrZScore}` : hrZScore}σ)
+              <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
+                <div className="text-[11px] text-slate-400">HRV RMSSD vs Baseline</div>
+                <div className="mt-1 text-base font-bold font-mono text-white">
+                  {member.vitals.hrv_rmssd} <span className="text-xs text-slate-400">ms</span>
+                </div>
+                <div className="text-[11px] font-mono text-purple-300">
+                  Base {num(member.baseline.hrv_rmssd)} ms ({Number(hrvZScore) >= 0 ? `+${hrvZScore}` : hrvZScore}σ)
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
+                <div className="text-[11px] text-slate-400">Blood Pressure</div>
+                <div className="mt-1 text-base font-bold font-mono text-white">
+                  {member.vitals.bp_systolic}/{member.vitals.bp_diastolic}{' '}
+                  <span className="text-xs text-slate-400">mmHg</span>
+                </div>
+                <div className="text-[11px] font-mono text-slate-400">
+                  Base {num(member.baseline.bp_systolic)}/{num(member.baseline.bp_diastolic)} mmHg
+                </div>
+              </div>
+              <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
+                <div className="text-[11px] text-slate-400">BMD / Body Mass</div>
+                <div className="mt-1 text-base font-bold font-mono text-white">
+                  {member.vitals.bmd_estimate_pct}% · {member.vitals.body_mass_kg} kg
+                </div>
+                <div className="text-[11px] font-mono text-emerald-300">
+                  Base 100% · {num(member.baseline.body_mass_kg)} kg
+                </div>
               </div>
             </div>
-
-            <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
-              <div className="text-[11px] text-slate-400">HRV RMSSD vs Baseline</div>
-              <div className="mt-1 text-base font-bold font-mono text-white">
-                {member.vitals.hrv_rmssd} <span className="text-xs text-slate-400">ms</span>
-              </div>
-              <div className="text-[11px] font-mono text-purple-300">
-                Base {member.baseline.hrv_rmssd} ms ({Number(hrvZScore) >= 0 ? `+${hrvZScore}` : hrvZScore}σ)
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
-              <div className="text-[11px] text-slate-400">Blood Pressure</div>
-              <div className="mt-1 text-base font-bold font-mono text-white">
-                {member.vitals.bp_systolic}/{member.vitals.bp_diastolic}{' '}
-                <span className="text-xs text-slate-400">mmHg</span>
-              </div>
-              <div className="text-[11px] font-mono text-slate-400">
-                Base {member.baseline.bp_systolic}/{member.baseline.bp_diastolic} mmHg
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
-              <div className="text-[11px] text-slate-400">BMD / Body Mass</div>
-              <div className="mt-1 text-base font-bold font-mono text-white">
-                {member.vitals.bmd_estimate_pct}% · {member.vitals.body_mass_kg} kg
-              </div>
-              <div className="text-[11px] font-mono text-emerald-300">
-                Base 100% · {member.baseline.body_mass_kg} kg
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -254,7 +305,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LimitBandChart
           title="Heart Rate (Biomonitor ECG)"
-          subtitle={`Personal resting baseline: ${member.baseline.hr_rest} bpm`}
+          subtitle={`Personal 48 h baseline: ${num(member.baseline.hr_rest)} bpm`}
           data={member.timeseries.heart_rate}
           unit="bpm"
           limit={limits['physiology.hr_bpm']}
@@ -276,7 +327,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
 
         <LimitBandChart
           title="Heart Rate Variability (RMSSD Autonomic Recovery)"
-          subtitle={`Personal 14-day baseline: ${member.baseline.hrv_rmssd} ms`}
+          subtitle={`Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
           data={member.timeseries.hrv_rmssd}
           unit="ms"
           hrpRisks={['HRP-03', 'HRP-12', 'HRP-14']}
@@ -314,7 +365,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
             </div>
             {sleepLimit && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
-                ⚠ unverified limit: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
+                {sleepLimit.verified ? '✓' : '⚠ unverified'} limit: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
               </span>
             )}
           </div>
@@ -332,17 +383,19 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                     fontSize: '12px',
                   }}
                 />
+                {sleepLimit?.value !== undefined && (
                 <ReferenceLine
-                  y={sleepLimit?.value ?? 6.0}
+                  y={sleepLimit.value}
                   stroke="#f59e0b"
                   strokeDasharray="4 4"
                   label={{
-                    value: 'Min 6.0h (⚠ unverified)',
+                    value: `Min ${sleepLimit.value} h${sleepLimit.verified ? '' : ' (⚠ unverified)'}`,
                     position: 'insideTopRight',
                     fill: '#fcd34d',
                     fontSize: 10,
                   }}
                 />
+                )}
                 <Bar
                   dataKey="hours"
                   name="Sleep Hours"

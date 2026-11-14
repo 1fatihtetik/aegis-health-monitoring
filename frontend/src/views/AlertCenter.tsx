@@ -33,7 +33,8 @@ export const AlertCenter: React.FC = () => {
   const handleAddNote = (alertId: string) => {
     const text = noteInputs[alertId];
     if (!text || !text.trim()) return;
-    addAlertNote(alertId, 'CMO (Dr. M. Chen)', text);
+    const cmo = state.crew.find((c) => c.role === 'CMO');
+    addAlertNote(alertId, cmo ? `CMO (${cmo.name})` : 'Crew', text);
     setNoteInputs((prev) => ({ ...prev, [alertId]: '' }));
   };
 

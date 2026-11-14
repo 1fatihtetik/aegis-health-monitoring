@@ -11,6 +11,7 @@ import {
   AlertEvidenceClause,
   AlertItem,
   AlertState,
+  BaselineStat,
   ConfigLimit,
   CrewBaseline,
   CrewId,
@@ -109,6 +110,7 @@ export interface BackendReadiness {
 export interface BackendCrew {
   id: CrewId;
   callsign: string;
+  name?: string;
   role: CrewRole;
   status: BackendStatus;
   top_alert: { id: string; title: string; severity: Severity } | null;
@@ -214,15 +216,7 @@ export type BackendMessage =
 /** One series from GET .../timeseries: points are [iso ts, value]. */
 export type SeriesPoints = Array<[string, number]>;
 
-export interface BackendBaseline {
-  unit: string;
-  n: number;
-  mean: number | null;
-  sd: number | null;
-  current: number | null;
-  z: number | null;
-  outside: boolean;
-}
+export type BackendBaseline = BaselineStat;
 
 /** History pulled once per world (scenario start / reconnect), then extended from snapshots. */
 export interface BackendHistory {
@@ -696,12 +690,13 @@ function mapCrew(input: MapInput): CrewMemberSummary[] {
     return {
       id: c.id,
       callsign: c.callsign,
-      name: c.callsign,
+      name: c.name ?? c.callsign,
       role: c.role,
       status,
       career_dose_prior_mSv: rc ? round(rc.dose_career_mSv - rc.dose_mission_mSv, 1) : 0,
       mission_dose_mSv: rc ? round(rc.dose_mission_mSv, 2) : 0,
       baseline: mapBaseline(history.baselines[c.id], c.trends, before.baseline),
+      baseline_stats: history.baselines[c.id],
       vitals: {
         heart_rate: round(v.heart_rate ?? 0, 0),
         hrv_rmssd: round(v.hrv_rmssd ?? 0),

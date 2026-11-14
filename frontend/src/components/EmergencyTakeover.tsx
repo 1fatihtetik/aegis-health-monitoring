@@ -70,7 +70,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
           </span>
           <span className="rounded-md bg-red-900/70 border border-red-400/50 px-3 py-1.5 text-xs font-mono text-red-100">
             AUTONOMOUS ONBOARD TRIGGER · MCC-HOUSTON LAGS BY{' '}
-            {formatDurationSeconds(groundLagSeconds || commDelaySeconds)}
+            {formatDurationSeconds(groundLagSeconds ?? commDelaySeconds)}
           </span>
         </div>
 

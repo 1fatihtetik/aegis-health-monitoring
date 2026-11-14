@@ -42,7 +42,7 @@ export const GroundConsole: React.FC = () => {
     });
   };
 
-  const lagFormatted = formatDurationSeconds(groundSnapshot.lag_s || sim.comm_delay_s);
+  const lagFormatted = formatDurationSeconds(groundSnapshot.lag_s ?? sim.comm_delay_s);
   const onboardHasEmergency = onboardAlerts.some(
     (a) => a.severity === 'EMERGENCY' && a.state !== 'RESOLVED'
   );
@@ -226,10 +226,11 @@ export const GroundConsole: React.FC = () => {
                   className="min-h-[44px] w-full rounded-lg border border-slate-700 bg-space-950 px-3 py-2 text-xs text-slate-100"
                 >
                   <option value="ALL">ALL CREW (C1–C4)</option>
-                  <option value="C1">C1 · CDR (Vance)</option>
-                  <option value="C2">C2 · CMO (Chen)</option>
-                  <option value="C3">C3 · MS (Al-Mansoor)</option>
-                  <option value="C4">C4 · PS (Tremblay)</option>
+                  {state.crew.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.id} · {c.role} ({c.name})
+                    </option>
+                  ))}
                 </select>
               </label>
 

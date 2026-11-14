@@ -300,9 +300,24 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (limits && !cancelled) setState((prev) => ({ ...prev, limits }));
     };
 
+    // Baseline z-scores move with the 10-minute current mean: refresh them every few seconds.
+    const baselineTimer = setInterval(() => {
+      const snap = L.lastSnap.onboard;
+      if (!connectedRef.current || !snap) return;
+      const gen = L.generation;
+      void Promise.all(
+        (snap.crew ?? []).map(async (c) => [c.id, await backendApi.baselines(c.id)] as const)
+      ).then((rows) => {
+        if (cancelled || gen !== L.generation) return;
+        for (const [cid, b] of rows) if (Object.keys(b).length) L.history.onboard.baselines[cid] = b;
+        render();
+      });
+    }, 4000);
+
     void connect();
     return () => {
       cancelled = true;
+      clearInterval(baselineTimer);
       if (retryTimer) clearTimeout(retryTimer);
       sockets.forEach((s) => s.close());
     };
