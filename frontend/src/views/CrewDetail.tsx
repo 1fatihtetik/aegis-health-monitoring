@@ -1,4 +1,5 @@
 import React from 'react';
+import { SeveritySublabel } from '../components/SeveritySublabel';
 import {
   Bar,
   BarChart,
@@ -278,6 +279,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                       <span className={`rounded border px-2 py-0.5 text-xs font-bold ${st.badgeClass}`}>
                         {st.label}
                       </span>
+                      <SeveritySublabel severity={alert.severity} />
                       {alert.hazards.map((hz) => (
                         <span
                           key={hz}

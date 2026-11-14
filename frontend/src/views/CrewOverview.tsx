@@ -176,7 +176,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                   </div>
 
                   <p className="text-xs font-mono text-slate-200">{getHazardTelemetryLine(hz.id)}</p>
-                  {hz.id === 'GRAVITY_FIELDS' && <GravityEffectNote gravity={sim.gravity} />}
+                  {hz.id === 'GRAVITY_FIELDS' && <GravityEffectNote gravity={sim.gravity} alerts={activeAlerts} />}
                 </div>
 
                 <div className="pt-2.5 flex flex-wrap items-center justify-between gap-1 border-t border-slate-800/80 w-full mt-2">

@@ -48,8 +48,13 @@ export function bandText(field: SelfTestField): string | null {
   const simple = field.rule_limits.filter((r) => r.rule_type === 'THRESHOLD');
   const low = simple.filter((r) => r.op === '<' || r.op === '<=').map((r) => r.value);
   const high = simple.filter((r) => r.op === '>' || r.op === '>=').map((r) => r.value);
-  const lo = low.length ? Math.max(...low) : null;
-  const hi = high.length ? Math.min(...high) : null;
+  let lo = low.length ? Math.max(...low) : null;
+  let hi = high.length ? Math.min(...high) : null;
+  if (lo === null && hi === null) {
+    // no rule judges this field alone: show the display band from limits.yaml (F-010, diastolic BP)
+    lo = field.band?.low?.value ?? null;
+    hi = field.band?.high?.value ?? null;
+  }
   if (lo !== null && hi !== null) return `${lo}–${hi} ${field.unit}`;
   if (lo !== null) return `${lo} ${field.unit} or more`;
   if (hi !== null) return `up to ${hi} ${field.unit}`;
@@ -58,7 +63,9 @@ export function bandText(field: SelfTestField): string | null {
 
 /** True when any limit behind the band is unverified (the UI shows the ⚠ marker). */
 export function bandUnverified(field: SelfTestField): boolean {
-  return field.rule_limits.some((r) => r.rule_type === 'THRESHOLD' && !r.verified);
+  const simple = field.rule_limits.filter((r) => r.rule_type === 'THRESHOLD');
+  if (simple.length) return simple.some((r) => !r.verified);
+  return [field.band?.low, field.band?.high].some((l) => l && !l.verified);
 }
 
 export interface ObservationPayload {

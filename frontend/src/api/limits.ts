@@ -18,7 +18,10 @@ export type LimitsTree = Record<string, Record<string, RawLimit>>;
  * Presentation only: a readable label and a display unit per limit key. No numbers live here.
  * A key without an entry gets a label derived from the key and no unit.
  */
-const LIMIT_META: Record<string, { label: string; unit: string }> = {
+export type LimitOp = '<' | '<=' | '>' | '>=';
+
+/** `op` says which side of a single value is normal or alerting, so "2000" reads "≥ 2000 mL". */
+const LIMIT_META: Record<string, { label: string; unit: string; op?: LimitOp }> = {
   'radiation.career_effective_dose_mSv': { label: 'Career effective dose limit', unit: 'mSv' },
   'radiation.spe_alert_dose_rate_uSv_h': { label: 'SPE dose-rate alert threshold', unit: 'µSv/h' },
   'radiation.dose_24h_mSv_max': { label: '24 h dose limit', unit: 'mSv' },
@@ -45,6 +48,24 @@ const LIMIT_META: Record<string, { label: string; unit: string }> = {
   'bone.bmd_loss_pct_per_month_expected_0g': { label: 'Expected 0 g bone loss rate', unit: '%/month' },
   'bone.bmd_pct_of_baseline_min': { label: 'Bone density minimum', unit: '% of baseline' },
   'readiness.eva_go_min': { label: 'EVA GO minimum readiness', unit: 'score' },
+  // Block T (F-010): self-test bands in plain words.
+  'physiology.bp_diastolic_mmHg': { label: 'Diastolic blood pressure band', unit: 'mmHg' },
+  'physiology.body_temp_C': { label: 'Body temperature band', unit: '°C' },
+  'metabolic.glucose_mg_dL': { label: 'Blood glucose band', unit: 'mg/dL' },
+  'nutrition.fluid_intake_mL_day_min': { label: 'Fluid per day', unit: 'mL', op: '>=' },
+  'nutrition.sodium_intake_mg_day_max': { label: 'Sodium per day', unit: 'mg', op: '<=' },
+  'cognition.pvt_lapse_ms': { label: 'Lapse = a response slower than', unit: 'ms', op: '>' },
+  'cognition.pvt_lapses_max': { label: 'Lapses per test', unit: 'lapses', op: '<=' },
+  'questionnaire.kss_sleepy_min': { label: 'Sleepiness alert from', unit: 'on the 1-9 scale', op: '>=' },
+  'questionnaire.tlx_workload_max': { label: 'High-workload note from', unit: 'on the 0-100 scale', op: '>=' },
+  'questionnaire.motion_sickness_misc_min': { label: 'Nausea alert from', unit: 'on the 0-10 scale', op: '>=' },
+  'questionnaire.mood_low_max': { label: 'Low-mood note at', unit: 'on the 1-5 scale', op: '<=' },
+  'stand_test.sbp_drop_mmHg_min': { label: 'Alert if the top number falls by', unit: 'mmHg', op: '>=' },
+  'stand_test.dbp_drop_mmHg_min': { label: 'Alert if the bottom number falls by', unit: 'mmHg', op: '>=' },
+  'stand_test.hr_rise_bpm_min': { label: 'Alert if the pulse rises by (two readings in a row)', unit: 'bpm', op: '>=' },
+  'stand_test.pulse_pressure_mmHg_min': { label: 'Alert if the gap between the two numbers is', unit: 'mmHg', op: '<' },
+  'stand_test.pulse_pressure_pct_min': { label: 'Alert if that gap is', unit: '% of the top number', op: '<' },
+  'stand_test.early_stop_flag': { label: 'Stopping early for symptoms', unit: '', op: '>=' },
 };
 
 /** Pulls the NASA-STD-3001 clause id ("[V2 6004]") out of a source_ref, if there is one. */
@@ -71,6 +92,7 @@ export function flattenLimits(tree: LimitsTree): Record<string, ConfigLimit> {
         key,
         label: meta?.label ?? labelFromKey(key),
         unit: meta?.unit ?? '',
+        op: meta?.op,
         value: raw.value,
         min: raw.min,
         max: raw.max,
@@ -148,12 +170,14 @@ export function parseLimitsYaml(text: string): LimitsTree {
 /** Limits bundled from config/limits.yaml, used until the backend answers GET /api/v1/limits. */
 export const BUNDLED_LIMITS: Record<string, ConfigLimit> = flattenLimits(parseLimitsYaml(limitsYaml));
 
+const SIGN: Record<string, string> = { '>=': '≥ ', '<=': '≤ ', '>': '> ', '<': '< ' };
+
 /** Short display of a limit: "≤ 3 mmHg", "≥ 92 %", "40–140 bpm". Empty when the key is missing. */
-export function formatLimit(limit: ConfigLimit | undefined, op?: '<=' | '>='): string {
+export function formatLimit(limit: ConfigLimit | undefined, op?: LimitOp): string {
   if (!limit) return '';
   const unit = limit.unit ? ` ${limit.unit}` : '';
   if (limit.min !== undefined && limit.max !== undefined) return `${limit.min}–${limit.max}${unit}`;
   if (limit.value === undefined) return '';
-  const sign = op === '>=' ? '≥ ' : op === '<=' ? '≤ ' : '';
+  const sign = SIGN[op ?? limit.op ?? ''] ?? '';
   return `${sign}${limit.value}${unit}`;
 }

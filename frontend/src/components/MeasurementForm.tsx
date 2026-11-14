@@ -191,9 +191,11 @@ const TapScale: React.FC<{ test: SelfTestDef; disabled: boolean; onPick: (v: num
           type="button"
           disabled={disabled}
           onClick={() => onPick(v)}
-          className="min-h-[56px] rounded-lg border border-slate-700 bg-space-950 text-lg font-black text-slate-100 hover:bg-space-800 disabled:opacity-40"
+          data-testid={`tap-${v}`}
+          className="min-h-[56px] rounded-lg border border-slate-700 bg-space-950 px-1 text-slate-100 hover:bg-space-800 disabled:opacity-40"
         >
-          {v}
+          <span className="block text-lg font-black">{v}</span>
+          {f.anchors?.[String(v)] && <span className="block text-xs font-semibold">{f.anchors[String(v)]}</span>}
         </button>
       ))}
     </div>

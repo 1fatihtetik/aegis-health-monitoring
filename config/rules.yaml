@@ -520,3 +520,45 @@ rules:
       - "Take a break and do something you enjoy"
       - "Talk with someone you trust on board"
       - "Consider a private talk with the CMO"
+
+  # ---- Block T, T-5: 10-minute stand test (config/selftests.yaml stand_test). The tablet sends a summary of the
+  # supine and standing readings; the standing readings also go in as heart_rate / bp_* hand values, so
+  # cardio.orthostatic judges them too. Stopping early for symptoms always counts as positive.
+  - id: cardio.stand.positive
+    type: COMPOUND
+    title: "Stand test: indicators consistent with orthostatic intolerance"
+    any:
+      - { signal: stand_sbp_drop, op: ">=", limit_ref: stand_test.sbp_drop_mmHg_min, window: 12h, agg: last }
+      - { signal: stand_dbp_drop, op: ">=", limit_ref: stand_test.dbp_drop_mmHg_min, window: 12h, agg: last }
+      - { signal: stand_hr_rise, op: ">=", limit_ref: stand_test.hr_rise_bpm_min, window: 12h, agg: last }
+      - { signal: stand_pulse_pressure_min, op: "<", limit_ref: stand_test.pulse_pressure_mmHg_min, window: 12h, agg: last }
+      - { signal: stand_pulse_pressure_pct, op: "<", limit_ref: stand_test.pulse_pressure_pct_min, window: 12h, agg: last }
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-02]
+    rationale: "On the stand test, blood pressure fell, heart rate rose or the pulse pressure narrowed past the configured criteria after standing up."
+    action: "Avoid long standing tasks, ladders and driving today; drink fluids; repeat the stand test tomorrow; recommend CMO review."
+    checklist:
+      - "Avoid long standing tasks, ladders and driving today"
+      - "Drink fluids (water or electrolyte drink) through the day"
+      - "Stand up slowly and hold on to something for the first minute"
+      - "Show the stand test result to the CMO; repeat the test tomorrow"
+
+  - id: cardio.stand.early_stop
+    type: THRESHOLD
+    title: "Stand test stopped early with symptoms"
+    signal: stand_early_stop
+    op: ">="
+    limit_ref: stand_test.early_stop_flag
+    window: 12h
+    agg: last
+    severity: WARNING
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-02]
+    rationale: "The crew member stopped the stand test because of dizziness or feeling faint: indicators consistent with orthostatic intolerance."
+    action: "Lie flat with legs raised until it passes; fluids; no standing tasks, ladders, EVA or driving; recommend CMO review now."
+    checklist:
+      - "Lie flat with legs slightly raised until the symptoms pass"
+      - "Drink fluids once you feel better"
+      - "No standing tasks, ladders, EVA or driving until the CMO has reviewed"
+      - "Tell the CMO now; stand up slowly, with someone nearby"

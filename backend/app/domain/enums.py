@@ -124,6 +124,15 @@ SIGNALS: dict[str, SignalMeta] = {
     "pvt_mean_rt": SignalMeta("ms", "crew", "self_test", entry_only=True),
     "pvt_lapses": SignalMeta("count", "crew", "self_test", entry_only=True),
     "pvt_false_starts": SignalMeta("count", "crew", "self_test", entry_only=True),
+    # T-5: stand test summary (Lee et al. 2015, wall-lean adaptation), computed on the tablet from the supine
+    # reading and the 1/3/5/10 min standing readings. Drops/rises are supine minus worst standing (may be negative).
+    "stand_sbp_drop": SignalMeta("mmHg", "crew", "self_test", entry_only=True),
+    "stand_dbp_drop": SignalMeta("mmHg", "crew", "self_test", entry_only=True),
+    "stand_hr_rise": SignalMeta("bpm", "crew", "self_test", entry_only=True),
+    "stand_pulse_pressure_min": SignalMeta("mmHg", "crew", "self_test", entry_only=True),
+    "stand_pulse_pressure_pct": SignalMeta("% of SBP", "crew", "self_test", entry_only=True),
+    "stand_early_stop": SignalMeta("0=no,1=stopped", "crew", "self_test", entry_only=True),
+    "stand_minutes": SignalMeta("min", "crew", "self_test", entry_only=True),
     # T-4: questionnaire answers. Onboard only: link/ never sends them, not even inside alert evidence or rollups.
     "kss": SignalMeta("1-9", "crew", "questionnaire", entry_only=True, onboard_only=True),
     "tlx_workload": SignalMeta("0-100", "crew", "questionnaire", entry_only=True, onboard_only=True),

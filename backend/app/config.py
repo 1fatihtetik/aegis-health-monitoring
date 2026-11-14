@@ -71,7 +71,8 @@ class Config:
                 if isinstance(member, str) and member not in ids:
                     raise ValueError(f"{rule.id}: unknown member rule '{member}'")
         for test in self.selftests.tests:  # Block T: every normal band must exist in limits.yaml
-            for ref in test.limit_refs:
+            band_refs = [r for f in test.fields for r in (f.band_low, f.band_high) if r]
+            for ref in [*test.limit_refs, *band_refs]:
                 try:
                     self.limit(ref)
                 except KeyError as exc:

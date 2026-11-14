@@ -49,6 +49,14 @@ metabolic:
 nutrition:
   fluid_intake_mL_day_min:   { value: 2000, source_ref: "Project heuristic (daily drinking target; no NASA-STD-3001 clause read)", verified: false }
   sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic (lower sodium intake is a spaceflight nutrition goal; no NASA-STD-3001 clause read)", verified: false }
+# Block T, T-5: 10-minute stand test (wall-lean adaptation of Lee et al. 2015). Clinical criteria, not NASA-STD-3001.
+stand_test:
+  sbp_drop_mmHg_min:       { value: 20, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 Clin Auton Res 21:69-72 consensus: systolic fall of 20 mmHg or more within 3 min of standing); protocol after Lee et al. (2015) Aerosp Med Hum Perform 86(12):A54-A67; no NASA-STD-3001 clause read", verified: false }
+  dbp_drop_mmHg_min:       { value: 10, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 consensus: diastolic fall of 10 mmHg or more); no NASA-STD-3001 clause read", verified: false }
+  hr_rise_bpm_min:         { value: 30, source_ref: "Clinical criterion (Freeman et al. 2011 consensus: sustained heart-rate rise of 30 bpm or more on standing); no NASA-STD-3001 clause read", verified: false }
+  pulse_pressure_mmHg_min: { value: 20, source_ref: "Clinical heuristic (narrowed pulse pressure below 20 mmHg while standing); no NASA-STD-3001 clause read", verified: false }
+  pulse_pressure_pct_min:  { value: 25, source_ref: "Clinical heuristic (pulse pressure below 25% of systolic while standing); no NASA-STD-3001 clause read", verified: false }
+  early_stop_flag:         { value: 0.5, source_ref: "Flag cut for stand_early_stop (0 or 1), not a medical limit: stopping early for symptoms counts as a positive test (supervisor protocol, 2026-11-15)", verified: false }
 symptoms:
   headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
 sleep:

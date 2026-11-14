@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { SeveritySublabel } from '../components/SeveritySublabel';
 import { formatDurationSeconds, formatOneWayDelay } from '../api/client';
 import {
   CrewId,
@@ -216,8 +217,11 @@ export const GroundConsole: React.FC = () => {
                       className="rounded-lg border border-slate-800 bg-space-950 p-3 text-xs space-y-1"
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`rounded border px-2 py-0.5 font-bold ${st.badgeClass}`}>
-                          {st.label} · {a.rule_id}
+                        <span className="flex items-center gap-1.5">
+                          <span className={`rounded border px-2 py-0.5 font-bold ${st.badgeClass}`}>
+                            {st.label} · {a.rule_id}
+                          </span>
+                          <SeveritySublabel severity={a.severity} />
                         </span>
                         <span className="font-mono text-slate-400">
                           Raised {a.raised_ts.slice(11, 19)} UTC

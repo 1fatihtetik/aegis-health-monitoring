@@ -432,6 +432,9 @@ def _selftest_catalog(rt: Runtime) -> list[dict[str, Any]]:
         for f in entry["fields"]:
             f["unit"] = SIGNALS[f["signal"]].unit
             f["rule_limits"] = by_signal.get(f["signal"], [])
+            # display-only band when no single-value rule judges the field (F-010: diastolic BP)
+            f["band"] = {side: cfg.limit(f[f"band_{side}"]).as_dict() if f.get(f"band_{side}") else None
+                         for side in ("low", "high")}
         out.append(entry)
     return out
 
@@ -484,6 +487,9 @@ async def observations(items: list[Observation], request: Request) -> dict[str, 
             field = next((f for f in test.fields if f.signal == obs.signal.value), None)
             if field is None:
                 raise HTTPException(422, f"{obs.signal.value} is not a field of self-test '{test.id}'")
+            if test.kind == "stand_test" and world.sim.phase_cfg["gravity_g"] < test.params["min_gravity_g"]:
+                raise HTTPException(422, f"{test.title} needs gravity (now {world.sim.phase_cfg['gravity_g']:g} g): "
+                                         "in weightlessness standing does not load the circulation")
             if not field.input_min <= obs.value <= field.input_max:
                 raise HTTPException(422, f"{field.label}: {obs.value:g} is outside {field.input_min:g}-"
                                          f"{field.input_max:g} {SIGNALS[field.signal].unit}; check the reading")

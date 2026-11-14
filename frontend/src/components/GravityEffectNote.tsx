@@ -1,5 +1,5 @@
 import React from 'react';
-import { GravityEffect } from '../api/types';
+import { AlertItem, GravityEffect } from '../api/types';
 
 /** Plain-language lines for the Gravity tile (P-5, model A linear). Decision support, not a diagnosis. */
 export function gravityEffectLines(g: GravityEffect): string[] {
@@ -26,8 +26,26 @@ export function gravityEffectLines(g: GravityEffect): string[] {
   return lines;
 }
 
-export const GravityEffectNote: React.FC<{ gravity?: GravityEffect | null }> = ({ gravity }) => {
+/** T-5: rules that judge standing up (the stand test and the existing orthostatic rule). */
+export const STANDING_RULES = ['cardio.stand.early_stop', 'cardio.stand.positive', 'cardio.orthostatic'];
+
+/** T-5 line for the Gravity tile: who has an open stand-test / standing alert, or when to take the test. */
+export function standTestLine(g: GravityEffect | null | undefined, alerts: AlertItem[]): string | null {
+  const open = alerts.filter((a) => STANDING_RULES.includes(a.rule_id) && a.crew_id);
+  if (open.length) {
+    const crew = [...new Set(open.map((a) => a.crew_id))].sort().join(', ');
+    const stopped = open.some((a) => a.rule_id === 'cardio.stand.early_stop');
+    return `Standing up: ${stopped ? 'stand test stopped early' : 'indicators on standing'} for ${crew}. Recommend CMO review; no ladders or long standing tasks.`;
+  }
+  if (g?.transition && g.transition.risk > 0) {
+    return 'Take the 10-minute stand test (Self-tests) before standing work after this gravity change.';
+  }
+  return null;
+}
+
+export const GravityEffectNote: React.FC<{ gravity?: GravityEffect | null; alerts?: AlertItem[] }> = ({ gravity, alerts = [] }) => {
   if (!gravity) return null;
+  const stand = standTestLine(gravity, alerts);
   return (
     <div className="mt-1.5 space-y-0.5" data-testid="gravity-effect">
       {gravityEffectLines(gravity).map((line) => (
@@ -35,6 +53,11 @@ export const GravityEffectNote: React.FC<{ gravity?: GravityEffect | null }> = (
           {line}
         </p>
       ))}
+      {stand && (
+        <p className="text-[11px] font-semibold leading-snug text-amber-200" data-testid="gravity-stand-test">
+          ▲ {stand}
+        </p>
+      )}
       <p className="text-[10px] text-slate-500" title={gravity.basis}>
         ◇ Synthetic (linear gravity model; sources: Ellman 2013, Norsk 2015, Meck 2001)
       </p>

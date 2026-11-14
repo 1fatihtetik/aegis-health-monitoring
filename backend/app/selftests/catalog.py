@@ -33,6 +33,11 @@ class Field_(BaseModel):
     input_max: float
     step: float = 1.0
     hint: str = ""
+    # Normal band for the form when no single-value rule judges this field (e.g. diastolic BP): limit refs into
+    # limits.yaml, shown with the unverified marker. Display only; rules still come from rules.yaml.
+    band_low: str | None = None
+    band_high: str | None = None
+    anchors: dict[int, str] = Field(default_factory=dict)  # words on tap-scale buttons (F-010), e.g. 1: "Mild"
 
     @field_validator("signal")
     @classmethod
@@ -105,6 +110,8 @@ class SelfTest(BaseModel):
     onboard_only: bool = False  # T-4: answers never leave the spacecraft
     items: list[Item] = Field(default_factory=list)  # T-4 questionnaire items
     score: Literal["mean"] | None = None  # how the item answers combine into the single field
+    checkpoints_min: list[float] = Field(default_factory=list)  # T-5: standing reading times (minutes)
+    stop_steps: list[str] = Field(default_factory=list)  # T-5: what to do at once after tapping STOP
 
     @model_validator(mode="after")
     def _consistent(self) -> "SelfTest":
@@ -117,6 +124,14 @@ class SelfTest(BaseModel):
             f = self.fields[0]
             if min(i.min for i in self.items) < f.input_min or max(i.max for i in self.items) > f.input_max:
                 raise ValueError(f"{self.id}: item ranges must fit the field range")
+        if self.kind == "stand_test":
+            need = {"supine_s", "stand_s", "min_gravity_g", "time_scale"}
+            if not need <= set(self.params) or not self.checkpoints_min or not self.stop_steps:
+                raise ValueError(f"{self.id}: a stand test needs params {sorted(need)}, checkpoints_min and stop_steps")
+            if self.checkpoints_min != sorted(self.checkpoints_min) or self.checkpoints_min[-1] * 60 != self.params["stand_s"]:
+                raise ValueError(f"{self.id}: checkpoints must rise and the last one must end the stand")
+            if self.params["time_scale"] != 1 and not self.short_mode_note:
+                raise ValueError(f"{self.id}: a shortened stand test must say it is not the real protocol")
         return self
 
 

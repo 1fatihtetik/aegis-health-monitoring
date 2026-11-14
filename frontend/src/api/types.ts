@@ -66,6 +66,8 @@ export interface ConfigLimit {
   min?: number;
   max?: number;
   unit: string;
+  /** Direction of a single-value limit for display (F-010), e.g. '>=' for "fluid per day ≥ 2000 mL". */
+  op?: '<' | '<=' | '>' | '>=';
   source_ref: string;
   verified: boolean;
 }
@@ -828,6 +830,10 @@ export interface SelfTestField {
   hint: string;
   unit: string;
   rule_limits: SelfTestRuleLimit[];
+  /** Display-only band from limits.yaml when no single-value rule judges the field (F-010: diastolic BP). */
+  band?: { low: SelfTestLimit | null; high: SelfTestLimit | null };
+  /** Words on tap-scale buttons (F-010), keyed by the scale value. */
+  anchors?: Record<string, string>;
 }
 
 export interface SelfTestLimit {
@@ -871,6 +877,9 @@ export interface SelfTestDef {
   /** T-4 questionnaire items; their answers combine into the single field by `score`. */
   items?: QuestionnaireItem[];
   score?: 'mean' | null;
+  /** T-5 stand test: standing reading times (protocol minutes) and what to do at once after STOP. */
+  checkpoints_min?: number[];
+  stop_steps?: string[];
 }
 
 export interface QuestionnaireItem {

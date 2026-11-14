@@ -15,6 +15,7 @@ import { MeasurementForm } from '../components/MeasurementForm';
 import { PvtTest } from '../components/PvtTest';
 import { OnboardOnlyBadge, Questionnaire } from '../components/Questionnaire';
 import { RoutineBoard } from '../components/RoutineBoard';
+import { StandTest } from '../components/StandTest';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 
 const CREW: CrewId[] = ['C1', 'C2', 'C3', 'C4'];
@@ -130,6 +131,14 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
               key={`${open.id}-${crewId}`}
               test={open}
               lapseMs={state.limits['cognition.pvt_lapse_ms']?.value ?? NaN}
+              connected={connected}
+              onSubmit={onSubmit}
+            />
+          ) : open.kind === 'stand_test' ? (
+            <StandTest
+              key={`${open.id}-${crewId}`}
+              test={open}
+              gravityG={state.sim.gravity_g}
               connected={connected}
               onSubmit={onSubmit}
             />

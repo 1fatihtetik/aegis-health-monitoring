@@ -10,7 +10,7 @@
 settings:
   manual_override:
     value: 30m
-    source_ref: "Project setting: a value the crew measures by hand replaces the continuous wearable stream of that crew member and signal for this long, so the rules judge the hand measurement"
+    source_ref: "User decision 2026-11-15 (\"taking over for 30 minutes is enough\"): a value the crew measures by hand replaces the continuous wearable stream of that crew member and signal for this long, so the rules judge the hand measurement"
   after_gravity_window:
     value: 2h
     source_ref: "Project setting (T-1): tests marked after_gravity_increase are due for this long after a gravity increase (e.g. a landing); overdue afterwards is INFO only"
@@ -21,7 +21,7 @@ tests:
     kind: report
     entry_method: tap
     fields:
-      - { signal: symptom_headache, label: "Headache right now (0 none, 1 mild, 2 moderate, 3 severe)", input_min: 0, input_max: 3, step: 1 }
+      - { signal: symptom_headache, label: "Headache right now (0 none, 1 mild, 2 moderate, 3 severe)", input_min: 0, input_max: 3, step: 1, anchors: { 0: "None", 1: "Mild", 2: "Moderate", 3: "Severe" } }
     why: "Headache is an early sign of high cabin CO2 and of low fluid intake. AEGIS compares it with heart rate and cabin CO2 to suggest the likely cause."
     hazards: [HOSTILE_CLOSED_ENV, GRAVITY_FIELDS]
     hrp_risks: [HRP-12, HRP-14, HRP-07]
@@ -39,7 +39,7 @@ tests:
     entry_method: form
     fields:
       - { signal: bp_systolic, label: "Blood pressure, top number (systolic)", input_min: 60, input_max: 260, hint: "From the cuff display" }
-      - { signal: bp_diastolic, label: "Blood pressure, bottom number (diastolic)", input_min: 30, input_max: 160 }
+      - { signal: bp_diastolic, label: "Blood pressure, bottom number (diastolic)", input_min: 30, input_max: 160, band_low: physiology.bp_diastolic_mmHg.min, band_high: physiology.bp_diastolic_mmHg.max }
       - { signal: spo2, label: "Blood oxygen (SpO2)", input_min: 50, input_max: 100, hint: "From the finger clip" }
     why: "In low gravity body fluids shift toward the head and the heart adapts; blood pressure and oxygen show how the heart and lungs cope with that and with the cabin air. A morning check gives a steady reference."
     hazards: [GRAVITY_FIELDS, HOSTILE_CLOSED_ENV]
@@ -170,6 +170,81 @@ tests:
     protocol: "Same rules as PVT-B (Basner et al. 2011), but only 30 s long."
     params: { duration_s: 30, isi_min_s: 1, isi_max_s: 4, false_start_ms: 100, timeout_ms: 30000 }
     short_mode_note: "Demo length, not the 3-minute protocol"
+
+  # ---- T-5: 10-minute stand test ------------------------------------------------------------------------------------
+  # Protocol confirmed by the supervisor 2026-11-15. The tablet sends one summary (drops, rise, pulse pressure, early
+  # stop) plus the last standing reading as hand values of heart_rate / bp_*; supine readings are not sent alone.
+  - id: stand_test
+    title: "Stand test (10 minutes)"
+    kind: stand_test
+    entry_method: stand_test
+    fields:
+      - { signal: stand_sbp_drop, label: "Fall of the top blood pressure number on standing", input_min: -100, input_max: 150 }
+      - { signal: stand_dbp_drop, label: "Fall of the bottom blood pressure number on standing", input_min: -100, input_max: 150 }
+      - { signal: stand_hr_rise, label: "Heart rate rise on standing (seen on two readings in a row)", input_min: -60, input_max: 150 }
+      - { signal: stand_pulse_pressure_min, label: "Smallest gap between the two blood pressure numbers while standing", input_min: 0, input_max: 200 }
+      - { signal: stand_pulse_pressure_pct, label: "That gap as a share of the top number", input_min: 0, input_max: 100 }
+      - { signal: stand_early_stop, label: "Stopped early because of symptoms (0 no, 1 yes)", input_min: 0, input_max: 1 }
+      - { signal: stand_minutes, label: "Minutes stood", input_min: 0, input_max: 10, step: 0.1 }
+      - { signal: heart_rate, label: "Heart rate (pulse)", input_min: 30, input_max: 220, hint: "From the cuff or the finger clip" }
+      - { signal: bp_systolic, label: "Blood pressure, top number (systolic)", input_min: 60, input_max: 260 }
+      - { signal: bp_diastolic, label: "Blood pressure, bottom number (diastolic)", input_min: 30, input_max: 160 }
+    why: "After weeks in low gravity the body holds less fluid and the blood vessels react more slowly, so standing up can make you dizzy or faint. This test shows how your heart and blood pressure cope with standing before you take on standing work after a landing."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-02]
+    steps:
+      - "Safety first: clear the floor around you and keep a seat or bunk right beside you; ask a crewmate to stay near if one is free"
+      - "Put the blood pressure cuff on your upper arm and leave it on for the whole test"
+      - "Lie flat and still for 5 minutes (the tablet counts down), then measure and enter your lying-down pulse and blood pressure"
+      - "Stand up and lean back lightly against a wall: shoulder blades touching it, heels about 15 cm out, legs still (do not tense or shift them)"
+      - "Measure and enter pulse and blood pressure when the tablet asks: at 1, 3, 5 and 10 minutes"
+      - "If you feel dizzy, faint, sick, sweaty, your vision greys out or your chest hurts: tap STOP and lie down at once. Never push on to finish"
+    limit_refs: [stand_test.sbp_drop_mmHg_min, stand_test.dbp_drop_mmHg_min, stand_test.hr_rise_bpm_min, stand_test.pulse_pressure_mmHg_min, stand_test.pulse_pressure_pct_min]
+    escalation: "Stopped early, fainted or still dizzy after lying down: stay lying with legs raised, a crewmate calls the crew medical officer (CMO) at once. A positive result without symptoms: no ladders, driving or long standing tasks today and show the result to the CMO. The CMO informs the ground when the link allows."
+    protocol: "10-minute stand test after 5 minutes lying down, readings at 1, 3, 5 and 10 minutes standing; a wall-lean version of the NASA post-flight orthostatic stress test (Lee et al. 2015, Aerosp Med Hum Perform 86(12):A54-A67) for use without a tilt table, only when there is gravity. Criteria after Freeman et al. 2011 (Clin Auton Res 21:69-72)."
+    params: { supine_s: 300, stand_s: 600, min_gravity_g: 0.1, time_scale: 1 }
+    checkpoints_min: [1, 3, 5, 10]
+    stop_steps:
+      - "Lie down flat now, on the floor or the bunk beside you"
+      - "Raise your legs a little (on the seat or a bag)"
+      - "Call a crewmate; they tell the crew medical officer (CMO)"
+      - "Stay lying down until the dizziness has fully passed, then sit up slowly before you stand"
+    after_gravity_increase: true
+
+  - id: stand_test_short
+    title: "Stand test, demo timing (1.5 minutes)"
+    kind: stand_test
+    entry_method: stand_test
+    fields:
+      - { signal: stand_sbp_drop, label: "Fall of the top blood pressure number on standing", input_min: -100, input_max: 150 }
+      - { signal: stand_dbp_drop, label: "Fall of the bottom blood pressure number on standing", input_min: -100, input_max: 150 }
+      - { signal: stand_hr_rise, label: "Heart rate rise on standing (seen on two readings in a row)", input_min: -60, input_max: 150 }
+      - { signal: stand_pulse_pressure_min, label: "Smallest gap between the two blood pressure numbers while standing", input_min: 0, input_max: 200 }
+      - { signal: stand_pulse_pressure_pct, label: "That gap as a share of the top number", input_min: 0, input_max: 100 }
+      - { signal: stand_early_stop, label: "Stopped early because of symptoms (0 no, 1 yes)", input_min: 0, input_max: 1 }
+      - { signal: stand_minutes, label: "Minutes stood", input_min: 0, input_max: 10, step: 0.1 }
+      - { signal: heart_rate, label: "Heart rate (pulse)", input_min: 30, input_max: 220, hint: "From the cuff or the finger clip" }
+      - { signal: bp_systolic, label: "Blood pressure, top number (systolic)", input_min: 60, input_max: 260 }
+      - { signal: bp_diastolic, label: "Blood pressure, bottom number (diastolic)", input_min: 30, input_max: 160 }
+    why: "The same stand test with every wait cut to a tenth, for demonstrations. It shows how the test works; it is too short to judge how you cope with standing, so it never counts as the real test."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-02]
+    steps:
+      - "Keep a seat beside you"
+      - "Lie still for 30 seconds, then enter your lying-down pulse and blood pressure"
+      - "Stand and lean lightly against a wall; enter the readings when the tablet asks"
+      - "Dizzy or faint: tap STOP and lie down at once"
+    limit_refs: [stand_test.sbp_drop_mmHg_min, stand_test.dbp_drop_mmHg_min, stand_test.hr_rise_bpm_min, stand_test.pulse_pressure_mmHg_min, stand_test.pulse_pressure_pct_min]
+    escalation: "For a real check, take the 10-minute stand test. Dizzy or faint at any time: lie down and tell the CMO."
+    protocol: "Same steps and criteria as the stand test, every wait shortened to a tenth."
+    params: { supine_s: 300, stand_s: 600, min_gravity_g: 0.1, time_scale: 0.1 }
+    checkpoints_min: [1, 3, 5, 10]
+    stop_steps:
+      - "Lie down flat now, on the floor or the bunk beside you"
+      - "Raise your legs a little (on the seat or a bag)"
+      - "Call a crewmate; they tell the crew medical officer (CMO)"
+      - "Stay lying down until the dizziness has fully passed, then sit up slowly before you stand"
+    short_mode_note: "Demo timing, not the 10-minute stand protocol"
 
   # ---- T-4: questionnaires. onboard_only: the answers and the alerts they raise never leave the spacecraft. --------
   - id: kss

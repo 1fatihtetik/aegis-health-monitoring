@@ -12,6 +12,12 @@ function options(item: QuestionnaireItem): number[] {
   return out;
 }
 
+/** Where an unset slider's thumb rests; the crew can accept it as an answer with one tap (F-011). */
+export function sliderMiddle(item: QuestionnaireItem): number {
+  const steps = Math.round((item.max - item.min) / 2 / item.step);
+  return Math.round((item.min + steps * item.step) * 100) / 100;
+}
+
 /** "Stays on board" marker for onboard-only answers (T-4: the link never sends them). */
 export const OnboardOnlyBadge: React.FC = () => (
   <span
@@ -93,15 +99,31 @@ export const Questionnaire: React.FC<{
                   min={item.min}
                   max={item.max}
                   step={item.step}
-                  value={answers[i] ?? (item.min + item.max) / 2}
+                  value={answers[i] ?? sliderMiddle(item)}
                   aria-label={item.label}
+                  aria-valuetext={answers[i] === null ? 'Not set yet' : String(answers[i])}
                   data-testid={`slider-${i}`}
+                  data-unset={answers[i] === null}
                   onChange={(e) => set(i, Number(e.target.value))}
-                  className="h-11 w-full"
+                  className={`h-11 w-full ${answers[i] === null ? 'opacity-40 grayscale' : ''}`}
                 />
-                <div className="flex justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
                   <span>{item.anchors[String(item.min)] ?? item.min}</span>
-                  <span className="font-mono text-slate-200">{answers[i] ?? 'move the slider'}</span>
+                  {answers[i] === null ? (
+                    <span className="flex flex-wrap items-center justify-center gap-2">
+                      <span className="font-semibold text-amber-200">Not set yet: move the slider, or</span>
+                      <button
+                        type="button"
+                        data-testid={`slider-keep-${i}`}
+                        onClick={() => set(i, sliderMiddle(item))}
+                        className="min-h-[44px] rounded-lg border border-slate-500 bg-space-900 px-3 font-bold text-slate-100"
+                      >
+                        Answer {sliderMiddle(item)}
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="font-mono text-base font-bold text-slate-100">{answers[i]}</span>
+                  )}
                   <span>{item.anchors[String(item.max)] ?? item.max}</span>
                 </div>
               </div>

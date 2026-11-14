@@ -175,7 +175,10 @@ class RuleEngine:
             if isinstance(m, str):
                 ref = self._by_id[m]
                 firing, ev = results.get((m, subject if self.scope(ref) == "crew" else None), (False, None))
-                return firing, {"rule_id": m, "firing": firing, **(ev or {})}
+                # F-011: name the member's signal even before it has data, so the evidence (and its redaction on
+                # downlink) has the same shape whether or not a value was ever entered
+                base = {"signal": str(ref.signal)} if ref.signal is not None and not ev else {}
+                return firing, {"rule_id": m, "firing": firing, **base, **(ev or {})}
             firing, ev = self._threshold((f"{rule.id}#{i}", subject), m, subject, now, rule.clear_margin)
             return firing, {"firing": firing, **(ev or {"signal": str(m.signal)})}
 

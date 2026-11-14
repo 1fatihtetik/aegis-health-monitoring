@@ -414,3 +414,114 @@ def _catalog_with_test(tmp_path: Path, test_id: str, mutate) -> Path:
     mutate(next(t for t in data["tests"] if t["id"] == test_id))
     (tmp_path / "selftests.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
     return tmp_path
+
+
+# ---- F-010 / F-011 ---------------------------------------------------------------------------------------------------
+def test_diastolic_field_carries_its_display_band(client):
+    tests = {t["id"]: t for t in client.get("/api/v1/selftests").json()["tests"]}
+    dia = next(f for f in tests["bp_spo2"]["fields"] if f["signal"] == "bp_diastolic")
+    assert dia["band"]["low"]["value"] == 50 and dia["band"]["high"]["value"] == 100
+    assert dia["band"]["low"]["verified"] is False
+    spo2 = next(f for f in tests["bp_spo2"]["fields"] if f["signal"] == "spo2")
+    assert spo2["band"] == {"low": None, "high": None}
+
+
+def test_questionnaire_member_has_the_same_shape_on_downlink_whether_or_not_answered(cfg):
+    w = World(cfg, "insomnia_streak")
+    w.delay_override = 0.0
+    for _ in range(12 * 60):
+        w.tick()
+    w._scripted_selftest(w.clock.now(), {"crew": "C1", "test": "pvt_b", "values": PVT_SLOW})
+    for _ in range(3):
+        w.tick()
+    risk = open_alert(w, "cog.performance_risk", "C1")
+    assert risk is not None  # fired through the PVT path; KSS never entered
+    onboard = {m.get("rule_id"): m for m in risk.evidence["members"]}
+    assert onboard["cog.sleepiness"]["signal"] == "kss" and onboard["cog.sleepiness"]["firing"] is False
+    sent = w.ground.alerts[risk.id]["evidence"]["members"]
+    assert {"signal": "redacted", "redacted": REDACTED} in sent
+    assert "cog.sleepiness" not in ground_text(w) and '"kss"' not in ground_text(w)
+
+
+# ---- T-5: stand test -------------------------------------------------------------------------------------------------
+STAND_NORMAL = {"stand_sbp_drop": 4, "stand_dbp_drop": -2, "stand_hr_rise": 12, "stand_pulse_pressure_min": 38,
+                "stand_pulse_pressure_pct": 32, "stand_early_stop": 0, "stand_minutes": 10,
+                "heart_rate": 78, "bp_systolic": 118, "bp_diastolic": 80}
+
+
+def on_the_moon(client):
+    assert client.post("/api/v1/sim/scenario", json={"name": "lunar_surface", "seed": 42}).status_code == 200
+    w = client.rt.world
+    for _ in range(31):  # the landing at 30m
+        w.tick()
+    assert w.sim.phase_cfg["gravity_g"] > 0
+    return w
+
+
+def test_stand_test_catalog_follows_the_confirmed_protocol(cfg):
+    full, short = cfg.selftests.test("stand_test"), cfg.selftests.test("stand_test_short")
+    assert full.params == {"supine_s": 300, "stand_s": 600, "min_gravity_g": 0.1, "time_scale": 1}
+    assert full.checkpoints_min == [1, 3, 5, 10] and full.after_gravity_increase and full.schedule is None
+    assert "Lee et al. 2015" in full.protocol and full.short_mode_note == ""
+    assert any("STOP" in s and "lie down" in s for s in full.steps)
+    assert short.short_mode_note == "Demo timing, not the 10-minute stand protocol"
+    assert short.params["time_scale"] < 1 and short.schedule is None and not short.after_gravity_increase
+    for ref in full.limit_refs:
+        assert cfg.limit(ref).verified is False
+    assert cfg.limit("stand_test.sbp_drop_mmHg_min").value == 20
+    assert cfg.limit("stand_test.dbp_drop_mmHg_min").value == 10
+    assert cfg.limit("stand_test.hr_rise_bpm_min").value == 30
+
+
+def test_stand_test_is_refused_without_gravity(client):
+    assert client.rt.world.sim.phase_cfg["gravity_g"] == 0
+    res = submit(client, "C1", "stand_test", STAND_NORMAL)
+    assert res.status_code == 422 and "needs gravity" in res.json()["detail"]
+
+
+def test_normal_stand_test_raises_nothing(client):
+    w = on_the_moon(client)
+    assert submit(client, "C3", "stand_test", STAND_NORMAL).status_code == 200
+    w.tick()
+    for rule_id in ("cardio.stand.positive", "cardio.stand.early_stop", "cardio.orthostatic"):
+        assert open_alert(w, rule_id, "C3") is None
+    [result] = client.get("/api/v1/selftests/results", params={"crew_id": "C3"}).json()["results"]
+    assert result["test_id"] == "stand_test" and result["provenance"] == "CREW_ENTERED"
+
+
+@pytest.mark.parametrize("change", [{"stand_sbp_drop": 24}, {"stand_dbp_drop": 12}, {"stand_hr_rise": 34},
+                                    {"stand_pulse_pressure_min": 16}, {"stand_pulse_pressure_pct": 20}])
+def test_each_stand_criterion_raises_the_caution(client, change):
+    w = on_the_moon(client)
+    assert submit(client, "C2", "stand_test", {**STAND_NORMAL, **change}).status_code == 200
+    w.tick()
+    alert = open_alert(w, "cardio.stand.positive", "C2")
+    assert alert is not None and alert.severity.value == "CAUTION"
+    assert alert.evidence["provenance"] == "CREW_ENTERED"
+    assert "GRAVITY_FIELDS" in [h.value for h in alert.hazards]
+    assert open_alert(w, "cardio.stand.early_stop", "C2") is None
+
+
+def test_stopping_early_for_symptoms_is_a_positive_warning_and_keeps_the_readings(client):
+    w = on_the_moon(client)
+    stopped = {"stand_sbp_drop": 26, "stand_dbp_drop": 8, "stand_hr_rise": 31, "stand_pulse_pressure_min": 22,
+               "stand_pulse_pressure_pct": 25, "stand_early_stop": 1, "stand_minutes": 2.4,
+               "heart_rate": 104, "bp_systolic": 88, "bp_diastolic": 66}
+    assert submit(client, "C4", "stand_test", stopped).status_code == 200
+    w.tick()
+    stop = open_alert(w, "cardio.stand.early_stop", "C4")
+    assert stop is not None and stop.severity.value == "WARNING" and stop.evidence["value"] == 1
+    assert open_alert(w, "cardio.stand.positive", "C4") is not None
+    # the standing hand reading replaces the wearable stream, so the existing orthostatic rule judges it too
+    assert open_alert(w, "cardio.orthostatic", "C4") is not None
+    [result] = client.get("/api/v1/selftests/results", params={"crew_id": "C4"}).json()["results"]
+    assert result["values"]["stand_minutes"] == 2.4 and result["values"]["bp_systolic"] == 88
+
+
+def test_stand_test_is_due_after_a_landing_and_the_demo_timing_never_is(cfg):
+    w = World(cfg, "orthostatic_intolerance")
+    for _ in range(31):  # past the Mars landing at 30m
+        w.tick()
+    board = board_for(w, "C3")
+    assert board["stand_test+g"]["status"] == "DUE" and board["stand_test+g"]["reason"] == "after gravity increase"
+    assert not any(key.startswith("stand_test_short") for key in board)
