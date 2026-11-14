@@ -25,8 +25,24 @@ signals:
 #   quality_factor:   mean <Q> published for the window; dose equivalent = RAD tissue dose x <Q> (NASA_DERIVED)
 # Signals: area_dose_rate_absorbed is NASA_MEASURED (RAD E detector). area_dose_rate_equivalent,
 # neutron_dose_equivalent_rate and the per-crew dose signals are NASA_DERIVED (formulas in `basis` below).
-# While a synthetic SPE effect is active (until R-3 replays a real one) the radiation signals are SYNTHETIC.
+# While a synthetic SPE effect is active (fallback if rad_spe is inactive) the radiation signals are SYNTHETIC.
 replays:
+  - id: rad_spe
+    adapter: rad
+    dataset_id: msl_rad_spe_2012_03
+    file: derived/msl_rad_spe_2012_03.csv
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission]
+    event: spe
+    event_date: "2012-03-07"
+    donki_id: "2012-03-07T01:44:00-SEP-001"
+    start: "2012-03-08T00:00:00Z"
+    compression: 20
+    mode: hold
+    max_step: 1h
+    max_hold: 6h
+    quality_factor: 1.17
+    quality_factor_ref: "Zeitlin et al. (2013) Science 340:1080, MSL/RAD March 7, 2012 SEP peak <Q>"
   - id: rad_cruise
     adapter: rad
     dataset_id: msl_rad_cruise_2012

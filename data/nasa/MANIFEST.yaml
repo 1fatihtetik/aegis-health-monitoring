@@ -96,3 +96,55 @@ datasets:
     sha256: 80744740630ab14b165502d597249f1802d80b805ba687f404c450ce9bf86d68
   - path: derived/msl_rad_gale_2013.csv
     sha256: c76e7e24672fcdf28fd7336f1167e609fdf5b799287d1635912460fa0f4774c3
+- id: msl_rad_spe_2012_03
+  tier: D2
+  label: MSL/RAD SPE Mar 2012
+  title: MSL Curiosity RAD dose rate during the March 7-9, 2012 solar particle event
+    (cruise)
+  source_url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/
+  retrieved: '2026-11-14'
+  terms: 'NASA PDS / SPDF public data. Cite: Hassler et al. (2012) Space Sci Rev 170:503
+    (instrument); MSL RAD team, D. Hassler (PI), SwRI.'
+  transform: Kept START_OBS_UTC, QC, L1 counter duration and DOSIMETRY_TOTAL_DOSE_E/B
+    of every RDR observation (no averaging); QC != 0 or dose_e < 9.5 uGy/h (50% of
+    pre-event quiet GCR median) -> quality SUSPECT. Replay holds each observation
+    until the next one (~17-32 min cadence) and holds the last GOOD value over SUSPECT
+    rows and gaps (marked SUSPECT). Dose equivalent = dose_e x SEP peak quality factor
+    <Q> 1.17 (Zeitlin et al. 2013) -> NASA_DERIVED.
+  reference:
+    citation: Zeitlin et al. (2013) Science 340:1080; MSL/RAD March 7, 2012 SEP
+    event_date: '2012-03-07'
+    donki_id: 2012-03-07T01:44:00-SEP-001
+    quality_factor: 1.17
+    peak_dose_e_uGy_h: 671.55
+  raw_sources:
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_067_00_29_C102_V00.TXT
+    bytes: 30516931
+    sha256: 1947e521d145f65adef8195f84de71db3a4d7fe3c237bd84022942a75f0bd92a
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_068_00_04_C103_V00.TXT
+    bytes: 34772175
+    sha256: 46124e4539bc905ef6c1d94c1edf404937bea50b411776c1acf825b6880b06d3
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_069_00_06_C104_V00.TXT
+    bytes: 34286424
+    sha256: f484533cd6c61588331d00292e1c8fe6a7ea1d481892380526a9994c73088206
+  - url: https://pds-ppi.igpp.ucla.edu/data/MSL-M-RAD-3-RDR-V1.0/DATA/CRUISE/RAD_RDR_2012_070_00_03_C105_V00.TXT
+    bytes: 19712498
+    sha256: 40ab3509c68cd41bcde281a400306080d5885b6d0d68c98911b56d43ed8b760b
+  files:
+  - path: derived/msl_rad_spe_2012_03.csv
+    sha256: d39c73f8199b59ddaf186f13ce687ceb8d93630411b3e33856438061dc33d7c4
+- id: donki_sep_2012_03
+  tier: D3
+  label: NASA DONKI SEP Mar 2012
+  title: NASA CCMC DONKI Solar Energetic Particle (SEP) records, 2012-03-06 to 2012-03-10
+  source_url: https://api.nasa.gov/DONKI/SEP?startDate=2012-03-06&endDate=2012-03-10
+  retrieved: '2026-11-14'
+  terms: NASA CCMC DONKI public space weather database (ccmc.gsfc.nasa.gov).
+  transform: Fetched DONKI SEP JSON for 2012-03-06..2012-03-10 via api.nasa.gov and
+    formatted with indent=2.
+  reference:
+    event_date: '2012-03-07'
+    donki_id: 2012-03-07T01:44:00-SEP-001
+  files:
+  - path: derived/donki_sep_2012_03.json
+    sha256: 98425182c35e7e06c95a7f0b25ae76b978363c475fbf71e3f9c65359f7729861

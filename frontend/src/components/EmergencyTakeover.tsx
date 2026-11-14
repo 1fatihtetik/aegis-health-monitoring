@@ -9,6 +9,8 @@ import {
   RadiationSummary,
 } from '../api/types';
 import { DataSourceBadge } from './DataSourceBadge';
+import { AutonomyNotice } from './AutonomyNotice';
+import { signalLabel } from '../api/backend';
 
 export interface EmergencyTakeoverProps {
   alert: AlertItem | null;
@@ -16,6 +18,8 @@ export interface EmergencyTakeoverProps {
   radiation: RadiationSummary;
   commDelaySeconds: number;
   groundLagSeconds: number;
+  /** Earth link blacked out: every decision in the takeover is onboard (F-008). */
+  linkBlackout?: boolean;
   onToggleCrewShelter: (crewId: CrewId) => void;
   onEvacuateAll: () => void;
   onAcknowledge: (alertId: string) => void;
@@ -29,6 +33,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
   radiation,
   commDelaySeconds,
   groundLagSeconds,
+  linkBlackout = false,
   onToggleCrewShelter,
   onEvacuateAll,
   onAcknowledge,
@@ -73,6 +78,14 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
             AUTONOMOUS ONBOARD TRIGGER · MCC-HOUSTON LAGS BY{' '}
             {formatDurationSeconds(groundLagSeconds ?? commDelaySeconds)}
           </span>
+          {linkBlackout && (
+            <span
+              data-testid="takeover-blackout"
+              className="rounded-md bg-fuchsia-700 border border-fuchsia-300 px-3 py-1.5 text-xs font-black uppercase tracking-wide text-white"
+            >
+              ⚡ Earth link blacked out: Mission Control cannot be reached
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -145,7 +158,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
                 )}
               </div>
               <p className="text-sm font-mono text-white">
-                Signal: <strong>{alert.evidence.signal}</strong> ={' '}
+                Signal: <strong>{signalLabel(alert.evidence.signal)}</strong> ={' '}
                 <strong className="text-red-300">
                   {radiation.dose_rate_equivalent_uSv_h} µSv/h
                 </strong>{' '}
@@ -251,6 +264,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
               Mandatory Autonomous SPE Protocol Checklist
             </h2>
             <p className="text-xs text-slate-300">{alert.action}</p>
+            <AutonomyNotice blackout={linkBlackout} delaySeconds={commDelaySeconds} />
 
             <div className="space-y-2 pt-1">
               {checklist.map((step, idx) => {

@@ -106,28 +106,30 @@ class World:
                 self.suspect[-1][1] = now
             else:
                 self.suspect.append([now, now])
-        replay = self.radiation.for_phase(self.sim.phase)
+        replay = (self.radiation.for_event("spe") if self.sim.spe_replay_active
+                  else self.radiation.for_phase(self.sim.phase))
         if rad is None or replay is None:
             for signal in RAD_SIGNALS:
                 src = self.cfg.datasets.source(signal)
                 self.provenance.set(signal, src.provenance, src.dataset_id, now, src.basis)
             return
-        if self.sim.spe_active:
-            basis = ("Synthetic SPE profile multiplied onto the MSL/RAD background. A real RAD-measured SPE "
-                     "replaces it in R-3.")
+        if self.sim.spe_active and not self.sim.spe_replay_active:
+            basis = "Synthetic SPE profile multiplied onto the MSL/RAD background (rad_spe replay inactive)."
             for signal in RAD_SIGNALS:
                 self.provenance.set(signal, Provenance.SYNTHETIC, None, now, basis)
             return
         did, q = rad.dataset_id, replay.quality_factor
         fraction = self.sim.phase_cfg["neutron_fraction"]
+        event_note = (f" [SPE {replay.event_date}, DONKI {replay.donki_id}, replayed x{replay.compression:g}]"
+                      if replay.donki_id else "")
         derived = {
             "area_dose_rate_equivalent": f"RAD tissue dose rate (E detector) x mean quality factor <Q> {q} "
-                                         f"({replay.quality_factor_ref}).",
+                                         f"({replay.quality_factor_ref}){event_note}.",
             "neutron_dose_equivalent_rate": f"{fraction:.0%} of the derived area dose equivalent (neutron share: "
                                             "project heuristic from the CSA LEO value, unverified).",
             "dose_rate_equivalent": "Area dose equivalent x (1 + seeded per-crew variation, sd 2%); x shelter factor "
                                     f"{self.cfg.mission['sim']['shelter_dose_factor']} (heuristic) while sheltered in "
-                                    "an SPE.",
+                                    f"an SPE{event_note}.",
             "dose_rate_absorbed": f"Personal dose equivalent / <Q> {q}.",
             "dose_mission": "Mission days before the scenario x the replay's mean dose-equivalent rate, plus the "
                             "integral of the personal dose rate.",
@@ -139,7 +141,8 @@ class World:
     def replay_status(self) -> dict[str, Any] | None:
         """What the radiation view shows about the active RAD replay (AGENTS.md section 2a: label the mapping)."""
         rad = self.sim.rad_sample
-        replay = self.radiation.for_phase(self.sim.phase)
+        replay = (self.radiation.for_event("spe") if self.sim.spe_replay_active
+                  else self.radiation.for_phase(self.sim.phase))
         if rad is None or replay is None:
             return None
         meta = self.cfg.datasets.dataset_meta(rad.dataset_id) or {}
@@ -148,7 +151,10 @@ class World:
             "dataset_ts": iso(rad.dataset_ts), "observation_ts": iso(rad.source_ts),
             "compression": replay.compression, "quality": rad.quality.value,
             "quality_factor": replay.quality_factor, "quality_factor_ref": replay.quality_factor_ref,
-            "absorbed_uGy_h": round(rad.absorbed_uGy_h, 3), "synthetic_spe_overlay": self.sim.spe_active,
+            "absorbed_uGy_h": round(rad.absorbed_uGy_h, 3),
+            "synthetic_spe_overlay": self.sim.spe_active and not self.sim.spe_replay_active,
+            "event_date": replay.event_date or None,
+            "donki_id": replay.donki_id or None,
         }
 
     def _fire_events(self, now: datetime, result: TickResult, prewarm: bool = False) -> None:

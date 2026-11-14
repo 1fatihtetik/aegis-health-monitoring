@@ -26,6 +26,8 @@ import { HeadacheReport } from '../components/HeadacheReport';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
+const HRV_HINT = 'Plain words: beat-to-beat heart rhythm variation; higher usually means better rested.';
+
 const BASELINE_SIGNALS: Array<{ key: string; label: string }> = [
   { key: 'heart_rate', label: 'Heart rate' },
   { key: 'hrv_rmssd', label: 'HRV (RMSSD)' },
@@ -193,6 +195,11 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                         {b.outside ? '▲ outside' : '✓ normal'}
                       </span>
                     </div>
+                    {key === 'hrv_rmssd' && (
+                      <div className="text-[10px] text-cyan-200" data-testid="hint-hrv">
+                        {HRV_HINT}
+                      </div>
+                    )}
                     <div className="mt-1 text-base font-bold font-mono text-white">
                       {num(b.current)} <span className="text-xs text-slate-400">{b.unit}</span>
                     </div>
@@ -217,7 +224,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
               <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
                 <div className="text-[11px] text-slate-400">HRV RMSSD vs Baseline</div>
                 <div className="text-[10px] text-cyan-200" data-testid="hint-hrv">
-                  Beat-to-beat heart rhythm variation; higher usually means better rested.
+                  {HRV_HINT}
                 </div>
                 <div className="mt-1 text-base font-bold font-mono text-white">
                   {member.vitals.hrv_rmssd} <span className="text-xs text-slate-400">ms</span>
@@ -347,7 +354,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
 
         <LimitBandChart
           title="Heart Rate Variability (RMSSD, recovery)"
-          subtitle={`Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
+          subtitle={`${HRV_HINT} Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
           data={member.timeseries.hrv_rmssd}
           unit="ms"
           hrpRisks={['HRP-03', 'HRP-12', 'HRP-14']}

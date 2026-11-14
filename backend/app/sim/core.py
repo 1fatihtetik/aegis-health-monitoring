@@ -55,6 +55,7 @@ class Simulator:
         self.radiation = radiation
         self.rad_sample: RadSample | None = None  # last replayed RAD value (None = synthetic radiation)
         self.spe_active = False
+        self.spe_replay_active = False
         self.set_phase(phase)
         bone = cfg.limits["bone"]["bmd_loss_pct_per_month_expected_0g"]
         self._bmd_rate = (bone["min"] + bone["max"]) / 2
@@ -164,9 +165,15 @@ class Simulator:
 
         # ---- cabin + area radiation
         spe = self._effect("spe", t)
-        factor = self._spe_factor(spe, t) if spe else 1.0
         self.spe_active = spe is not None
-        rad = self.radiation.sample(t, self.phase) if self.radiation else None
+        spe_rad = self.radiation.sample_event(t, "spe", spe.start) if (spe and self.radiation) else None
+        self.spe_replay_active = spe_rad is not None
+        if spe_rad is not None:
+            rad = spe_rad
+            factor = 1.0
+        else:
+            factor = self._spe_factor(spe, t) if spe else 1.0
+            rad = self.radiation.sample(t, self.phase) if self.radiation else None
         self.rad_sample = rad
         area_noise = g(0, 0.02)  # drawn either way, so the other RNG streams do not shift with the data source
         if rad:

@@ -145,10 +145,41 @@ def test_mars_surface_switches_to_gale_replay(cfg):
     assert w.snapshot["radiation"]["replay"] is None
 
 
-def test_synthetic_spe_overlay_is_labelled_synthetic(cfg):
+def test_spe_event_replays_real_rad_spe_with_donki_evidence(cfg):
     w = _world(cfg, 40, "spe_event")  # SPE effect starts at 30 min
+    prov = w.snapshot["provenance"]
+    assert prov["area_dose_rate_absorbed"]["provenance"] == "NASA_MEASURED"
+    assert prov["area_dose_rate_absorbed"]["dataset_id"] == "msl_rad_spe_2012_03"
+    assert prov["area_dose_rate_equivalent"]["provenance"] == "NASA_DERIVED"
+    assert "2012-03-07" in prov["area_dose_rate_equivalent"]["basis"]
+    assert "2012-03-07T01:44:00-SEP-001" in prov["area_dose_rate_equivalent"]["basis"]
+    replay = w.snapshot["radiation"]["replay"]
+    assert replay["synthetic_spe_overlay"] is False
+    assert replay["event_date"] == "2012-03-07"
+    assert replay["donki_id"] == "2012-03-07T01:44:00-SEP-001"
+
+    for _ in range(200):  # up to 4 h total
+        w.tick()
+    spe_alerts = [a for a in w.alerts.alerts.values() if a.rule_id in ("rad.spe.dose_rate", "rad.dose.24h")]
+    assert any(a.rule_id == "rad.spe.dose_rate" and a.severity.value == "EMERGENCY" for a in spe_alerts)
+    assert any(a.rule_id == "rad.dose.24h" and a.severity.value == "WARNING" for a in spe_alerts)
+    for a in spe_alerts:
+        assert a.evidence["provenance"] == "NASA_DERIVED"
+        assert a.evidence["dataset_id"] == "msl_rad_spe_2012_03"
+        assert "2012-03-07" in a.evidence["basis"]
+        assert "2012-03-07T01:44:00-SEP-001" in a.evidence["basis"]
+
+
+def test_tampered_spe_file_falls_back_to_synthetic_overlay(tmp_path):
+    data = tmp_path / "nasa"
+    shutil.copytree(DATA_DIR, data)
+    csv = data / "derived" / "msl_rad_spe_2012_03.csv"
+    csv.write_text(csv.read_text(encoding="utf-8").replace("GOOD", "GOOD ", 1), encoding="utf-8")
+    cfg = Config(CONFIG_DIR, data)
+    assert not cfg.datasets.replay("rad_spe").active
+    w = _world(cfg, 40, "spe_event")
     prov = w.snapshot["provenance"]["area_dose_rate_equivalent"]
-    assert prov["provenance"] == "SYNTHETIC" and "R-3" in prov["basis"]
+    assert prov["provenance"] == "SYNTHETIC"
     assert w.snapshot["radiation"]["replay"]["synthetic_spe_overlay"] is True
 
 

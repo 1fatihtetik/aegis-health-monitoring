@@ -10,6 +10,7 @@ import {
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { formatLimit } from '../api/limits';
+import { signalLabel } from '../api/backend';
 import { LimitBadge } from '../components/LimitBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { Sparkline } from '../components/Sparkline';
@@ -468,7 +469,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                         {STATUS_DISPLAY[member.status].symbol} {topAlert.title}
                       </div>
                       <div className="text-[11px] font-mono text-slate-300 truncate">
-                        {topAlert.evidence.signal}: {topAlert.evidence.value}{' '}
+                        {signalLabel(topAlert.evidence.signal)}: {topAlert.evidence.value}{' '}
                         {topAlert.evidence.unit ?? ''} ({topAlert.hrp_risks.join(', ')})
                       </div>
                     </div>

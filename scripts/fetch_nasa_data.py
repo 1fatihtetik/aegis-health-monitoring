@@ -27,6 +27,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -209,13 +210,14 @@ def parse_cdaweb_text(text: str) -> list[dict[str, Any]]:
 DROPOUT_FRACTION = 0.5  # an observation below half the window median is an instrument dropout, not GCR
 
 
-def flag_dropouts(rows: list[dict[str, Any]]) -> int:
+def flag_dropouts(rows: list[dict[str, Any]], floor_uGy_h: float | None = None) -> int:
     """Mark dropouts SUSPECT (documented in the manifest transform). Returns how many were flagged."""
-    good = sorted(float(r["dose_e_uGy_h"]) for r in rows if r["quality"] == "GOOD")
-    median = good[len(good) // 2]
+    if floor_uGy_h is None:
+        good = sorted(float(r["dose_e_uGy_h"]) for r in rows if r["quality"] == "GOOD")
+        floor_uGy_h = DROPOUT_FRACTION * good[len(good) // 2]
     flagged = 0
     for r in rows:
-        if r["quality"] == "GOOD" and float(r["dose_e_uGy_h"]) < DROPOUT_FRACTION * median:
+        if r["quality"] == "GOOD" and float(r["dose_e_uGy_h"]) < floor_uGy_h:
             r["quality"] = "SUSPECT"
             flagged += 1
     return flagged
@@ -241,12 +243,17 @@ def _mean_e_day(rows: list[dict[str, Any]]) -> float:
     return 24 * sum(good) / len(good)
 
 
-def cmd_rad_cruise(_: argparse.Namespace) -> int:
+SPE_DAYS = (date(2012, 3, 7), date(2012, 3, 10))  # inclusive; March 7-9, 2012 SEP measured in cruise
+DONKI_SEP_URL = "https://api.nasa.gov/DONKI/SEP"
+DONKI_SEP_ID = "2012-03-07T01:44:00-SEP-001"
+
+
+def _fetch_pds_cruise_days(start_day: date, end_day: date) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     listing = _get(PDS_CRUISE).decode("utf-8", "replace")
     rows: list[dict[str, Any]] = []
     raws: list[dict[str, Any]] = []
-    day = CRUISE_DAYS[0]
-    while day <= CRUISE_DAYS[1]:
+    day = start_day
+    while day <= end_day:
         doy = day.timetuple().tm_yday
         names = sorted(set(re.findall(rf"RAD_RDR_{day.year}_{doy:03d}_\d\d_\d\d_C\d+_V00\.TXT", listing)))
         for name in names:
@@ -257,6 +264,11 @@ def cmd_rad_cruise(_: argparse.Namespace) -> int:
             print(f"{name}: {len(blob)} bytes, {len(parsed)} observations")
         day += timedelta(days=1)
     rows.sort(key=lambda r: r["utc"])
+    return rows, raws
+
+
+def cmd_rad_cruise(_: argparse.Namespace) -> int:
+    rows, raws = _fetch_pds_cruise_days(*CRUISE_DAYS)
     dropouts = flag_dropouts(rows)
     rel = "derived/msl_rad_cruise_2012.csv"
     _write_csv(DATA / rel, rows, "MSL/RAD cruise dosimetry from PDS MSL-M-RAD-3-RDR-V1.0; one row per RAD "
@@ -317,6 +329,56 @@ def cmd_rad_surface(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_rad_spe(_: argparse.Namespace) -> int:
+    rows, raws = _fetch_pds_cruise_days(*SPE_DAYS)
+    quiet = sorted(float(r["dose_e_uGy_h"]) for r in rows if r["quality"] == "GOOD" and r["utc"] < "2012-03-07T03:00:00Z")
+    floor = DROPOUT_FRACTION * quiet[len(quiet) // 2]
+    dropouts = flag_dropouts(rows, floor_uGy_h=floor)
+    rel = "derived/msl_rad_spe_2012_03.csv"
+    _write_csv(DATA / rel, rows, "MSL/RAD March 7-9, 2012 solar particle event (cruise) from PDS MSL-M-RAD-3-RDR-V1.0; "
+               "one row per RAD observation; dose_e = TOTAL_DOSE_E (tissue-equivalent plastic), "
+               "dose_b = TOTAL_DOSE_B (silicon); microGray/hour")
+    good_e = [float(r["dose_e_uGy_h"]) for r in rows if r["quality"] == "GOOD"]
+    peak_e = max(good_e)
+    _upsert({
+        "id": "msl_rad_spe_2012_03", "tier": "D2", "label": "MSL/RAD SPE Mar 2012",
+        "title": "MSL Curiosity RAD dose rate during the March 7-9, 2012 solar particle event (cruise)",
+        "source_url": PDS_CRUISE, "retrieved": datetime.now(UTC).date().isoformat(), "terms": RAD_TERMS,
+        "transform": ("Kept START_OBS_UTC, QC, L1 counter duration and DOSIMETRY_TOTAL_DOSE_E/B of every RDR "
+                      f"observation (no averaging); QC != 0 or dose_e < {floor:.1f} uGy/h (50% of pre-event quiet GCR "
+                      "median) -> quality SUSPECT. Replay holds each observation until the next one (~17-32 min cadence) "
+                      "and holds the last GOOD value over SUSPECT rows and gaps (marked SUSPECT). Dose equivalent = "
+                      "dose_e x SEP peak quality factor <Q> 1.17 (Zeitlin et al. 2013) -> NASA_DERIVED."),
+        "reference": {
+            "citation": "Zeitlin et al. (2013) Science 340:1080; MSL/RAD March 7, 2012 SEP",
+            "event_date": "2012-03-07",
+            "donki_id": DONKI_SEP_ID,
+            "quality_factor": 1.17,
+            "peak_dose_e_uGy_h": round(peak_e, 2),
+        },
+        "raw_sources": raws,
+        "files": [{"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+
+    key = os.environ.get("NASA_API_KEY", "DEMO_KEY")
+    sep_url = f"{DONKI_SEP_URL}?startDate=2012-03-06&endDate=2012-03-10"
+    sep_blob = _get(f"{sep_url}&api_key={key}", accept="application/json")
+    sep_rel = "derived/donki_sep_2012_03.json"
+    (DATA / sep_rel).parent.mkdir(parents=True, exist_ok=True)
+    (DATA / sep_rel).write_bytes(json.dumps(json.loads(sep_blob), indent=2).encode("utf-8") + b"\n")
+    _upsert({
+        "id": "donki_sep_2012_03", "tier": "D3", "label": "NASA DONKI SEP Mar 2012",
+        "title": "NASA CCMC DONKI Solar Energetic Particle (SEP) records, 2012-03-06 to 2012-03-10",
+        "source_url": sep_url, "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": "NASA CCMC DONKI public space weather database (ccmc.gsfc.nasa.gov).",
+        "transform": "Fetched DONKI SEP JSON for 2012-03-06..2012-03-10 via api.nasa.gov and formatted with indent=2.",
+        "reference": {"event_date": "2012-03-07", "donki_id": DONKI_SEP_ID},
+        "files": [{"path": sep_rel, "sha256": sha256(DATA / sep_rel)}],
+    })
+    print(f"{len(rows)} rows ({dropouts} dropouts flagged), peak GOOD dose_e {peak_e:.2f} uGy/h -> {rel}; {sep_rel}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -338,6 +400,7 @@ def main(argv: list[str] | None = None) -> int:
     dl.set_defaults(fn=cmd_download)
     sub.add_parser("rad-cruise").set_defaults(fn=cmd_rad_cruise)
     sub.add_parser("rad-surface").set_defaults(fn=cmd_rad_surface)
+    sub.add_parser("rad-spe").set_defaults(fn=cmd_rad_spe)
     args = parser.parse_args(argv)
     return int(args.fn(args))
 

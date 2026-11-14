@@ -141,7 +141,7 @@ def test_cumulative(cfg, store):
                 limit_ref="radiation.dose_24h_mSv_max", window="24h", scale=0.001, unit="mSv")
     engine = RuleEngine([dose], cfg, store, CREW)
     fill(store, "C1", "dose_rate_equivalent", [300.0] * 1440)  # 7.2 mSv
-    now = fill(store, "C2", "dose_rate_equivalent", [100.0] * 1440)  # 2.4 mSv
+    now = fill(store, "C2", "dose_rate_equivalent", [70.0] * 1440)  # 1.68 mSv (quiet GCR)
     high = firing(engine, now, "dose", "C1")
     assert high.firing and high.evidence["value"] == pytest.approx(7.2) and high.evidence["unit"] == "mSv"
     assert not firing(engine, now, "dose", "C2").firing

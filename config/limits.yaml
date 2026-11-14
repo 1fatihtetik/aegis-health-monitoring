@@ -10,8 +10,8 @@ radiation:
   spe_event_effective_dose_mSv: { value: 250, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4031] Short-Term Radiation Limits - Solar Particle Events (design event), via OCHMO-TB-020 Rev G", verified: true }
   gcr_rate_free_space_mSv_day: { value: 1.3, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (free-space design rate), via OCHMO-TB-020 Rev G", verified: true }
   gcr_rate_surface_mSv_day:   { value: 0.9, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (planetary-surface design rate), via OCHMO-TB-020 Rev G", verified: true }
-  spe_alert_dose_rate_uSv_h:  { value: 500, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false }
-  dose_24h_mSv_max:           { value: 5, source_ref: "Project heuristic", verified: false }
+  spe_alert_dose_rate_uSv_h:  { value: 250, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false }
+  dose_24h_mSv_max:           { value: 2.0, source_ref: "Project heuristic", verified: false }
 environment:
   ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
   ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic (OCHMO-TB-004 lists worsening symptoms above 4.5 mmHg; not a limit)", verified: false }

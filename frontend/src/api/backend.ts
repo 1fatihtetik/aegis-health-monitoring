@@ -535,6 +535,16 @@ const SIGNAL_LABEL: Record<string, string> = {
   area_dose_rate_equivalent: 'Cabin radiation dose rate',
   neutron_dose_equivalent_rate: 'Neutron dose rate',
   dose_24h: 'Radiation dose, last 24 h',
+  cabin_pressure: 'Cabin pressure',
+  cabin_temp: 'Cabin temperature',
+  humidity: 'Cabin humidity',
+  noise_level: 'Cabin noise',
+  resp_rate: 'Breathing rate',
+  bp_diastolic: 'Blood pressure (bottom number)',
+  sleep_night_h: 'Sleep last night',
+  bmd_estimate: 'Bone density estimate',
+  exercise_adherence_pct: 'Exercise sessions done',
+  compound: 'Combined indicators',
 };
 
 export function signalLabel(signal: string): string {

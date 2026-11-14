@@ -39,9 +39,14 @@ export const ReplayLine: React.FC<{ replay?: RadReplayInfo | null }> = ({ replay
           ▲ data gap: holding last good RAD value
         </span>
       )}
+      {replay.donki_id && (
+        <span className="rounded border border-red-400/60 bg-red-950/60 px-2 py-0.5 font-mono font-semibold text-red-100">
+          SPE {replay.event_date} · DONKI {replay.donki_id}
+        </span>
+      )}
       {replay.synthetic_spe_overlay && (
         <span className="rounded border border-slate-500 bg-slate-800/70 px-2 py-0.5 font-semibold text-slate-100">
-          · SPE profile is synthetic (real RAD SPE replay pending)
+          · SPE profile is synthetic (real RAD SPE replay inactive)
         </span>
       )}
     </p>

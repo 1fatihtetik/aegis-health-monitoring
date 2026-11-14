@@ -56,7 +56,7 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     expect(banner).toHaveTextContent('▲ caution');
     expect(banner).toHaveTextContent('HRP-12');
     expect(banner).toHaveTextContent('HRP-14');
-    expect(banner).toHaveTextContent('ppco2');
+    expect(banner).toHaveTextContent('Cabin CO₂');
     expect(banner).toHaveTextContent('3.6 mmHg');
     expect(banner).toHaveTextContent('⚠ unverified limit');
 

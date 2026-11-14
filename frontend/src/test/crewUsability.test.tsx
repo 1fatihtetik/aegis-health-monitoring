@@ -4,7 +4,9 @@ import { BUNDLED_LIMITS, clauseId } from '../api/limits';
 import { AlertItem } from '../api/types';
 import { AlertBanner } from '../components/AlertBanner';
 import { AutonomyNotice } from '../components/AutonomyNotice';
+import { EmergencyTakeover } from '../components/EmergencyTakeover';
 import { LimitBadge } from '../components/LimitBadge';
+import { buildInitialSystemState } from '../api/client';
 
 const co2Alert: AlertItem = {
   id: 'alert-co2-verified',
@@ -80,5 +82,45 @@ describe('F-007 crew usability', () => {
   it('AutonomyNotice stays hidden on a near-real-time link', () => {
     render(<AutonomyNotice blackout={false} delaySeconds={1.3} />);
     expect(screen.queryByTestId('autonomy-notice')).toBeNull();
+  });
+
+  it('EmergencyTakeover shows plain-language signal label and blackout autonomy notice (F-008)', () => {
+    const initial = buildInitialSystemState(42);
+    const speAlert: AlertItem = {
+      ...co2Alert,
+      id: 'alert-spe-f008',
+      rule_id: 'rad.spe.dose_rate',
+      title: 'Solar particle event: dose rate above SPE threshold',
+      severity: 'EMERGENCY',
+      hazards: ['RADIATION'],
+      hrp_risks: ['HRP-17'],
+      evidence: {
+        ...co2Alert.evidence,
+        signal: 'area_dose_rate_equivalent',
+        value: 312.0,
+        unit: 'µSv/h',
+        limit: 250,
+        limit_verified: false,
+      },
+    };
+    render(
+      <EmergencyTakeover
+        alert={speAlert}
+        crew={initial.crew}
+        radiation={initial.radiation}
+        commDelaySeconds={720}
+        groundLagSeconds={720}
+        linkBlackout
+        onToggleCrewShelter={() => undefined}
+        onEvacuateAll={() => undefined}
+        onAcknowledge={() => undefined}
+        onResolve={() => undefined}
+      />
+    );
+    const takeover = screen.getByTestId('emergency-takeover');
+    expect(takeover).toHaveTextContent('Cabin radiation dose rate');
+    expect(takeover).not.toHaveTextContent('area_dose_rate_equivalent');
+    expect(screen.getByTestId('takeover-blackout')).toHaveTextContent('Earth link blacked out');
+    expect(screen.getByTestId('autonomy-notice')).toHaveTextContent('Act onboard now');
   });
 });

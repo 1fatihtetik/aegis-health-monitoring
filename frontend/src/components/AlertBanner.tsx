@@ -7,6 +7,7 @@ import {
   severityToStatus,
 } from '../api/types';
 import { clauseId } from '../api/limits';
+import { signalLabel } from '../api/backend';
 import { AlertChecklist } from './AlertChecklist';
 import { AutonomyNotice } from './AutonomyNotice';
 import { DataSourceBadge } from './DataSourceBadge';
@@ -116,7 +117,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
           <div className="flex flex-wrap items-center gap-2 pt-0.5 text-xs font-mono text-slate-200">
             <span className="rounded bg-space-950/80 border border-slate-700/80 px-2 py-1">
-              Evidence: <strong>{top.evidence.signal}</strong> = {top.evidence.value}
+              Evidence: <strong>{signalLabel(top.evidence.signal)}</strong> = {top.evidence.value}
               {top.evidence.unit ? ` ${top.evidence.unit}` : ''} ({top.evidence.op ?? '>'}{' '}
               limit {top.evidence.limit}
               {top.evidence.unit ? ` ${top.evidence.unit}` : ''} over {top.evidence.window})

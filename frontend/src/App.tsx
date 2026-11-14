@@ -89,6 +89,7 @@ const AegisShell: React.FC = () => {
           radiation={radiation}
           commDelaySeconds={sim.comm_delay_s}
           groundLagSeconds={link.lag_seconds}
+          linkBlackout={link.blackout}
           onToggleCrewShelter={toggleCrewShelter}
           onEvacuateAll={evacuateAllToShelter}
           onAcknowledge={acknowledgeAlert}

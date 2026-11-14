@@ -7,6 +7,7 @@ import {
   severityToStatus,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { signalLabel } from '../api/backend';
 import { StatusRing } from '../components/StatusRing';
 
 export const GroundConsole: React.FC = () => {
@@ -191,7 +192,7 @@ export const GroundConsole: React.FC = () => {
                       </div>
                       <div className="font-bold text-slate-100">{a.title}</div>
                       <div className="font-mono text-slate-300">
-                        Evidence: {a.evidence.signal} = {a.evidence.value} {a.evidence.unit ?? ''} (Limit{' '}
+                        Evidence: {signalLabel(a.evidence.signal)} = {a.evidence.value} {a.evidence.unit ?? ''} (Limit{' '}
                         {a.evidence.limit} · {a.evidence.limit_verified ? '✓ verified' : '⚠ unverified'})
                       </div>
                     </div>

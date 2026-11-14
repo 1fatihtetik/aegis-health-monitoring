@@ -54,6 +54,9 @@ class RadReplay:
         self.id = status.id
         self.dataset_id = status.dataset_id
         self.phases = [str(p) for p in spec.get("phases", [])]
+        self.event = str(spec["event"]) if spec.get("event") else None
+        self.event_date = str(spec.get("event_date", ""))
+        self.donki_id = str(spec.get("donki_id", ""))
         self.quality_factor = float(spec["quality_factor"])
         self.quality_factor_ref = str(spec.get("quality_factor_ref", ""))
         self.compression = float(spec.get("compression", 1))
@@ -77,14 +80,16 @@ class RadReplay:
     def mean_equivalent_uSv_h(self) -> float:
         return self.mean_absorbed_uGy_h * self.quality_factor
 
-    def dataset_time(self, t: datetime) -> datetime:
-        offset = (self.start - self.first) + (t - self.t0) * self.compression
+    def dataset_time(self, t: datetime, origin: datetime | None = None) -> datetime:
+        offset = (self.start - self.first) + (t - (origin or self.t0)) * self.compression
         if self.mode == "loop":
             offset = offset % self.length
+        elif offset > self.times[-1] - self.first:
+            return self.times[-1]
         return self.first + offset
 
-    def sample(self, t: datetime) -> RadSample | None:
-        dt = self.dataset_time(t)
+    def sample(self, t: datetime, origin: datetime | None = None) -> RadSample | None:
+        dt = self.dataset_time(t, origin)
         i = bisect.bisect_right(self.times, dt) - 1
         if i < 0:
             return None
@@ -107,16 +112,26 @@ class RadiationReplays:
 
     def __init__(self, registry: DatasetRegistry, t0: datetime) -> None:
         self.by_phase: dict[str, RadReplay] = {}
+        self.by_event: dict[str, RadReplay] = {}
         for status in registry.replays:
             if not status.active or status.spec.get("adapter") != ADAPTER:
                 continue
             replay = RadReplay(status, registry.data_dir / str(status.spec["file"]), t0)
             for phase in replay.phases:
                 self.by_phase[phase] = replay
+            if replay.event:
+                self.by_event[replay.event] = replay
 
     def for_phase(self, phase: str) -> RadReplay | None:
         return self.by_phase.get(phase)
 
+    def for_event(self, event: str) -> RadReplay | None:
+        return self.by_event.get(event)
+
     def sample(self, t: datetime, phase: str) -> RadSample | None:
         replay = self.by_phase.get(phase)
         return replay.sample(t) if replay else None
+
+    def sample_event(self, t: datetime, event: str, origin: datetime) -> RadSample | None:
+        replay = self.by_event.get(event)
+        return replay.sample(t, origin) if replay else None

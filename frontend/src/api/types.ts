@@ -324,8 +324,10 @@ export interface RadReplayInfo {
   quality_factor: number;
   quality_factor_ref: string;
   absorbed_uGy_h: number;
-  /** A synthetic SPE profile is multiplied onto the replay (until R-3 replays a real SPE). */
+  /** A synthetic SPE profile is multiplied onto the replay (fallback when rad_spe is inactive). */
   synthetic_spe_overlay: boolean;
+  event_date?: string | null;
+  donki_id?: string | null;
 }
 
 export interface AlertEvidenceClause {
