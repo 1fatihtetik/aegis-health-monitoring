@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current priority (2026-11-14): Block P, phases and gravity** (`ROADMAP.md` §0, PRD §1.8, §6 M0/M2). Block R (real NASA data) and the D-3 freeze are done (tag `demo-ready`). Block P adds measured radiation for LEO, the lunar surface and Earth, gravity-dependent physiology, the Inspiration4 reference panel and an extended demo. §2a below covers how to handle real data.
+> **Current state (2026-11-14): Block P done, demo re-frozen at tag `demo-ready-v2` (D-4).** Block R (real NASA data, tag `demo-ready`) and Block P (`ROADMAP.md` §0, PRD §1.8, §6 M0/M2) are approved. Further work only on the user's request (stretch list in `implementationsandgoals.txt` §6). Block P added measured radiation for LEO, the lunar surface and Earth, gravity-dependent physiology, the Inspiration4 reference panel and an extended demo. §2a below covers how to handle real data.
 
 ---
 
@@ -217,6 +217,6 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 ## 10. Build order
 
-Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`).
+Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`).
 
-**Now:** Block P (`ROADMAP.md` §0.3, mirrored in PRD §13): P-0 `MEASURED_OTHER` label → P-1 LEO radiation (RadLab) → P-2 lunar radiation (CRaTER) → P-3 Earth radiation (RadNet) → P-4 partial-gravity research (**stop: the user picks the model**) → P-5 gravity physiology → P-6 Inspiration4 panel → P-7 extended demo → **Gate P** → D-4 re-freeze (`demo-ready-v2`). If behind, cut in the order given in `ROADMAP.md` §0.4.
+**Was (done):** Block P (`ROADMAP.md` §0.3, mirrored in PRD §13): P-0 `MEASURED_OTHER` label → P-1 LEO radiation (RadLab) → P-2 lunar radiation (CRaTER) → P-3 Earth radiation (RadNet) → P-4 partial-gravity research (**stop: the user picks the model**) → P-5 gravity physiology → P-6 Inspiration4 panel → P-7 extended demo → **Gate P** → D-4 re-freeze (`demo-ready-v2`). If behind, cut in the order given in `ROADMAP.md` §0.4.

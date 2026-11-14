@@ -5,7 +5,7 @@ alerts on its own, and syncs to a ground console over a delayed, lossy link (Ear
 Horizons, about 11 min one way on the demo date).
 
 > Decision support only, not a medical diagnosis.
-> **Real NASA data (Block R, approved; demo frozen at tag `demo-ready`).** 9 limits verified against NASA-STD-3001
+> **Real NASA data (Block R + Block P, approved; demo re-frozen at tag `demo-ready-v2`).** 9 limits verified against NASA-STD-3001
 > clauses (R-1); cabin radiation in Mars transit, on the Mars surface and during the March 2012 solar particle
 > event is replayed from MSL Curiosity RAD measurements (R-2, R-3); the comm delay is the JPL Horizons Earth–Mars
 > light time (R-4); the ground console shows the real DONKI/OMNI2 record of that event (R-5); every simulator

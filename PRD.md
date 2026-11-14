@@ -478,7 +478,7 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 | P+10 to 12 | P-6 Inspiration4 reference panel (was S-4) | Aggregate-only panel renders offline |
 | P+12 to 14 | P-7 Extended demo + re-rehearsal | Plays twice untouched, offline |
 
-**Gate P:** measured radiation with correct provenance in every phase, cited gravity parameters, aggregate-only Inspiration4 data, extended demo offline, checks pass. Then the D-4 re-freeze (`demo-ready-v2`).
+**Gate P:** measured radiation with correct provenance in every phase, cited gravity parameters, aggregate-only Inspiration4 data, extended demo offline, checks pass. Then the D-4 re-freeze (`demo-ready-v2`). *Done: Gate P approved, tag `demo-ready-v2`.*
 
 Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infection` scenarios, Countermeasures and Wellbeing views (M5), research export (M9), admin/config (M10), a separate ground process and docker compose (§11).
 

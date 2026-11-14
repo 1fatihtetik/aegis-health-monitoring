@@ -2,8 +2,8 @@
 
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
-**Current state (2026-11-14):** the 30-hour MVP and Block R (real NASA data) are built and approved, and the demo is frozen at tag `demo-ready` (D-3). See `implementationsandgoals.txt`.
-**Current priority: Block P, phases and gravity (§0).** Block R made Mars transit and Mars surface real. Block P does the same for the other mission phases (LEO, lunar surface, back on Earth), makes crew physiology respond to each phase's gravity, adds the Inspiration4 reference panel (formerly stretch item S-4), and then extends and re-freezes the demo.
+**Current state (2026-11-14):** the 30-hour MVP, Block R (real NASA data) and Block P (phases and gravity, Gate P) are built and approved, and the extended demo is re-frozen at tag `demo-ready-v2` (D-4; the Block R demo stays at `demo-ready`). See `implementationsandgoals.txt`.
+**Block P is done (§0, kept for the record).** Next work only on the user's request (stretch items in `implementationsandgoals.txt` §6). Block R made Mars transit and Mars surface real. Block P does the same for the other mission phases (LEO, lunar surface, back on Earth), makes crew physiology respond to each phase's gravity, adds the Inspiration4 reference panel (formerly stretch item S-4), and then extends and re-freezes the demo.
 
 ---
 
@@ -44,7 +44,7 @@ All Block R rules still apply (fetch once and replay offline, a manifest entry w
 | P+10 to 12 | **P-6 Inspiration4 reference panel (was S-4).** Fetch aggregate CBC/CMP statistics per time point from OSDR; manifest entry; CrewDetail panel showing the pre/post-flight reference ranges (AEGIS has no lab signals yet, so the panel is reference only) | Panel renders offline with a NASA badge; a test checks that the bundled file has no per-person rows |
 | P+12 to 14 | **P-7 Extended demo + re-rehearsal.** Add segments to `demo_5min` that show the new phases (proposal: a short LEO opening before trans-Mars departure, with ISS-RAD radiation and 0 g drift; exact segments agreed with the user once P-1..P-6 land). Add `leo_baseline` and `lunar_surface` scenarios. Rehearse twice untouched; update the README walkthrough and PRD §14 | Extended demo plays twice untouched; every expected alert in its window; no-network test passes |
 
-**Gate P (supervisor):** LEO, lunar-surface and Earth radiation replay bundled measured data with correct provenance (`NASA_MEASURED` / `NASA_DERIVED` / `MEASURED_OTHER`); every gravity parameter cites a source or says heuristic; the Inspiration4 panel holds aggregate data only; the extended demo runs with networking blocked; all checks pass. Then **D-4: re-freeze**, tag `demo-ready-v2` (with the user's go-ahead).
+**Gate P (supervisor):** LEO, lunar-surface and Earth radiation replay bundled measured data with correct provenance (`NASA_MEASURED` / `NASA_DERIVED` / `MEASURED_OTHER`); every gravity parameter cites a source or says heuristic; the Inspiration4 panel holds aggregate data only; the extended demo runs with networking blocked; all checks pass. Then **D-4: re-freeze**, tag `demo-ready-v2` (with the user's go-ahead). *Done 2026-11-14: Gate P approved, tag `demo-ready-v2`.*
 
 ### 0.4 If Block P runs behind
 
@@ -81,6 +81,8 @@ Cut in this order, top first: P-6 Inspiration4 panel → P-7 demo extension (kee
 | 30-hour MVP | Setup, simulator (Gate 1), rules + alerts (Gate 2), crew UI (Gate 3), radiation + SPE, ground link (Gate 4), demo script (D-1, D-2) | approved |
 | Block R: real NASA data | R-0 data layer + provenance, R-1 nine verified NASA-STD-3001 limits, R-2 MSL/RAD cruise + Gale replay, R-3 real March 2012 SPE, R-4 Horizons light time, R-5 space-weather card, R-6 calibrated simulator; **Gate R** | approved |
 | Freeze | D-3, tag `demo-ready` | approved |
+| Block P: phases and gravity | P-0..P-7 (§0.3); **Gate P** | approved |
+| Re-freeze | D-4, tag `demo-ready-v2` | done |
 
 Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`.
 
