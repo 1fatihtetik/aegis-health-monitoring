@@ -57,7 +57,17 @@ class Simulator:
         self.rad_sample: RadSample | None = None  # last replayed RAD value (None = synthetic radiation)
         self.spe_active = False
         self.spe_replay_active = False
-        self.set_phase(phase)
+        self.phase = phase
+        self.phase_cfg = cfg.mission["phases"][phase]
+        self._gravity = self.params["gravity"]
+        # P-5: before the scenario the crew is assumed to have spent the whole mission at the starting phase's
+        # gravity (documented assumption). From then on each tick adds its share.
+        self._created = clock.now()
+        self._start_g = float(self.phase_cfg["gravity_g"])
+        start_days = max(0.0, self.elapsed_days(clock.now()))
+        self.unloaded_days = start_days * self.load_factor(self._start_g)  # 0 g-equivalent days of unloading
+        self.low_g_days = start_days if self._start_g < 1.0 else 0.0  # time below 1 g, for orthostatic risk
+        self.transition: dict[str, Any] | None = None  # last gravity increase and its orthostatic risk
         bone = cfg.limits["bone"]["bmd_loss_pct_per_month_expected_0g"]
         self._bmd_rate = (bone["min"] + bone["max"]) / 2
         log_len = int(24 * 3600 / mission["tick_s"])
@@ -82,8 +92,66 @@ class Simulator:
         return float(self.phase_cfg["neutron_fraction"])
 
     def set_phase(self, name: str) -> None:
+        old_g = float(self.phase_cfg["gravity_g"])
         self.phase = name
         self.phase_cfg = self.cfg.mission["phases"][name]
+        new_g = float(self.phase_cfg["gravity_g"])
+        if new_g > old_g:
+            fraction = self.presyncope_fraction(self.low_g_days)
+            self.transition = {
+                "ts": self.clock.now(), "from_g": old_g, "to_g": new_g, "days_at_low_g": self.low_g_days,
+                "presyncope_fraction": fraction, "risk": fraction * (new_g - old_g),
+            }
+        if new_g >= 1.0:
+            self.low_g_days = 0.0
+
+    # ---- P-5 gravity model A (linear) -------------------------------------------------------------------
+    @staticmethod
+    def load_factor(gravity_g: float) -> float:
+        """Share of the 0 g drift rate at this gravity: 1 - g (Ellman 2013, Mortreux 2018: linear, no threshold)."""
+        return max(0.0, 1.0 - gravity_g)
+
+    def presyncope_fraction(self, days: float) -> float:
+        """Meck 2001: 0.17 after short flights, 0.83 after 129+ days; linear in between, capped."""
+        short, long_ = self._gravity["orthostatic"]["short"], self._gravity["orthostatic"]["long"]
+        if days <= short["days"]:
+            return float(short["presyncope_fraction"])
+        if days >= long_["days"]:
+            return float(long_["presyncope_fraction"])
+        x = (days - short["days"]) / (long_["days"] - short["days"])
+        return float(short["presyncope_fraction"] + x * (long_["presyncope_fraction"] - short["presyncope_fraction"]))
+
+    def bp_offset(self) -> tuple[float, float, float]:
+        """(SBP, DBP, HR) added to the in-flight baseline at the current gravity (Norsk 2015 x g)."""
+        g, off = float(self.phase_cfg["gravity_g"]), self._gravity["bp_offset_1g"]
+        return g * off["sbp_mmHg"], g * off["dbp_mmHg"], g * off["hr_bpm"]
+
+    def bmd_rate_pct_month(self, adherence: float, gravity_g: float | None = None) -> float:
+        g = float(self.phase_cfg["gravity_g"]) if gravity_g is None else gravity_g
+        return self._bmd_rate * self.load_factor(g) * (1 - self.params["exercise_bmd_protection"] * adherence)
+
+    def gravity_state(self) -> dict[str, Any]:
+        """What the Gravity tile explains (P-5). Rates use the crew's mean exercise adherence."""
+        g = float(self.phase_cfg["gravity_g"])
+        adherence = sum(c.cfg["exercise_adherence"] for c in self.crew) / len(self.crew)
+        sbp, dbp, hr = self.bp_offset()
+        t = self.transition
+        return {
+            "model": "LINEAR", "gravity_g": g, "load_factor": round(self.load_factor(g), 3),
+            "bmd_loss_pct_month": round(self.bmd_rate_pct_month(adherence, g), 3),
+            "bmd_loss_pct_month_0g": round(self.bmd_rate_pct_month(adherence, 0.0), 3),
+            "bp_offset_mmHg": [round(sbp, 1), round(dbp, 1)], "hr_offset_bpm": round(hr, 1),
+            "unloaded_days": round(self.unloaded_days, 2), "days_at_low_g": round(self.low_g_days, 2),
+            "transition": None if t is None else {
+                "ts": t["ts"].isoformat().replace("+00:00", "Z"), "from_g": t["from_g"], "to_g": t["to_g"],
+                "days_at_low_g": round(t["days_at_low_g"], 1),
+                "presyncope_fraction": round(t["presyncope_fraction"], 3), "risk": round(t["risk"], 3),
+            },
+            "basis": ("Linear model (user decision P-4): drift = 0 g rate x (1 - g); animal partial-loading data "
+                      "(Ellman 2013, Mortreux 2018). BP offset = g x Norsk 2015 (8/9 mmHg). Orthostatic risk = "
+                      "Meck 2001 presyncope fraction for the time at low g x the gravity increase (heuristic for "
+                      "partial-g landings). Synthetic physiology, not a diagnosis."),
+        }
 
     def add_effect(self, type_: str, start: datetime, end: datetime, params: dict[str, Any]) -> None:
         if type_ not in EFFECT_TYPES:
@@ -137,14 +205,21 @@ class Simulator:
         r = random.Random(f"{self.seed}:sleep:{c.id}:{int(self.elapsed_days(ts))}")
         return max(3.0, min(9.0, r.gauss(7.6, 0.45)))
 
+    def _unloaded_at(self, ts: datetime) -> float:
+        """0 g-equivalent days of unloading at ts (before the simulator started: the starting phase's gravity)."""
+        if ts >= self._created:
+            return self.unloaded_days
+        return max(0.0, self.elapsed_days(ts)) * self.load_factor(self._start_g)
+
     def _daily(self, c: CrewState, ts: datetime) -> list[Sample]:
         day = self.elapsed_days(ts)
+        unloaded = self._unloaded_at(ts)  # P-5: equals `day` at 0 g, so the 0 g curves are unchanged
         r = random.Random(f"{self.seed}:{c.id}:{int(day)}")
         adherence = c.cfg["exercise_adherence"]
         base = c.cfg["baseline"]
         protect = self.params["exercise_bmd_protection"]
-        bmd = 100 - self._bmd_rate * (day / 30.44) * (1 - protect * adherence) + r.gauss(0, 0.05)
-        vo2 = base["vo2max_proxy"] * (1 - 0.0008 * day * (1 - adherence)) + r.gauss(0, 0.2)
+        bmd = 100 - self._bmd_rate * (unloaded / 30.44) * (1 - protect * adherence) + r.gauss(0, 0.05)
+        vo2 = base["vo2max_proxy"] * (1 - 0.0008 * unloaded * (1 - adherence)) + r.gauss(0, 0.2)
         mass = base["body_mass"] * (1 - 0.00015 * day) + r.gauss(0, 0.15)
         return [(c.id, "bmd_estimate", bmd), (c.id, "vo2max_proxy", vo2), (c.id, "body_mass", mass)]
 
@@ -170,6 +245,11 @@ class Simulator:
     def step(self) -> list[Sample]:
         self.clock.advance(self.tick)
         t = self.clock.now()
+        gravity = float(self.phase_cfg["gravity_g"])
+        self.unloaded_days += self.tick_h / 24 * self.load_factor(gravity)
+        if gravity < 1.0:
+            self.low_g_days += self.tick_h / 24
+        bp_sbp, bp_dbp, bp_hr = self.bp_offset()
         h = t.hour + t.minute / 60 + t.second / 3600
         g = self.rng.gauss
         out: list[Sample] = []
@@ -242,9 +322,9 @@ class Simulator:
             ortho = self._effect("orthostatic", t, c.id) if not asleep else None
             symptom = self._effect("symptom", t, c.id) if not asleep else None
 
-            hr = base["hr_rest"] + 4 * math.sin(2 * math.pi * (h - 9) / 24) + g(0, 1.5)
+            hr = base["hr_rest"] + bp_hr + 4 * math.sin(2 * math.pi * (h - 9) / 24) + g(0, 1.5)
             hrv = base["hrv"] + g(0, 2.0)
-            sbp, dbp = base["sbp"] + g(0, 3.0), base["dbp"] + g(0, 2.0)
+            sbp, dbp = base["sbp"] + bp_sbp + g(0, 3.0), base["dbp"] + bp_dbp + g(0, 2.0)
             resp = 14 + g(0, 0.5)
             if asleep:
                 hr, hrv, resp = hr - 8, hrv * 1.15, resp - 2

@@ -178,6 +178,26 @@ rules:
       - "Read personal dosimeters every 15 minutes"
       - "Stay sheltered until the dose rate is back under the threshold"
 
+  # P-1c (user decision 3B): make the SAA stand-down visible. One INFO alert per pass (the 10 min max bridges the
+  # pass), auto-resolved after the station leaves the box. INFO costs no readiness points (readiness.yaml).
+  - id: rad.saa.transit
+    type: THRESHOLD
+    title: "South Atlantic Anomaly crossing: short dose spike, not a solar event"
+    signal: saa_transit
+    op: ">"
+    limit_ref: radiation.saa_transit_flag
+    window: 10m
+    agg: max
+    severity: INFO
+    hazards: [RADIATION]
+    hrp_risks: [HRP-17]
+    rationale: "The station is passing through the South Atlantic Anomaly, where trapped protons raise the dose rate for a few minutes each pass. This is expected in LEO and is not a solar particle event, so the shelter alarm stands down."
+    action: "No action needed. Normal activities continue; the dose is counted in your mission total."
+    checklist:
+      - "Carry on with normal activities"
+      - "Expect this alert to clear by itself within about 10 minutes of leaving the anomaly"
+      - "If the dose rate stays high after the station leaves the anomaly, follow the solar particle event procedure"
+
   - id: rad.dose.24h
     type: CUMULATIVE
     title: "24 h radiation dose above limit"

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { DatasetMeta, RadReplayInfo, SignalSource } from '../api/types';
+import { DatasetMeta, GravityEffect, RadReplayInfo, SignalSource } from '../api/types';
 import { DataSourceBadge, dataSourcesLine } from '../components/DataSourceBadge';
+import { GravityEffectNote, gravityEffectLines } from '../components/GravityEffectNote';
 import { ReplayLine } from '../components/ReplayLine';
 
 // Block P, P-0: MEASURED_OTHER = measured by another agency (e.g. EPA RadNet). Never shown as NASA.
@@ -122,5 +123,40 @@ describe('P-1..P-3 replay line', () => {
     );
     expect(screen.getByTestId('rad-replay-agency')).toHaveTextContent('Measured by EPA, not NASA');
     expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('Absorbed dose = dose equivalent ÷ Q 1');
+  });
+});
+
+// Block P, P-5: the Gravity tile explains the linear model in plain words.
+
+const mars: GravityEffect = {
+  model: 'LINEAR',
+  gravity_g: 0.38,
+  load_factor: 0.62,
+  bmd_loss_pct_month: 0.343,
+  bmd_loss_pct_month_0g: 0.553,
+  bp_offset_mmHg: [3.0, 3.4],
+  hr_offset_bpm: 0,
+  unloaded_days: 141.5,
+  days_at_low_g: 141.5,
+  transition: {
+    ts: '2026-11-15T12:30:00Z', from_g: 0, to_g: 0.38, days_at_low_g: 141.5, presyncope_fraction: 0.83, risk: 0.315,
+  },
+  basis: 'Linear model ... Synthetic physiology, not a diagnosis.',
+};
+
+describe('P-5 gravity tile', () => {
+  it('states the drift share, the blood-pressure shift and the landing risk', () => {
+    const lines = gravityEffectLines(mars).join(' ');
+    expect(lines).toContain('62% of the zero-g rate');
+    expect(lines).toContain('+3/+3 mmHg');
+    expect(lines).toContain('fainting risk when standing up ~32%');
+    expect(lines).not.toMatch(/you have/i); // decision support, never a diagnosis
+  });
+
+  it('shows no loss at 1 g and renders the synthetic label', () => {
+    const earth = { ...mars, gravity_g: 1, load_factor: 0, bmd_loss_pct_month: 0, transition: null };
+    expect(gravityEffectLines(earth)[0]).toContain('no further bone or fitness loss');
+    render(<GravityEffectNote gravity={mars} />);
+    expect(screen.getByTestId('gravity-effect')).toHaveTextContent('Synthetic (linear gravity model');
   });
 });

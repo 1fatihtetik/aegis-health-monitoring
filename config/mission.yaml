@@ -27,6 +27,15 @@ sim:
   shelter_dose_factor: 0.2     # fraction of the area dose a sheltered crew member receives
   quality_factor: 2.5          # dose equivalent / absorbed dose, synthetic fallback only (RAD replay uses the published <Q>)
   exercise_bmd_protection: 0.6 # share of bone loss prevented at 100% exercise adherence
+  # P-5 gravity model A, LINEAR (user decision 2026-11-14). Drift rate at gravity g = 0 g rate x (1 - g / 1 g):
+  # BMD and fitness (VO2max proxy) loss. crew.yaml baselines are in-flight (0 g) values; at gravity g blood
+  # pressure rises by g x the 1 g offset (fluid shift back to the legs). After a gravity increase the
+  # orthostatic risk = presyncope fraction for the time spent at lower gravity x the gravity increase.
+  gravity:
+    bp_offset_1g: { sbp_mmHg: 8, dbp_mmHg: 9, hr_bpm: 0 }
+    orthostatic:
+      short: { days: 16, presyncope_fraction: 0.17 }
+      long:  { days: 129, presyncope_fraction: 0.83 }
   # Cabin atmosphere generator: value = mean + diurnal_amp x sin(2 pi (h - peak_h) / 24) + N(0, sd).
   # Scenario effects (co2_ramp) add on top; see the scenario files for where their peaks sit.
   cabin:
@@ -66,6 +75,14 @@ sources:
   sim.shelter_dose_factor: "heuristic: storm-shelter dose reduction, not a measured shielding value"
   sim.quality_factor: "heuristic: synthetic fallback only; the RAD replays use the published <Q> (datasets.yaml)"
   sim.exercise_bmd_protection: "heuristic: share of the NASA HRP bone-loss rate prevented by full exercise adherence"
+  sim.gravity.bp_offset_1g.*: >-
+    Norsk et al. (2015) J Physiol 593:573: on ISS (85-192 days) 24-h systolic pressure was 8 +/- 2 mmHg and
+    diastolic 9 +/- 2 mmHg lower than on the ground, heart rate unchanged. Scaling by g at 0.16 / 0.38 g is the
+    linear model (heuristic: no partial-gravity blood-pressure data exist)
+  sim.gravity.orthostatic.*.*: >-
+    Meck et al. (2001) Psychosom Med 63:865: 5 of 6 veteran astronauts presyncopal on tilt after 129-190 day
+    flights (0.83) vs 1 of 6 after short flights (0.17; short = Shuttle-length, 16 days is a heuristic
+    cut). Linear in days between the two points and x the gravity increase for partial-g landings (heuristic)
   sim.cabin.ppco2_mmHg.mean: >-
     OCHMO-TB-004 Rev D: ISS 24-h average ppCO2 has stayed at or below 3.00 mmHg since 2016 (p. 7); CDRA sized for
     2.0-3.9 mmHg (p. 8); a 7-day mean below 2.5 mmHg keeps headache risk below 1% (p. 5). 2.0 mmHg = a well-run

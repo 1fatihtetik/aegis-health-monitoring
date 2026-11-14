@@ -20,6 +20,7 @@ import {
   CrewRole,
   DatasetMeta,
   EnvironmentState,
+  GravityEffect,
   Hazard,
   HrpRiskId,
   LinkStatus,
@@ -203,7 +204,7 @@ export interface BackendSnapshot {
   scenario?: string;
   seed?: number;
   mission_day?: number;
-  phase?: { name: string; gravity_g: number; comm_delay_s: number };
+  phase?: { name: string; gravity_g: number; comm_delay_s: number; gravity?: GravityEffect };
   crew?: BackendCrew[];
   environment?: Record<string, number>;
   hazards?: Record<string, { status: BackendStatus; alert_ids: string[] }>;
@@ -879,6 +880,7 @@ export function applyOnboardSnapshot(input: MapInput): AegisSystemState {
       mission_day: snap.mission_day ?? prev.sim.mission_day,
       phase: toPhase(snap.phase?.name, prev.sim.phase),
       gravity_g: snap.phase?.gravity_g ?? prev.sim.gravity_g,
+      gravity: snap.phase?.gravity ?? prev.sim.gravity ?? null,
       comm_delay_s: snap.link.delay_s,
       active_scenario: snap.sim.scenario,
       demo_segment_label: undefined,

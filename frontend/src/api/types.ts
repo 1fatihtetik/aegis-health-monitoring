@@ -684,6 +684,31 @@ export interface LinkStatus {
   }>;
 }
 
+/** P-5: what the current gravity does to the body (model A, linear; synthetic physiology). */
+export interface GravityEffect {
+  model: 'LINEAR';
+  gravity_g: number;
+  /** Share of the 0 g drift rate at this gravity: 1 - g. */
+  load_factor: number;
+  bmd_loss_pct_month: number;
+  bmd_loss_pct_month_0g: number;
+  /** [systolic, diastolic] added to the in-flight baseline (Norsk 2015 x g). */
+  bp_offset_mmHg: [number, number];
+  hr_offset_bpm: number;
+  unloaded_days: number;
+  days_at_low_g: number;
+  /** Last gravity increase (a landing) and the fainting-on-standing risk it carries (Meck 2001). */
+  transition: {
+    ts: string;
+    from_g: number;
+    to_g: number;
+    days_at_low_g: number;
+    presyncope_fraction: number;
+    risk: number;
+  } | null;
+  basis: string;
+}
+
 export interface SimState {
   running: boolean;
   speed: number;
@@ -692,6 +717,8 @@ export interface SimState {
   mission_day: number;
   phase: MissionPhaseName;
   gravity_g: number;
+  /** P-5 gravity effect from the backend; absent offline. */
+  gravity?: GravityEffect | null;
   comm_delay_s: number;
   /** Backend scenarios include some the dock has no button for (nominal, headache_branching). */
   active_scenario: ScenarioName | string | null;

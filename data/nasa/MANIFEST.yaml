@@ -211,41 +211,6 @@ datasets:
     sha256: 3738fcf44a80f4fd36df17d904547e20776f6f187105687e9be6639a4a573b6d
   - path: derived/omni2_proton_flux_2012_03.csv
     sha256: 7303f40a3eb573493f371345da1a00886862b3347a6c777797912b37f910e065
-- id: iss_dostel1_2019_01
-  tier: D6
-  label: ISS DOSTEL-1 2019
-  title: ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate, 2019-01-03 to 2019-01-10,
-    via NASA OSDR RadLab
-  source_url: https://visualization.osdr.nasa.gov/radlab/api/?instrument=DosTel1&timestamp>=2019-01-03&timestamp<2019-01-11&absorbed_dose_rate&latitude&longitude&altitude&format=tsv
-  retrieved: '2026-11-14'
-  terms: 'NASA Open Science Data Repository (OSDR) RadLab, public. Instrument: DOSTEL-1
-    of the DOSIS 3D experiment (DLR / ESA, PI T. Berger), archived and served by NASA
-    OSDR. Cite: Berger et al. (2017) J. Space Weather Space Clim. 7:A8.'
-  transform: 'RadLab API TSV (raw/, as downloaded) -> one row per record: UTC, absorbed
-    dose rate in silicon (uGy/h, unchanged), ISS lat/lon/alt; saa = 1 inside the SAA
-    box 10-80 deg W, 5-45 deg S (Berger et al. 2017). Rows without a value or position
-    -> SUSPECT. Replay holds each record until the next one. Dose equivalent = DOSTEL
-    dose x <Q> 2.26 = 647 uSv/day / 286 uGy/day, the DOSTEL-1 total published for
-    end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Not ISS-RAD: RadLab served
-    no ISS-RAD, REM or TEPC series for this window (checked 2026-11-14).'
-  reference:
-    citation: 'Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (non-NASA paper; reference
-      check only): DOSIS 3D DOSTEL on ISS, same period as Chang''E 4 first lunar day,
-      731 uSv/day (GCR 523, SAA ~208). Q from Berger et al. (2017) JSWSC 7:A8.'
-    dose_equivalent_uSv_day: 731
-    tolerance_uSv_day: 150
-    tolerance_note: '~20%: <Q> 2.26 comes from May 2016 (higher solar activity, more
-      SAA weight); Jan 2019 is near solar minimum with a larger GCR share and so a
-      higher true <Q>. The published value may also average DOSTEL-1 and -2.'
-    quality_factor: 2.26
-    window_mean_dose_si_uGy_day: 272.9
-    window_mean_dose_equivalent_uSv_day: 616.7
-    window_saa_row_share: 0.168
-  files:
-  - path: raw/radlab_dostel1_20190103_20190110.tsv
-    sha256: f34811a680b598a228253019ba6eefbc1144c4e56984f1b7ddc805f6f474edc4
-  - path: derived/iss_dostel1_2019_01.csv
-    sha256: fc67e02d5db87562111d18f4b1c3e95096b27ae4daeae740a7137bfa8baca5bf
 - id: radnet_houston_2024_06
   tier: D7
   agency: EPA
@@ -307,3 +272,75 @@ datasets:
   files:
   - path: derived/lro_crater_surface_2019_01.csv
     sha256: cad9f5ba559ee61aae45523cd3f310195201c13b8a79818befd02a937d982924
+- id: iss_dostel1_2019_01
+  tier: D6
+  label: ISS DOSTEL-1 (DLR) 2019
+  title: ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate, 2019-01-03 to 2019-01-10,
+    via NASA OSDR RadLab
+  source_url: https://visualization.osdr.nasa.gov/radlab/api/?instrument=DosTel1&timestamp>=2019-01-03&timestamp<2019-01-11&absorbed_dose_rate&latitude&longitude&altitude&format=tsv
+  retrieved: '2026-11-14'
+  terms: 'NASA Open Science Data Repository (OSDR) RadLab, public. Instrument: DOSTEL-1
+    of the DOSIS 3D experiment (DLR / ESA, PI T. Berger), archived and served by NASA
+    OSDR. Cite: Berger et al. (2017) J. Space Weather Space Clim. 7:A8.'
+  transform: 'RadLab API TSV (raw/, as downloaded) -> one row per record: UTC, absorbed
+    dose rate in silicon (uGy/h, unchanged), ISS lat/lon/alt; saa = 1 inside the SAA
+    box 10-80 deg W, 5-45 deg S (Berger et al. 2017). Rows without a value or position
+    -> SUSPECT. Replay holds each record until the next one. Dose equivalent = DOSTEL
+    dose x <Q> 2.26 = 647 uSv/day / 286 uGy/day, the DOSTEL-1 total published for
+    end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Why DOSTEL-1 and not ISS-RAD:
+    see reference.instrument_comparison (P-1b).'
+  reference:
+    citation: 'Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (non-NASA paper; reference
+      check only): DOSIS 3D DOSTEL on ISS, same period as Chang''E 4 first lunar day,
+      731 uSv/day (GCR 523, SAA ~208). Q from Berger et al. (2017) JSWSC 7:A8.'
+    dose_equivalent_uSv_day: 731
+    tolerance_uSv_day: 150
+    tolerance_note: '~20%: <Q> 2.26 comes from May 2016 (higher solar activity, more
+      SAA weight); Jan 2019 is near solar minimum with a larger GCR share and so a
+      higher true <Q>. The published value may also average DOSTEL-1 and -2.'
+    quality_factor: 2.26
+    window_mean_dose_si_uGy_day: 272.9
+    window_mean_dose_equivalent_uSv_day: 616.7
+    window_saa_row_share: 0.168
+    instrument_comparison:
+      reference_uSv_day: 731
+      quality_factor_applied: 2.26
+      DosTel1:
+        what: DLR DOSIS 3D DOSTEL-1, Columbus (bundled)
+        mean_uGy_day: 272.9
+        dose_equivalent_uSv_day: 617
+      RAD-LAB1O3-pre:
+        what: NASA ISS-RAD, US Lab (daily means only, marked preliminary by RadLab)
+        records: 8
+        mean_uGy_day: 277.9
+        dose_equivalent_uSv_day: 628
+      TEPC-SMP330-pre:
+        what: NASA TEPC, Service Module (daily means only, marked preliminary by RadLab)
+        records: 4
+        mean_uGy_day: 475.4
+        dose_equivalent_uSv_day: 1074
+      DosTel2:
+        what: DLR DOSIS 3D DOSTEL-2, Columbus
+        records: 7263
+        mean_uGy_day: 247.2
+        dose_equivalent_uSv_day: 559
+      TriTel-SM:
+        what: Hungarian TriTel, Service Module
+        records: 1152
+        mean_uGy_day: 397.0
+        dose_equivalent_uSv_day: 897
+      absent: 'Liulin, Lidal and Timepix: no records in RadLab for 2019-01-03..10
+        (their series start or end elsewhere).'
+      decision: Keep DOSTEL-1. ISS-RAD (NASA) agrees with it within a few percent,
+        so the gap to 731 is not a RadLab DOSTEL problem; it most likely comes from
+        applying the May 2016 <Q> to a solar-minimum window. ISS-RAD is not clearly
+        better, has only daily means (no SAA passes to replay) and no <Q> we could
+        cite. DOSTEL-2 reads lower (other viewing direction). TriTel (Service Module,
+        different shielding) misses 731 by more than DOSTEL-1 and the DOSTEL <Q> does
+        not apply to it. TEPC has 4 days in the window and reads far above every other
+        instrument (unit or processing unclear, marked preliminary).
+  files:
+  - path: raw/radlab_dostel1_20190103_20190110.tsv
+    sha256: f34811a680b598a228253019ba6eefbc1144c4e56984f1b7ddc805f6f474edc4
+  - path: derived/iss_dostel1_2019_01.csv
+    sha256: fc67e02d5db87562111d18f4b1c3e95096b27ae4daeae740a7137bfa8baca5bf

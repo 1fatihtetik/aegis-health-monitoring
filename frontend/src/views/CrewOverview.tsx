@@ -11,6 +11,7 @@ import {
 import { useAegis } from '../api/useLiveSocket';
 import { formatLimit } from '../api/limits';
 import { signalLabel } from '../api/backend';
+import { GravityEffectNote } from '../components/GravityEffectNote';
 import { LimitBadge } from '../components/LimitBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { Sparkline } from '../components/Sparkline';
@@ -175,6 +176,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                   </div>
 
                   <p className="text-xs font-mono text-slate-200">{getHazardTelemetryLine(hz.id)}</p>
+                  {hz.id === 'GRAVITY_FIELDS' && <GravityEffectNote gravity={sim.gravity} />}
                 </div>
 
                 <div className="pt-2.5 flex flex-wrap items-center justify-between gap-1 border-t border-slate-800/80 w-full mt-2">

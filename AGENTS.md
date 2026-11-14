@@ -95,7 +95,7 @@ Rules:
 - **Never** fetch at runtime, commit an API key (DONKI via api.nasa.gov needs one; use `DEMO_KEY` or an env var in the fetch script only), or bundle per-person OSDR records.
 - **Reference values from non-NASA papers** (e.g. Chang'e-4) go into the manifest `reference` block and a fidelity test, never into the data stream.
 - **LEO SAA (P-1):** the ISS crosses the South Atlantic Anomaly several times a day and the measured dose rate spikes past the SPE alarm level. The replay emits `saa_transit` (position inside the SAA box of Berger et al. 2017) and `rad.spe.dose_rate` stands down through its `unless:` predicate. Never "fix" this by editing or capping the data.
-- **Partial gravity:** no physiology rate for 0.16 g or 0.38 g goes into the simulator until the user has picked the model after the P-4 research. Each such parameter cites its source or says `heuristic`.
+- **Partial gravity:** the user picked model A, LINEAR (P-4): drift rate = 0 g rate x (1 - g), BP = in-flight baseline + g x Norsk 2015 offset, orthostatic risk after a gravity increase = Meck 2001 fraction x the increase. Parameters live in `mission.yaml sim.gravity` and each cites its source or says `heuristic`. Do not swap the model without the user.
 
 ## 3. Commands
 
@@ -160,7 +160,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Circadian patterns: HR and temperature rhythms, sleep blocks, two exercise sessions a day.
 - Phase-dependent parameters (gravity 0 / 0.16 / 0.38 / 1 g; comm delay; radiation background).
 - Slow drifts: BMD −1 to −1.5% per month in 0 g, scaled down by exercise adherence. Cumulative dose integration.
-- Block P (P-5): gravity drives physiology (bone and fitness drift rates, fluid shift on HR/BP, orthostatic risk after a gravity increase) using the model the user picks after P-4. Until then, gravity is display-only.
+- Block P (P-5, built): gravity drives physiology with the user's LINEAR model (bone and fitness drift at (1 - g) x the 0 g rate, BP rises g x 8/9 mmHg, orthostatic risk recorded after a gravity increase).
 - Radiation stream split into total and **neutron** components (neutrons ≈ 30% in LEO per CSA).
 - The simulator feeds the engine in-process on each simulated tick. `POST /api/v1/observations` exists and uses the same code path, but the simulator does not go through HTTP.
 - Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Deferred: `arrhythmia`, `eva`, `infection`.

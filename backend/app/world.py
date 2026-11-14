@@ -334,6 +334,7 @@ class World:
             "phase": {
                 "name": self.sim.phase,
                 "gravity_g": self.sim.phase_cfg["gravity_g"],
+                "gravity": self.sim.gravity_state(),
                 "comm_delay_s": self.delay_s,
                 "comm_delay_source": self.delay_source().as_dict(),
             },

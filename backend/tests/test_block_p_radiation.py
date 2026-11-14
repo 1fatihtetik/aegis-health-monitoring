@@ -75,7 +75,7 @@ def test_leo_replays_iss_dostel_with_nasa_labels(cfg):
     assert prov["saa_transit"]["provenance"] == "NASA_DERIVED"
     assert "Berger" in prov["saa_transit"]["basis"]
     replay = w.snapshot["radiation"]["replay"]
-    assert replay["label"] == "ISS DOSTEL-1 2019" and replay["agency"] == "NASA"
+    assert replay["label"] == "ISS DOSTEL-1 (DLR) 2019" and replay["agency"] == "NASA"
     assert "DOSTEL" in replay["instrument"] and replay["saa"] in (True, False)
     assert w.store.latest(None, "saa_transit") is not None
 
@@ -139,6 +139,11 @@ def test_saa_crossings_do_not_raise_the_spe_emergency(cfg):
     assert 1.0 in [v for _, v in w.store.points(None, "saa_transit")]
     raised = [a.rule_id for a in w.alerts.alerts.values()]
     assert "rad.spe.dose_rate" not in raised  # ...but the rule stands down there
+    # P-1c (3B): each pass shows one INFO alert instead, auto-resolved after the pass; never more than one open.
+    saa = [a for a in w.alerts.alerts.values() if a.rule_id == "rad.saa.transit"]
+    assert saa and all(a.severity == "INFO" for a in saa)
+    assert sum(1 for a in saa if a.state != "RESOLVED") <= 1
+    assert len(saa) <= 6  # about one per SAA pass in 6 h, not one per spike
 
 
 def test_unless_stands_down_a_threshold_rule_with_evidence(cfg):

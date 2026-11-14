@@ -28,7 +28,7 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 | Cabin CO2 | **Synthetic, NASA-calibrated**: nominal 2.0 mmHg and degradation peaks 3.7-3.8 mmHg set from OCHMO-TB-004 Rev D | labelled "Synthetic · NASA-calibrated" |
 | Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, heuristic parameters (each listed under `sources` in `config/crew.yaml`). NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
 | LEO, lunar-surface and post-landing radiation | **Measured (Block P).** LEO: ISS Columbus DOSTEL-1 via NASA OSDR RadLab (Jan 2019), with South Atlantic Anomaly passes flagged so they do not trigger the SPE alarm. Lunar surface: LRO CRaTER, surface-corrected by the CRaTER team (NASA ISWA), checked against Chang'e-4. After landing: EPA RadNet Houston (non-NASA, labelled `MEASURED_OTHER`). | P-1..P-3, done |
-| Gravity effects on the body | **Display only today**: bone loss runs at the 0 g rate in every phase. Planned (Block P): drift rates and orthostatic risk depend on the phase's gravity, with a model chosen after research | planned |
+| Gravity effects on the body | **Synthetic, linear model (P-5, user's pick)**: bone and fitness loss run at (1 - g) x the zero-g rate (animal partial-loading data, Ellman 2013; Mortreux 2018), blood pressure rises g x 8/9 mmHg (Norsk 2015), fainting risk after a landing from Meck 2001. No human data exist at 0.16 g or 0.38 g | P-5, done |
 | Inspiration4 blood panels | Planned (Block P): aggregate pre/post-flight CBC/CMP ranges from NASA OSDR (OSD-569/570/571/575), never one person's values | planned |
 
 NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py rad-cruise` / `rad-surface` / `rad-spe` /

@@ -619,6 +619,52 @@ def parse_radlab_tsv(text: str) -> list[dict[str, Any]]:
     return rows
 
 
+# P-1b (user decision 2D): the other ISS series RadLab serves, checked against the same 731 uSv/day reference.
+# Switch the LEO replay only if one matches clearly better AND its <Q> is citable; otherwise record why not.
+ISS_OTHERS = {
+    "RAD-LAB1O3-pre": "NASA ISS-RAD, US Lab (daily means only, marked preliminary by RadLab)",
+    "TEPC-SMP330-pre": "NASA TEPC, Service Module (daily means only, marked preliminary by RadLab)",
+    "DosTel2": "DLR DOSIS 3D DOSTEL-2, Columbus",
+    "TriTel-SM": "Hungarian TriTel, Service Module",
+}
+ISS_ABSENT = "Liulin, Lidal and Timepix: no records in RadLab for 2019-01-03..10 (their series start or end elsewhere)."
+
+
+def _compare_iss_instruments(dostel1_uGy_day: float) -> dict[str, Any]:
+    out: dict[str, Any] = {
+        "reference_uSv_day": 731, "quality_factor_applied": ISS_Q,
+        "DosTel1": {"what": "DLR DOSIS 3D DOSTEL-1, Columbus (bundled)", "mean_uGy_day": round(dostel1_uGy_day, 1),
+                    "dose_equivalent_uSv_day": round(dostel1_uGy_day * ISS_Q)},
+    }
+    for ins, what in ISS_OTHERS.items():
+        query = (f"{RADLAB_API}?instrument={ins}&timestamp>={ISS_WINDOW[0]}&timestamp<{ISS_WINDOW[1]}"
+                 "&absorbed_dose_rate&format=tsv")
+        rows = [r for r in csv.DictReader(_get(query).decode("utf-8", "replace").splitlines(), delimiter="\t")
+                if NUMBER.fullmatch(r.get("absorbed_dose_rate", "").strip())]
+        if not rows:
+            out[ins] = {"what": what, "records": 0}
+            continue
+        times = [datetime.fromisoformat(r["timestamp"].strip('"')) for r in rows]
+        values = [float(r["absorbed_dose_rate"]) for r in rows]
+        # Time-weighted (hold until the next record, max 1 day) so 20 s SAA records do not dominate.
+        weights = [min(((b - a).total_seconds() if b else 86400.0), 86400.0)
+                   for a, b in zip(times, [*times[1:], None], strict=True)]
+        if len(rows) > 1 and weights[-1] == 86400.0:
+            weights[-1] = sorted(weights[:-1])[len(weights) // 2 - 1]
+        mean_day = 24 * sum(v * w for v, w in zip(values, weights, strict=True)) / sum(weights)
+        out[ins] = {"what": what, "records": len(rows), "mean_uGy_day": round(mean_day, 1),
+                    "dose_equivalent_uSv_day": round(mean_day * ISS_Q)}
+    out["absent"] = ISS_ABSENT
+    out["decision"] = (
+        "Keep DOSTEL-1. ISS-RAD (NASA) agrees with it within a few percent, so the gap to 731 is not a RadLab "
+        "DOSTEL problem; it most likely comes from applying the May 2016 <Q> to a solar-minimum window. ISS-RAD is not "
+        "clearly better, has only daily means (no SAA passes to replay) and no <Q> we could cite. DOSTEL-2 reads lower "
+        "(other viewing direction). TriTel (Service Module, different shielding) misses 731 by more than DOSTEL-1 and "
+        "the DOSTEL <Q> does not apply to it. TEPC has 4 days in the window and reads far above every other "
+        "instrument (unit or processing unclear, marked preliminary).")
+    return out
+
+
 def cmd_iss_radlab(_: argparse.Namespace) -> int:
     query = (f"{RADLAB_API}?instrument=DosTel1&timestamp>={ISS_WINDOW[0]}&timestamp<{ISS_WINDOW[1]}"
              "&absorbed_dose_rate&latitude&longitude&altitude&format=tsv")
@@ -633,8 +679,9 @@ def cmd_iss_radlab(_: argparse.Namespace) -> int:
                 "(Berger et al. 2017); microGray/hour")
     mean_day = 24 * _time_weighted_mean(rows, "dose_si_uGy_h", 600)
     saa_share = sum(1 for r in rows if r["saa"] == 1) / len(rows)
+    comparison = _compare_iss_instruments(mean_day)
     _upsert({
-        "id": "iss_dostel1_2019_01", "tier": "D6", "label": "ISS DOSTEL-1 2019",
+        "id": "iss_dostel1_2019_01", "tier": "D6", "label": "ISS DOSTEL-1 (DLR) 2019",
         "title": "ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate, 2019-01-03 to 2019-01-10, via NASA OSDR RadLab",
         "source_url": query, "retrieved": datetime.now(UTC).date().isoformat(),
         "terms": ("NASA Open Science Data Repository (OSDR) RadLab, public. Instrument: DOSTEL-1 of the DOSIS 3D "
@@ -644,8 +691,8 @@ def cmd_iss_radlab(_: argparse.Namespace) -> int:
                       "(uGy/h, unchanged), ISS lat/lon/alt; saa = 1 inside the SAA box 10-80 deg W, 5-45 deg S (Berger "
                       "et al. 2017). Rows without a value or position -> SUSPECT. Replay holds each record until the "
                       f"next one. Dose equivalent = DOSTEL dose x <Q> {ISS_Q} = 647 uSv/day / 286 uGy/day, the "
-                      "DOSTEL-1 total published for end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Not ISS-RAD: "
-                      "RadLab served no ISS-RAD, REM or TEPC series for this window (checked 2026-11-14)."),
+                      "DOSTEL-1 total published for end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Why DOSTEL-1 "
+                      "and not ISS-RAD: see reference.instrument_comparison (P-1b)."),
         "reference": {
             "citation": ("Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (non-NASA paper; reference check only): DOSIS 3D "
                          "DOSTEL on ISS, same period as Chang'E 4 first lunar day, 731 uSv/day (GCR 523, SAA ~208). "
@@ -657,6 +704,7 @@ def cmd_iss_radlab(_: argparse.Namespace) -> int:
             "quality_factor": ISS_Q, "window_mean_dose_si_uGy_day": round(mean_day, 1),
             "window_mean_dose_equivalent_uSv_day": round(mean_day * ISS_Q, 1),
             "window_saa_row_share": round(saa_share, 3),
+            "instrument_comparison": comparison,
         },
         "files": [{"path": raw_rel, "sha256": sha256(DATA / raw_rel)}, {"path": rel, "sha256": sha256(DATA / rel)}],
     })
