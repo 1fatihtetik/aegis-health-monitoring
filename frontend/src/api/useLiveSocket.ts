@@ -555,6 +555,15 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
       }
 
+      // P-7: phase scenarios. Offline they only move the browser simulation to the phase's profile.
+      if (scenario === 'leo_baseline' || scenario === 'lunar_surface') {
+        const phase: MissionPhaseName = scenario === 'leo_baseline' ? 'LEO' : 'LUNAR_SURFACE';
+        next.sim.phase = phase;
+        next.sim.gravity_g = PHASE_PROFILES[phase].gravity_g;
+        next.sim.comm_delay_s = PHASE_PROFILES[phase].comm_delay_s;
+        next.link.one_way_delay_s = PHASE_PROFILES[phase].comm_delay_s;
+      }
+
       if (scenario === 'orthostatic_intolerance') {
         next.sim.phase = 'MARS_SURFACE';
         next.sim.gravity_g = 0.38;

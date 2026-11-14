@@ -1,0 +1,6 @@
+description: "Normal day on the ISS (LEO, 0 g, P-7). Measured DOSTEL-1 radiation with South Atlantic Anomaly passes: short dose spikes raise a plain INFO notice, never the SPE emergency."
+phase: LEO
+speed: 60
+events: []
+expected:
+  - { rule_id: rad.saa.transit, severity: INFO, within: 8h }

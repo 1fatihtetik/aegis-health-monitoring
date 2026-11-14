@@ -156,3 +156,14 @@ space_weather:
   sep:    { dataset_id: donki_sep_2012_03,         file: derived/donki_sep_2012_03.json }
   events: { dataset_id: donki_flr_cme_2012_03,     file: derived/donki_flr_cme_2012_03.json }
   flux:   { dataset_id: omni2_proton_flux_2012_03, file: derived/omni2_proton_flux_2012_03.csv }
+
+# P-6: reference panels. Shown in CrewDetail as context only; they never feed signals, rules or alerts.
+# Aggregate only (ROADMAP 0.2 rule 4): backend/app/datasets/inspiration4.py refuses per-person columns and
+# cells with fewer than 3 crew. Checked against MANIFEST.yaml like a replay.
+reference_panels:
+  inspiration4:
+    dataset_id: osdr_inspiration4_cbc_cmp
+    file: derived/inspiration4_cbc_cmp_aggregate.csv
+    title: "Inspiration4 crew blood panels (CBC, CMP): pre- and post-flight"
+    basis: "Aggregate of the 4 Inspiration4 crew (3-day LEO flight, Sept 2021): mean and SD per analyte and time point, from NASA OSDR OSD-569 (CBC) and OSD-575 (CMP). Reference only; AEGIS crew have no lab signals."
+    timepoints: [L-92, L-44, L-3, R+1, R+45, R+82, R+194]

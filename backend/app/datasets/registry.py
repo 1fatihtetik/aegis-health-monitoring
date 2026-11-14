@@ -101,6 +101,12 @@ class DatasetRegistry:
             if reason:
                 self.problems.append(f"space_weather {part} unavailable: {reason}")
             self.space_weather_files[part] = (did, rel, reason)
+        # P-6 reference panels (aggregate, reference only; never feed the engine). Checked like replays.
+        self.reference_panels: dict[str, dict[str, Any]] = dict(spec.get("reference_panels") or {})
+        for name, src in self.reference_panels.items():
+            reason = self.file_problem(str(src.get("dataset_id", "")), src.get("file"))
+            if reason:
+                self.problems.append(f"reference panel {name} unavailable: {reason}")
         for problem in self.problems:
             log.warning("NASA data: %s", problem)
 

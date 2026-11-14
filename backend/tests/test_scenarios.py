@@ -13,6 +13,8 @@ HOURS = {
     "orthostatic_intolerance": 3,
     "demo_5min": 25,
     "headache_branching": 13,
+    "leo_baseline": 8,
+    "lunar_surface": 6,
 }
 
 
@@ -128,3 +130,23 @@ def test_headache_branches_on_cabin_co2(cfg):
     world = run(cfg, "headache_branching", 13)
     fired = {(a.rule_id, a.crew_id) for a in world.alerts.alerts.values() if a.rule_id.startswith("ctx.")}
     assert fired == {("ctx.headache_tachy.hydration", "C2"), ("ctx.headache_tachy.co2", "C4")}
+
+
+# ---- P-7 phase scenarios ---------------------------------------------------------------------------------------
+def test_leo_baseline_shows_saa_notices_but_no_spe_alarm(cfg):
+    world = run(cfg, "leo_baseline", 8)
+    rules = {a.rule_id for a in world.alerts.alerts.values()}
+    assert rules == {"rad.saa.transit"}
+    assert all(a.severity.value == "INFO" for a in world.alerts.alerts.values())
+    src = world.snapshot["provenance"]["area_dose_rate_absorbed"]
+    assert (src["provenance"], src["dataset_id"]) == ("NASA_MEASURED", "iss_dostel1_2019_01")
+
+
+def test_lunar_surface_switches_radiation_and_gravity(cfg):
+    world = run(cfg, "lunar_surface", 6)
+    assert alert_log(world) == []
+    src = world.snapshot["provenance"]["area_dose_rate_equivalent"]
+    assert (src["provenance"], src["dataset_id"]) == ("NASA_DERIVED", "lro_crater_surface_2019_01")
+    g = world.snapshot["phase"]["gravity"]
+    assert g["gravity_g"] == 0.16 and g["load_factor"] == 0.84
+    assert g["transition"] and g["transition"]["to_g"] == 0.16

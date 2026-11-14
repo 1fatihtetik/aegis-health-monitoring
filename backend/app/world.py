@@ -12,6 +12,7 @@ from app.alerts.manager import AlertManager
 from app.clock import SimClock
 from app.config import Config
 from app.datasets.horizons import CommDelay, LightTime
+from app.datasets.inspiration4 import load_inspiration4
 from app.datasets.provenance import ProvenanceTracker
 from app.datasets.rad import RadiationReplays
 from app.datasets.spaceweather import SpaceWeather
@@ -63,6 +64,7 @@ class World:
         self.radiation = RadiationReplays(cfg.datasets, self.start_ts)
         self.comm = CommDelay(cfg.datasets, mission["phases"])  # R-4: JPL Horizons light time by date
         self.space_weather = SpaceWeather(cfg)  # R-5: ground-side DONKI/OMNI2 context, reaches the crew via link
+        self.inspiration4 = load_inspiration4(cfg.datasets)  # P-6: aggregate reference panel, bundled, onboard too
         self.suspect: list[list[datetime]] = []  # [from, to] spans where a RAD gap was filled by holding (SUSPECT)
         self.sim = Simulator(cfg, self.clock, seed, self.scenario.get("phase", mission["default_phase"]), self.start_ts,
                              self.radiation)

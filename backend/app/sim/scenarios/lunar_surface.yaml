@@ -1,0 +1,6 @@
+description: "Lunar landing (0 to 0.16 g, P-7). Transit radiation (MSL/RAD cruise) gives way to the lunar surface dose (LRO CRaTER, surface-corrected); bone loss slows to 84 % of the 0 g rate. No alerts expected."
+phase: TRANSIT
+speed: 120
+events:
+  - { at: 30m, type: phase, params: { name: LUNAR_SURFACE } }
+expected: []

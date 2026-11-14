@@ -39,6 +39,10 @@ Usage (from the repo root):
     python -P scripts/fetch_nasa_data.py radnet
         P-3: US EPA RadNet fixed monitor, Houston TX, hourly gamma dose equivalent rate, 2024-06-03..12 (bundled raw
         CSV for 2024 + derived window). Non-NASA: manifest `agency: EPA`, label MEASURED_OTHER.
+    python -P scripts/fetch_nasa_data.py inspiration4
+        P-6: Inspiration4 CBC (OSD-569) and CMP (OSD-575) from NASA OSDR. The per-person files are aggregated in
+        memory (n, mean, SD per analyte and time point; cells with n < 3 dropped) and NOT bundled; only the
+        aggregate CSV is written. Their URL + sha256 are recorded.
 """
 
 import argparse
@@ -822,6 +826,115 @@ def cmd_radnet(_: argparse.Namespace) -> int:
     return 0
 
 
+# ---- Block P (P-6): Inspiration4 aggregate blood panel ---------------------------------------------------------
+OSDR_DL = "https://osdr.nasa.gov/geode-py/ws/studies/{osd}/download?source=datamanager&file={name}"
+I4_SOURCES = (  # (panel, OSD study, file) - per-person lab results; downloaded, aggregated in memory, never bundled
+    ("CBC", "OSD-569", "LSDS-7_Complete_Blood_Count_CBC.upload_SUBMITTED.csv"),
+    ("CMP", "OSD-575", "LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv"),
+)
+I4_TIMEPOINTS = ("L-92", "L-44", "L-3", "R+1", "R+45", "R+82", "R+194")  # days before launch (L) / after return (R)
+I4_MIN_N = 3  # small-cell rule: a cell with fewer crew than this is dropped, so no row can describe one person
+I4_DROP = ("EGFR",)  # eGFR rows use a race coefficient; not shown
+I4_HEADER = ["panel", "analyte", "unit", "timepoint", "n", "mean", "sd", "ref_low", "ref_high", "ref_note"]
+I4_FORBIDDEN = {"SUBJECT_ID", "SEX", "VALUE", "subject_id", "sex", "value"}
+
+
+def _num(text: str) -> float | None:
+    text = text.strip()
+    return float(text) if NUMBER.fullmatch(text) else None
+
+
+def _fmt(x: float) -> str:
+    return f"{x:.4g}" if abs(x) < 1000 else f"{x:.0f}"
+
+
+def aggregate_i4(panel: str, text: str) -> tuple[list[dict[str, Any]], int]:
+    """Per-person lab rows -> one row per (analyte, time point): n, mean, SD and the lab reference interval.
+
+    Sex-specific analytes ("HEMOGLOBIN (FEMALE)") are pooled with their base analyte; the interval is given per
+    sex in ref_note when the sexes differ. Returns (rows, dropped cells with n < I4_MIN_N).
+    """
+    reader = csv.DictReader(text.splitlines())
+    tp_key = "TEST_DATE" if "TEST_DATE" in (reader.fieldnames or []) else "timepoint"
+    values: dict[tuple[str, str], list[float]] = {}
+    units: dict[str, str] = {}
+    intervals: dict[str, dict[str, tuple[float | None, float | None]]] = {}
+    for r in reader:
+        raw_name = (r.get("ANALYTE") or "").strip()
+        if not raw_name or any(raw_name.upper().startswith(d) for d in I4_DROP):
+            continue
+        name = raw_name.replace(" (FEMALE)", "").strip()
+        tp = (r.get(tp_key) or "").strip()
+        if tp not in I4_TIMEPOINTS:
+            continue
+        units.setdefault(name, (r.get("UNITS") or "").strip())
+        sex = (r.get("SEX") or "?").strip()
+        intervals.setdefault(name, {})[sex] = (_num(r.get("RANGE_MIN") or ""), _num(r.get("RANGE_MAX") or ""))
+        v = _num(r.get("VALUE") or "")
+        if v is not None:
+            values.setdefault((name, tp), []).append(v)
+    rows, dropped = [], 0
+    for name in sorted(units):
+        ivs = intervals[name]
+        lows = [lo for lo, _ in ivs.values() if lo is not None]
+        highs = [hi for _, hi in ivs.values() if hi is not None]
+        note = ""
+        if len(set(ivs.values())) > 1:
+            note = "; ".join(f"{s} {'' if lo is None else _fmt(lo)}-{'' if hi is None else _fmt(hi)}"
+                             for s, (lo, hi) in sorted(ivs.items()))
+        for tp in I4_TIMEPOINTS:
+            vals = values.get((name, tp), [])
+            if len(vals) < I4_MIN_N:
+                dropped += 1 if vals else 0
+                continue
+            mean = sum(vals) / len(vals)
+            sd = (sum((v - mean) ** 2 for v in vals) / (len(vals) - 1)) ** 0.5
+            rows.append({
+                "panel": panel, "analyte": name, "unit": units[name], "timepoint": tp, "n": len(vals),
+                "mean": _fmt(mean), "sd": _fmt(sd), "ref_low": _fmt(min(lows)) if lows else "",
+                "ref_high": _fmt(max(highs)) if highs else "", "ref_note": note,
+            })
+    return rows, dropped
+
+
+def cmd_inspiration4(_: argparse.Namespace) -> int:
+    rows: list[dict[str, Any]] = []
+    raw_sources, dropped = [], 0
+    for panel, osd, name in I4_SOURCES:
+        url = OSDR_DL.format(osd=osd, name=name)
+        blob = _get(url)
+        part, d = aggregate_i4(panel, blob.decode("utf-8", "replace"))
+        rows += part
+        dropped += d
+        raw_sources.append({"url": url, "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest()})
+    assert not I4_FORBIDDEN & set(I4_HEADER) and all(int(r["n"]) >= I4_MIN_N for r in rows)
+    rel = "derived/inspiration4_cbc_cmp_aggregate.csv"
+    _write_rows(DATA / rel, I4_HEADER, rows,
+                f"Inspiration4 crew (n=4) CBC/CMP AGGREGATE per analyte and time point (mean, sample SD); "
+                f"no per-person values; cells with n < {I4_MIN_N} dropped. L-x = days before launch, "
+                f"R+x = days after return (3-day flight, Sept 2021).")
+    _upsert({
+        "id": "osdr_inspiration4_cbc_cmp", "tier": "D5", "label": "OSDR Inspiration4 CBC/CMP",
+        "title": "Inspiration4 crew blood panels (CBC, CMP), aggregate pre/post-flight, NASA OSDR OSD-569 / OSD-575",
+        "source_url": " ; ".join(s["url"] for s in raw_sources),
+        "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": ("NASA Open Science Data Repository (OSDR), public. Inspiration4 (SpaceX) crew samples collected "
+                  "by the SOMA team. Cite: Overbey et al. (2024) Nature, doi:10.1038/s41586-024-07639-y (SOMA); "
+                  "OSD-569, OSD-575."),
+        "transform": (f"Per-person lab CSVs downloaded at build time and NOT bundled. Per analyte and time point: "
+                      f"n, mean, sample SD across the crew (sex-specific analytes pooled with their base analyte); "
+                      f"lab reference interval = widest low/high across sexes, per-sex text in ref_note when they "
+                      f"differ. Cells with n < {I4_MIN_N} dropped ({dropped} dropped); eGFR rows (race "
+                      f"coefficient) dropped. No subject id, sex or individual value is kept."),
+        "reference": {"crew_n": 4, "timepoints": list(I4_TIMEPOINTS), "flight_days": 3, "min_cell_n": I4_MIN_N,
+                      "rows": len(rows), "studies": ["OSD-569", "OSD-575"]},
+        "raw_sources": raw_sources,
+        "files": [{"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(rows)} aggregate rows ({dropped} small cells dropped) -> {rel}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -849,6 +962,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("iss-radlab").set_defaults(fn=cmd_iss_radlab)
     sub.add_parser("crater").set_defaults(fn=cmd_crater)
     sub.add_parser("radnet").set_defaults(fn=cmd_radnet)
+    sub.add_parser("inspiration4").set_defaults(fn=cmd_inspiration4)
     args = parser.parse_args(argv)
     return int(args.fn(args))
 

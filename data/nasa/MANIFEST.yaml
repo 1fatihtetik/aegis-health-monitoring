@@ -344,3 +344,46 @@ datasets:
     sha256: f34811a680b598a228253019ba6eefbc1144c4e56984f1b7ddc805f6f474edc4
   - path: derived/iss_dostel1_2019_01.csv
     sha256: fc67e02d5db87562111d18f4b1c3e95096b27ae4daeae740a7137bfa8baca5bf
+- id: osdr_inspiration4_cbc_cmp
+  tier: D5
+  label: OSDR Inspiration4 CBC/CMP
+  title: Inspiration4 crew blood panels (CBC, CMP), aggregate pre/post-flight, NASA
+    OSDR OSD-569 / OSD-575
+  source_url: https://osdr.nasa.gov/geode-py/ws/studies/OSD-569/download?source=datamanager&file=LSDS-7_Complete_Blood_Count_CBC.upload_SUBMITTED.csv
+    ; https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv
+  retrieved: '2026-11-14'
+  terms: 'NASA Open Science Data Repository (OSDR), public. Inspiration4 (SpaceX)
+    crew samples collected by the SOMA team. Cite: Overbey et al. (2024) Nature, doi:10.1038/s41586-024-07639-y
+    (SOMA); OSD-569, OSD-575.'
+  transform: 'Per-person lab CSVs downloaded at build time and NOT bundled. Per analyte
+    and time point: n, mean, sample SD across the crew (sex-specific analytes pooled
+    with their base analyte); lab reference interval = widest low/high across sexes,
+    per-sex text in ref_note when they differ. Cells with n < 3 dropped (3 dropped);
+    eGFR rows (race coefficient) dropped. No subject id, sex or individual value is
+    kept.'
+  reference:
+    crew_n: 4
+    timepoints:
+    - L-92
+    - L-44
+    - L-3
+    - R+1
+    - R+45
+    - R+82
+    - R+194
+    flight_days: 3
+    min_cell_n: 3
+    rows: 252
+    studies:
+    - OSD-569
+    - OSD-575
+  raw_sources:
+  - url: https://osdr.nasa.gov/geode-py/ws/studies/OSD-569/download?source=datamanager&file=LSDS-7_Complete_Blood_Count_CBC.upload_SUBMITTED.csv
+    bytes: 26138
+    sha256: 10a878b009eb2ea11a13fe92ad698098858639e8ed02f5ee849431313b9457d3
+  - url: https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Comprehensive_Metabolic_Panel_CMP.upload_SUBMITTED.csv
+    bytes: 25275
+    sha256: dab247eb794edab59aaaa683c85fd1f2dbf4ae3684872739338e10ead4192a0c
+  files:
+  - path: derived/inspiration4_cbc_cmp_aggregate.csv
+    sha256: 443096ff757e3ecff8501a3c76b5b5692bbe5cb37dbbc6abd5bc26b735258227

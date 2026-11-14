@@ -53,7 +53,9 @@ export type ScenarioName =
   | 'co2_scrubber_degradation'
   | 'insomnia_streak'
   | 'headache_branching'
-  | 'orthostatic_intolerance';
+  | 'orthostatic_intolerance'
+  | 'leo_baseline'
+  | 'lunar_surface';
 
 export type ReadinessKind = 'OVERALL' | 'EVA' | 'COGNITIVE' | 'PHYSICAL';
 
@@ -746,4 +748,39 @@ export interface AegisSystemState {
     environment: EnvironmentState;
     provenance: Record<string, SignalSource>;
   };
+}
+
+/** P-6: one time point of an Inspiration4 aggregate analyte (crew mean and SD, never one person). */
+export interface ReferencePoint {
+  timepoint: string;
+  n: number;
+  mean: number | null;
+  sd: number | null;
+}
+
+/** P-6: one analyte of the Inspiration4 CBC/CMP aggregate reference (NASA OSDR OSD-569 / OSD-575). */
+export interface ReferenceAnalyte {
+  panel: 'CBC' | 'CMP' | string;
+  analyte: string;
+  unit: string;
+  ref_low: number | null;
+  ref_high: number | null;
+  /** Per-sex lab interval when the sexes differ, e.g. "F 11.7-15.5; M 13.2-17.1". */
+  ref_note: string;
+  points: ReferencePoint[];
+}
+
+/** P-6: GET /api/v1/reference/inspiration4 -> panel. Reference only; never feeds rules or alerts. */
+export interface Inspiration4Panel {
+  available: boolean;
+  title: string;
+  provenance: Provenance;
+  dataset_id: string | null;
+  dataset: DatasetMeta | null;
+  basis: string;
+  timepoints: string[];
+  crew_n: number | null;
+  min_cell_n: number;
+  analytes: ReferenceAnalyte[];
+  problem: string;
 }

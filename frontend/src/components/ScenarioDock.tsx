@@ -45,6 +45,18 @@ const SCENARIO_BUTTONS: Array<{
     badge: 'WARNING',
     style: 'border-orange-400/60 bg-orange-500/15 text-orange-100 hover:bg-orange-500/25',
   },
+  {
+    id: 'leo_baseline',
+    label: '✓ ISS Day (LEO, SAA passes)',
+    badge: 'INFO',
+    style: 'border-sky-400/60 bg-sky-500/15 text-sky-100 hover:bg-sky-500/25',
+  },
+  {
+    id: 'lunar_surface',
+    label: '✓ Lunar Landing (0.16 g)',
+    badge: 'NOMINAL',
+    style: 'border-slate-400/60 bg-slate-500/15 text-slate-100 hover:bg-slate-500/25',
+  },
 ];
 
 const SPEED_OPTIONS = [1, 10, 60, 100, 1000, 10000];

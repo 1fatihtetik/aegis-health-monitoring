@@ -411,6 +411,14 @@ async def spaceweather_forward(body: ForwardBody, request: Request) -> dict[str,
     return w.forward_space_weather(body.crew_id)
 
 
+# ---- reference panels (P-6) ------------------------------------------------------------------
+@router.get("/reference/inspiration4")
+async def reference_inspiration4(request: Request, node: Node = "onboard") -> dict[str, Any]:
+    """Bundled Inspiration4 aggregate CBC/CMP reference (NASA OSDR). Static, offline, same on both nodes."""
+    rt = _rt(request)
+    return _envelope(rt, node, panel=rt.world.inspiration4)
+
+
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
 async def observations(items: list[Observation], request: Request) -> dict[str, int]:

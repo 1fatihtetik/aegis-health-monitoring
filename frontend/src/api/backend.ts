@@ -23,6 +23,7 @@ import {
   GravityEffect,
   Hazard,
   HrpRiskId,
+  Inspiration4Panel,
   LinkStatus,
   LongTermTrendPoint,
   MissionPhaseName,
@@ -274,6 +275,10 @@ export const backendApi = {
   async alerts(node: 'onboard' | 'ground'): Promise<BackendAlert[]> {
     const res = await getJson<{ alerts: BackendAlert[] }>(`/alerts?node=${node}`);
     return res?.alerts ?? [];
+  },
+  async inspiration4(): Promise<Inspiration4Panel | null> {
+    const res = await getJson<{ panel: Inspiration4Panel }>('/reference/inspiration4?node=onboard');
+    return res?.panel ?? null;
   },
   async spaceWeather(): Promise<SpaceWeatherEvent | null> {
     const res = await getJson<{ event: SpaceWeatherEvent }>('/spaceweather/event?node=ground');

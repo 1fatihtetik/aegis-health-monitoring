@@ -23,6 +23,7 @@ import { AutonomyNotice } from '../components/AutonomyNotice';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { ContextBadge } from '../components/EvidenceDetails';
 import { HeadacheReport } from '../components/HeadacheReport';
+import { Inspiration4ReferencePanel } from '../components/Inspiration4Panel';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
@@ -517,6 +518,9 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {/* P-6: Inspiration4 aggregate CBC/CMP reference (NASA OSDR), reference only */}
+      <Inspiration4ReferencePanel />
     </div>
   );
 };

@@ -87,6 +87,8 @@ The same scenario and seed always produce the same alerts.
 | `insomnia_streak` | C1 sleeps under half of each sleep period for three nights | `sleep.short_24h` CAUTION |
 | `orthostatic_intolerance` | Gravity transition, C3 | `cardio.orthostatic` WARNING |
 | `headache_branching` | Same symptoms, different cause | `ctx.headache_tachy.hydration` (C2, CO2 normal), then `ctx.headache_tachy.co2` (C4, CO2 high) |
+| `leo_baseline` | ISS day (LEO, 0 g), measured DOSTEL-1 radiation | `rad.saa.transit` INFO per South Atlantic Anomaly pass; no SPE alarm |
+| `lunar_surface` | Lunar landing (0 -> 0.16 g), CRaTER surface dose | none (radiation switches to LRO CRaTER, bone loss slows to 84 % of the 0 g rate) |
 
 ## Demo walkthrough (`demo_5min`, about 4 minutes, plays untouched)
 
