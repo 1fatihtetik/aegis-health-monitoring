@@ -3,7 +3,7 @@
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
 **Current state (2026-11-14):** the 30-hour MVP, Block R (real NASA data) and Block P (phases and gravity) are built and approved. The demo is frozen at tag `demo-ready-v2` (D-4); the Block R demo stays at `demo-ready`. See `implementationsandgoals.txt`.
-**Current priority: Block T, crew self-tests and body map (§0). Status: PLANNED, not started.** The user decided the scope on 2026-11-14 ("we are only planning and recording our next moves, not building"). Building starts only on the user's go-ahead.
+**Current priority: Block T, crew self-tests and body map (§0). Status: IN PROGRESS (go-ahead 2026-11-15).** Built: T-0, T-3, T-1, T-2, T-4 (ready for review). Next: T-5 stand test, after the protocol is confirmed.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
@@ -103,7 +103,7 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 | Block R: real NASA data | R-0 data layer + provenance, R-1 nine verified NASA-STD-3001 limits, R-2 MSL/RAD cruise + Gale replay, R-3 real March 2012 SPE, R-4 Horizons light time, R-5 space-weather card, R-6 calibrated simulator; **Gate R** | approved |
 | Freeze | D-3, tag `demo-ready` | approved |
 | Block P: phases and gravity | P-0 `MEASURED_OTHER`; P-1 LEO = ISS DOSTEL-1 (DLR, via NASA OSDR RadLab) with SAA stand-down + INFO notice; P-2 lunar = LRO CRaTER (NASA ISWA, checked vs Chang'e-4); P-3 Earth = EPA RadNet Houston; P-4/P-5 linear partial-gravity model; P-6 Inspiration4 aggregate panel; P-7 `leo_baseline`, `lunar_surface`, extended `demo_5min`; **Gate P** | approved |
-| Re-freeze | D-4, tag `demo-ready-v2` | done (supervisor confirmation pending) |
+| Re-freeze | D-4, tag `demo-ready-v2` | approved |
 
 Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`. The full Block P plan is in git history (`ROADMAP.md` before 2026-11-14 Block T planning).
 

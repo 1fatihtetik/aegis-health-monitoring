@@ -1,10 +1,11 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-14 (Block T PLANNED by the user; not started. D-4 re-freeze `demo-ready-v2` READY FOR REVIEW)
-State: 30-hour MVP, Block R, Block P (Gate P) APPROVED; frozen at `demo-ready` (Block R) and `demo-ready-v2` (Block P, D-4). F-001..F-009 CLOSED. Checks at `fb14f1d`: pytest 130, ruff clean (backend + scripts), manifest verify clean, tsc clean, vitest 47.
-Next: (1) Antigravity confirms D-4. (2) Block T, crew self-tests and body map (ROADMAP.md §0), ONLY after the user's go-ahead ("we are only planning and recording our next moves, not building"): T-0 foundation -> T-3 guided measurements -> T-1 schedule -> T-2 PVT-B -> T-4 questionnaires -> T-5 stand test -> T-7 SANS rule -> T-8 landing gate -> T-9 Amsler grid -> T-6 body map -> T-10 extended demo -> Gate T -> D-5 re-freeze (`demo-ready-v3`).
+Last updated: 2026-11-15 (Block T IN PROGRESS: T-0, T-3, T-1, T-2, T-4 built, READY FOR REVIEW; next T-5 needs the stand-test protocol confirmed)
+State: 30-hour MVP, Block R, Block P (Gate P), D-4 APPROVED; frozen at `demo-ready` (Block R) and `demo-ready-v2` (Block P). F-001..F-009 CLOSED. Checks at `7fa305a`: pytest 168, ruff clean (backend + scripts), manifest verify clean, tsc clean, vitest 72 (12 files).
+Next: (1) Antigravity reviews T-0, T-3, T-1, T-2, T-4 (section 6). (2) T-5 stand test: confirm the protocol (Lee et al. 2015, supervisor note 2) before coding. Then T-7 SANS rule -> T-8 landing gate -> T-9 Amsler grid -> T-6 body map -> T-10 extended demo -> Gate T -> D-5 re-freeze (`demo-ready-v3`).
 
 Read order: this file -> ROADMAP.md §0 -> AGENTS.md (§2b for Block T) -> PRD.md (§6 M11, §7.4 severity, §9 limits, then only needed sections).
 User directives:
+- 2026-11-15 Block T go-ahead (user: "read implementationsandgoals.txt and work on your next tasks ... commit to the repo").
 - 2026-11-14 Block T scope (user, planning only): taking self-tests is a must; NO gamification (no points, streaks, badges, levels, leaderboards; overdue = neutral INFO). New provenance label `CREW_ENTERED`. T-6 body map included (reverses the old "leave out the body map"). From Gemini's outside plan (written without codebase access): accepted SANS rule + fluid/sodium intake, landing readiness gate, Amsler grid; rejected the downlink summary packet/opt-in sharing (so questionnaires stay onboard) and a hardcoded 20-min delay. Severity: keep INFO..EMERGENCY, add LOMO/LOM/LOC sublabel in the UI. Schedule filter: RIDGE. Demo: extend `demo_5min` and re-freeze as `demo-ready-v3`.
 - 2026-11-14 FIRST PRIORITY: real data. "Without real data this MVP would mean nothing." Use NASA-published measurements and limits wherever a public source exists; label the rest honestly.
 - AEGIS is used by non-medical-expert astronauts in extreme environments with delayed/blacked-out Earth comms. Always prioritize plain operational language, step-by-step checklists, >=44px touch targets, and 100% offline/blackout onboard autonomy.
@@ -27,6 +28,10 @@ User directives:
 - Calibration (R-6): every number in `mission.yaml`/`crew.yaml` has a `sources` entry or says heuristic/setting (test-enforced); cabin constants in `mission.yaml sim.cabin`; ppCO2 SYNTHETIC_CALIBRATED from OCHMO TB-004 Rev D.
 - Gravity (P-5, model A LINEAR): `Simulator.unloaded_days` grows by (1 - g) per day, so BMD and VO2max drift run at 100 / 84 / 62 / 0 % of the 0 g rate in 0 / 0.16 / 0.38 / 1 g (Ellman 2013, Mortreux 2018); BP = in-flight baseline + g x (8/9 mmHg) (Norsk 2015), HR unchanged; a gravity increase records `transition` with risk = Meck 2001 presyncope fraction for the days at low g (0.17 at <= 16 d, 0.83 at >= 129 d, linear between) x the increase. Before the scenario the crew is assumed to have spent the whole mission at the starting phase's gravity. No recovery at 1 g is modelled. Snapshot `phase.gravity`; CrewOverview Gravity tile explains it in plain words. The scripted `orthostatic` effect still drives the alert; the risk is shown, not simulated.
 - Inspiration4 panel (P-6): `fetch_nasa_data.py inspiration4` downloads OSDR OSD-569 CBC + OSD-575 CMP (per-person, 4 crew, 7 time points L-92..R+194), aggregates in memory to n / mean / sample SD per analyte and time point, drops cells with n < 3 (3 dropped) and eGFR (race coefficient), and bundles only `derived/inspiration4_cbc_cmp_aggregate.csv` (252 rows, 37 analytes; raw URLs + sha256 in the manifest `raw_sources`). Manifest `osdr_inspiration4_cbc_cmp` (D5, NASA OSDR archive -> NASA_MEASURED aggregate reference; cites Overbey et al. 2024 Nature SOMA). `datasets.yaml reference_panels.inspiration4`; `app/datasets/inspiration4.py` refuses per-person columns, n < 3 and duplicate cells; `GET /reference/inspiration4` (both nodes). CrewDetail `Inspiration4ReferencePanel`: 8 key values in plain words (before flight avg, day after landing mean +/- SD, change, lab range, 6 months later), "Show all 37" toggle, NASA badge, reference-only / not-a-diagnosis copy; offline it parses the bundled CSV (`?raw`). Never feeds signals, rules or alerts.
+- Block T so far (T-0..T-4, details in section 5): `CREW_ENTERED` provenance; `config/selftests.yaml` catalog (12 tests:
+  headache, bp_spo2, temperature, body_mass, glucose, intake, pvt_b, pvt_b_short, kss, tlx, motion_sickness, mood);
+  `app/selftests/` (catalog, entries, schedule); Self-Tests tab (routine board, one test per screen, MeasurementForm,
+  PvtTest, Questionnaire); LOMO/LOM/LOC sublabel; onboard-only questionnaire privacy on the link.
 - `demo_5min` timings (seed 42, P-7): ISS/LEO 0-30m (`rad.saa.transit` INFO 0h05m, auto-resolved 0h28m; delay 0 s); lunar surface 30m-50m (0.16 g, CRaTER, fainting risk ~13 % recorded; delay 1.3 s); Mars transit from 50m (Horizons ~657 s); `sleep.short_24h` 5h56m; `env.co2.high_1h` + `cog.performance_risk` 17h26m; `ctx.headache_tachy.co2` 19h16m; `rad.spe.dose_rate` EMERGENCY 20h09m onboard / 20h20m ground; blackout 20h45m-21h20m; `rad.dose.24h` WARNINGs 21h16m / 21h27m; `cardio.orthostatic` 23h45m; pause 24h30m. About 4 min 40 s real time.
 
 3. KEY DECISIONS (DO NOT REOPEN WITHOUT USER)
@@ -46,19 +51,46 @@ User directives:
 - Open findings: none.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 T-4 questionnaires (`7fa305a`): kss / tlx_workload / motion_sickness / mood are entry_only + onboard_only.
+  Simple-rule alerts on them are `onboard_only` and never sent; compound alerts (cog.performance_risk now also takes
+  cog.sleepiness) go down with the member replaced by a placeholder (no value, source or firing state); the downlink
+  snapshot strips the signals and is rebuilt without private alerts; the ground store copy at T0 excludes them. Rules
+  cog.sleepiness (KSS >= 7), workload.high (raw TLX >= 70, INFO), vestib.motion_sickness (MISC >= 6), psych.mood.low
+  (<= 2, INFO); cut-offs unverified with cited scales. UI: Questionnaire (anchored taps, TLX sliders), "Stays on board"
+  badge, redacted evidence placeholder. Live: KSS 8 for C2 -> cog.sleepiness onboard; caught-up ground shows nothing.
+- 2026-11-15 T-2 PVT-B (`81eaef4`): Basner 2011 (3 min, 1-4 s gaps, lapse > 355 ms in limits.yaml, false start
+  < 100 ms or before the counter, timeout = lapse); params in the catalog; pvt_mean_rt / pvt_lapses / pvt_false_starts;
+  cog.pvt.lapses (> 3, heuristic); cog.performance_risk = short sleep AND (CO2 OR PVT lapses OR sleepiness), CO2 path and
+  demo timing unchanged; COGNITIVE readiness pvt component (left out until a result exists). pvt_b_short (30 s) is a
+  separate catalog test labelled "Demo length, not the 3-minute protocol" so it never counts as the daily test.
+- 2026-11-15 T-1 routine (`2704bf2`): `schedule.py` pure function; slots from the scenario start day, DUE for
+  `due_window`, then OVERDUE as INFO only (no alert, no readiness penalty, never counted); slots before T0 not tracked;
+  after_gravity_increase tests due for 2h after a landing. GET /selftests/schedule; RoutineBoard. A test greps shown UI
+  copy and the catalog for gamification wording.
+- 2026-11-15 T-3 measurements (`603b76c`): body_temp, glucose, fluid_intake, sodium_intake (entry_only); limits all
+  unverified; rules physio.bp.high, physio.temp.fever/low, metab.glucose.low/high, intake.fluid.low,
+  intake.sodium.high (INFO). Server refuses values outside a field's typing range. MeasurementForm asks to re-check and
+  confirm before sending a WARNING/EMERGENCY value (supervisor note 3). Live: SpO2 88 for C1 -> physio.spo2.low WARNING
+  with CREW_ENTERED evidence and the LOM sublabel.
+- 2026-11-15 T-0 foundation (`96c5c36`): Provenance.CREW_ENTERED (between SYNTHETIC_CALIBRATED and MEASURED_OTHER; no
+  dataset; entry_method + crew_id required); Observation.entry_method/test_id; EntryLog keeps per-crew sources in memory
+  (an entry never relabels other crew); a hand measurement of a streamed signal replaces that crew member's wearable
+  stream for `manual_override` (30m setting) and the rules judge the hand values; scenario event `selftest` adds
+  scripted results labelled SYNTHETIC. GET /selftests, /selftests/results. Headache report now posts CREW_ENTERED (tap).
+  Escalation texts lead with onboard / CMO steps (supervisor note 1).
 - 2026-11-14 Block T PLANNED (user: "we are only planning and recording our next moves, not building"). Compared the hackathon brief with the MVP: 9 of 16 points fully covered, 4 partly (treatment guidance, prevention, crew data entry, "why this exam"), 3 missing (routine prompts, body figure, gamification; gamification stays out by user decision). Mapped an outside plan from Gemini (no codebase access) onto the code: its limit schema/triage protocol, LOMO/LOM/LOC, orthostatic + cognitive compound rules, unified ingestion, action cards, readiness Go/Hold and store-and-forward already exist; new and accepted: SANS rule + intake, landing gate, Amsler grid, PVT-B details (1-4 s gaps, lapse > 355 ms, labelled short mode), stand-test timing. User decisions in "User directives". Restructured ROADMAP.md (Block T = §0; Block P moved to Done), AGENTS.md (header, layout, §2a `CREW_ENTERED`, new §2b, §5, §7 Block T tests, §8, §9, §10), README.md (Block P done, Block T next, data table) and this file. Then PRD.md v1.3 (header, G7, non-goals, US-12..16, M0, M3, M4, new M11, §7.4 sublabel column, §8 entities, §12 planned API, §13 Block T table + Gate T, §14 T-10 note, §15, §16 risks, §17 method references). No code changed.
 - 2026-11-14 D-4 re-freeze (ROADMAP Block P gate; user go-ahead "work on your next tasks ... commit"). Checks: pytest 130 passed, ruff clean (backend + scripts), `fetch_nasa_data.py verify` all files match, tsc clean, vitest 47 passed (9 files). Live rehearsal from the README run steps (backend :8000, Vite :5173), `demo_5min` seed 42 untouched: all 7 replays active, `/datasets` problems []; alerts at T0 + 0h05m SAA INFO (resolved), 5h56m sleep, 17h26m CO2 + cognitive, 19h16m headache context, 20h09m SPE EMERGENCY (a second SPE EMERGENCY re-raises at 20h34m on the next peak, as before), 21h16m `rad.dose.24h` WARNING x4, 23h45m `cardio.orthostatic` C3, pause ~24h31m; ground shows the same alert set; no console errors. Tag `demo-ready-v2` on `fb14f1d`, pushed with `main`.
 - Earlier (details in commit messages and git history of this file): P-7 part 2 (`92714e6`), P-6 + P-7 part 1 (`cc762a0`), P-1a/b/c + P-5 (`d12f678`), P-1..P-3 (`d9eb4b2`), P-0 (`86d1278`), D-3 freeze (`de359bf`, tag `demo-ready`), R-0..R-6 (`f697367`..`fb90aee`).
 
 6. WORK QUEUE
 Done (APPROVED): 30-hour MVP, Block R, D-3 (`demo-ready`), Block P P-0..P-7 + Gate P. D-4 (`demo-ready-v2`): READY FOR REVIEW.
-Block T: crew self-tests and body map (PRIORITY 1, ROADMAP.md §0.4; PLANNED, waiting for the user's go-ahead; ~29 h):
-- T-0 PLANNED: `CREW_ENTERED` provenance (enum, ranking, badge "Crew-entered", footer, `check_agency`), `config/selftests.yaml` catalog + `GET /selftests`, LOMO/LOM/LOC severity sublabel.
-- T-3 PLANNED: guided measurement forms (BP, SpO2, temperature, body mass, glucose mg/dL, fluid mL, sodium mg) with steps, live limit band, unverified marker; results through the observation path.
-- T-1 PLANNED: due / done / overdue schedule on the sim clock, RIDGE filter, extra checks after a gravity increase; overdue = INFO only.
-- T-2 PLANNED: PVT-B (3 min, 1-4 s gaps, lapse > 355 ms, Basner 2011), keyboard + tap; COGNITIVE readiness component; labelled short demo mode.
-- T-4 PLANNED: KSS, NASA-TLX, motion sickness, mood; onboard only (never sent by `link/`).
-- T-5 PLANNED: 10-minute stand test (supine, 1/3/5/10 min HR + BP) -> `cardio.orthostatic`, Gravity tile, T-8. Confirm the NASA protocol first.
+Block T: crew self-tests and body map (PRIORITY 1, ROADMAP.md §0.4; IN PROGRESS since 2026-11-15):
+- T-0 READY FOR REVIEW (`96c5c36`): `CREW_ENTERED` provenance (enum, ranking, badge "Crew-entered", footer, `check_agency`), `config/selftests.yaml` catalog + `GET /selftests`, LOMO/LOM/LOC severity sublabel.
+- T-3 READY FOR REVIEW (`603b76c`): guided measurement forms (BP, SpO2, temperature, body mass, glucose mg/dL, fluid mL, sodium mg) with steps, live limit band, unverified marker; results through the observation path.
+- T-1 READY FOR REVIEW (`2704bf2`): due / done / overdue schedule on the sim clock, RIDGE filter, extra checks after a gravity increase; overdue = INFO only.
+- T-2 READY FOR REVIEW (`81eaef4`): PVT-B (3 min, 1-4 s gaps, lapse > 355 ms, Basner 2011), keyboard + tap; COGNITIVE readiness component; labelled short demo mode.
+- T-4 READY FOR REVIEW (`7fa305a`): KSS, NASA-TLX, motion sickness, mood; onboard only (never sent by `link/`).
+- T-5 NEXT (blocked on protocol confirmation): 10-minute stand test (supine, 1/3/5/10 min HR + BP) -> `cardio.orthostatic`, Gravity tile, T-8. Confirm the NASA protocol (Lee et al. 2015) first; explicit safety-stop control (supervisor note 2).
 - T-7 PLANNED: SANS compound rule (HRP-10) on low-g days, ppCO2, sodium/fluid intake (+ Amsler flag); heuristic, copy says the evidence is limited.
 - T-8 PLANNED: `LANDING` readiness gate (Go / Hold) from PVT-B, stand test, fluids, SpO2, low-g days.
 - T-9 PLANNED: Amsler grid self-exam (click input), feeds T-7 and the body map.
@@ -71,6 +103,10 @@ Stretch (only if the user asks, after Gate T): S-3 `arrhythmia` scenario; a seco
 
 7. API & WS QUICK REFERENCE (`/api/v1`, `?node=onboard|ground`)
 - GETs return `{ node, now, as_of, age_s, ...data }`.
+- Block T: `GET /selftests` (catalog with resolved limits + per-field rule limits), `GET /selftests/schedule?crew_id=`
+  (onboard; DUE/DONE/OVERDUE/UPCOMING, overdue level INFO), `GET /selftests/results?crew_id=` (onboard, in memory).
+  Observation adds `entry_method` (CREW_ENTERED only, required there) and `test_id` (value must be a field of that test
+  and inside its typing range, else 422). Alert adds `onboard_only`. Ground never receives onboard-only signals/alerts.
 - Endpoints: `GET /health`, `GET /crew`, `GET /crew/{id}/summary`, `GET /crew/{id}/timeseries?signal=&from=&to=&max_points=`, `GET /crew/{id}/baselines?window=48h`, `GET /environment/current`, `GET /environment/timeseries?signal=`, `GET /radiation/summary`, `POST /radiation/shelter {crew_id, sheltered}`, `GET /readiness?kind=`, `GET /alerts?state=&severity=`, `POST /alerts/{id}/ack|/treat|/resolve|/note {text}`, `GET /rules`, `GET /limits`, `GET /sim/status`, `POST /sim/scenario {name, seed?, speed?}`, `POST /sim/control {action: pause|resume|speed, speed?}`, `GET /link/status`, `POST /link/blackout {on}`, `POST /link/delay {delay_s|null}`, `POST /link/recommendation {text, checklist?, crew_id?}`, `GET /link/recommendations`, `POST /observations [Observation]`, `GET /datasets`, `GET /spaceweather/event`, `POST /spaceweather/forward {crew_id?}`.
 - Provenance objects (snapshot `provenance` map, timeseries `provenance`, alert `evidence`): `{provenance, dataset_id, basis, dataset: {id, label, title, source_url, retrieved, terms, transform, agency} | null}`; timeseries add `segments[]` and `suspect: [[from, to]]`. Observation accepts `provenance` (default SYNTHETIC) + `dataset_id` (required for NASA_* and MEASURED_OTHER); 422 if the label does not match the dataset's manifest `agency`.
 - `GET /datasets` -> `{datasets: [{id, tier, title, label, agency, source_url, retrieved, terms, transform, reference, files[{path, sha256_ok}], sha256_ok}], replays: [{id, dataset_id, signals, active, reason}], problems: [], signals: {signal: {provenance, dataset_id, basis}}}`.
