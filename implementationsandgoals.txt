@@ -27,6 +27,7 @@ User directive: AEGIS is used by non-medical-expert astronauts in extreme enviro
 - F-001..F-005: CLOSED (fixed in Gate 3: per-crew mission dose, `lag_s ??`, crew names, plain-language checklists on all 14 rules, >=44px touch targets, `headache_branching` in ScenarioDock + `HeadacheReport` in CrewDetail). No open findings.
 
 5. RECENT LOG (Claude)
+- 2026-11-14 Rename done: handoff file is now `implementationsandgoals.txt`; references updated in AGENTS.md, README.md, PRD.md and two frontend comments.
 - 2026-11-14 UI Feedback: Added Dark/Light theme toggle button (`>=44px` touch target, `data-testid="theme-toggle-btn"`, persisted to `localStorage` under `aegis-theme`, defaults to `dark`) in `frontend/src/App.tsx` and scoped `html.light` surface/text/border/badge rules in `frontend/src/index.css`.
 - 2026-11-14 D-1 + D-2: `demo_5min` rehearsed & retuned (`sbp_drop: 40` to stop orthostatic flapping, C2 headache CO2 branch at 19h05m, scripted blackout 20h45m–21h10m). Played twice untouched (~4m each, 10 alerts, 0 errors). Checks: pytest 50 pass, ruff ok, tsc ok, vitest 17 pass. Note: if an old backend holds `:8000`, stop it or use `AEGIS_BACKEND_PORT=8010`.
 - 2026-11-14 Gate 3 (G3-1..G3-9): Live WS/REST integration, `limits.ts`, F-001..F-005 fixes, async REST handlers (`94e8a81`).
@@ -36,7 +37,7 @@ Gates 1, 2, 3, 4: APPROVED (2026-11-14, tag `gate3-approved`)
 Demo & Freeze:
 - D-1 APPROVED: Rehearse & retune `demo_5min.yaml` (includes C2 headache CO2 branch + scripted comm blackout).
 - D-2 APPROVED: End-to-end untouched rehearsal x2 (`3469673`).
-- D-3 TODO: Freeze — re-check README run steps, track filename rename (`implementaionsandgoals.txt` -> `implementationsandgoals.txt`) and update references in `AGENTS.md`/`README.md`, final commit + tag `demo-ready` (with user's go-ahead).
+- D-3 TODO: Freeze — re-check README run steps, final commit + tag `demo-ready` (with user's go-ahead).
 Stretch (only if user requests, ROADMAP §5):
 - S-1 TODO: Verify 3–4 limits against NASA-STD-3001 PDFs and set `verified: true`.
 - S-2 TODO: 30s reaction-time self-test widget feeding `COGNITIVE` readiness.

@@ -7,7 +7,7 @@ alerts on its own, and syncs to a ground console over a delayed, lossy link (12 
 > (`verified: false` in `config/limits.yaml`); the UI marks them as unverified.
 
 Specs: `PRD.md` (product), `ROADMAP.md` (30-hour scope), `AGENTS.md` (how to build).
-Agent handoff and the API contract: `implementaionsandgoals.txt`.
+Agent handoff and the API contract: `implementationsandgoals.txt`.
 
 ## Run it
 

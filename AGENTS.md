@@ -50,7 +50,7 @@ config/
   crew.yaml         4 synthetic crew + baselines
   readiness.yaml    readiness score components, weights, alert penalties
 Makefile            dev, test, lint, demo
-implementaionsandgoals.txt   handoff: Claude implements, Antigravity supervises; work queue, review findings, API contract
+implementationsandgoals.txt   handoff: Claude implements, Antigravity supervises; work queue, review findings, API contract
 ```
 
 Not in the 30-hour scope (do not build unless `ROADMAP.md` §5 is reached): docker compose, a second backend process, the TREND rule type, Countermeasures and Wellbeing views, research export, rules editor, generated API client, Playwright.

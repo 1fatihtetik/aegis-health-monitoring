@@ -1,5 +1,5 @@
 /**
- * Wire types for the AEGIS backend (implementaionsandgoals.txt section 8) and the adapter that turns
+ * Wire types for the AEGIS backend (implementationsandgoals.txt section 7) and the adapter that turns
  * backend payloads into the view model (AegisSystemState) the views render.
  *
  * When the backend is connected, everything the views show comes from here. The in-browser simulation in

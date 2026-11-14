@@ -365,7 +365,7 @@ GET    /api/v1/export/standard-measures?from=&to=&format=csv|parquet
 WS     /ws/live                        # observations (downsampled), alerts, scores
 ```
 
-Added in the 30-hour build (full shapes are in `implementaionsandgoals.txt` section 5):
+Added in the 30-hour build (full shapes are in `implementationsandgoals.txt` section 7):
 
 ```text
 Every GET takes ?node=onboard|ground and returns { node, now, as_of, age_s, ...data }

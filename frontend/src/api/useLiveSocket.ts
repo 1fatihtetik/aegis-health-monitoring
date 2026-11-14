@@ -144,7 +144,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     rngRef.current = createSeededRng(state.sim.seed);
   }, [state.sim.seed]);
 
-  // ---- backend connection (implementaionsandgoals.txt section 8) -----------------------------
+  // ---- backend connection (implementationsandgoals.txt section 7) -----------------------------
   // When /ws/live is up, every view renders from backend snapshots and the local simulation stops.
   const connectedRef = useRef<boolean>(false);
   const linkRef = useRef<BackendLinkState>(emptyLinkState());
