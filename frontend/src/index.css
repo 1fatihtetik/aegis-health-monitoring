@@ -3,10 +3,184 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  html.dark {
     color-scheme: dark;
   }
-  body {
-    @apply bg-space-950 text-slate-100 min-h-screen;
+  html.light {
+    color-scheme: light;
   }
+  body {
+    @apply bg-space-950 text-slate-100 min-h-screen transition-colors duration-200;
+  }
+}
+
+/* ==========================================================================
+   Light Theme Overrides (Scoped strictly to html.light; Dark mode untouched)
+   ========================================================================== */
+
+/* 1. Page & Recessed Surfaces (space-950) */
+html.light,
+html.light body,
+html.light .bg-space-950,
+html.light .bg-space-950\/90,
+html.light .bg-space-950\/85,
+html.light .bg-space-950\/80 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-space-950\/95 {
+  background-color: rgba(248, 250, 252, 0.96) !important;
+}
+
+/* 2. Primary Card & Panel Surfaces (space-900) */
+html.light .bg-space-900,
+html.light .bg-space-900\/95,
+html.light .bg-space-900\/90,
+html.light .bg-space-900\/80,
+html.light .bg-space-900\/70 {
+  background-color: #ffffff !important;
+}
+
+/* 3. Secondary / Control / Pill Surfaces (space-800, slate-800, slate-700) */
+html.light .bg-space-800,
+html.light .bg-slate-800,
+html.light .bg-slate-800\/90 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-slate-700 {
+  background-color: #cbd5e1 !important;
+}
+
+html.light .hover\:bg-space-800:hover,
+html.light .hover\:bg-space-800\/90:hover {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .hover\:bg-space-700:hover {
+  background-color: #cbd5e1 !important;
+}
+
+/* 4. Typography */
+html.light .text-white {
+  color: #0f172a !important;
+}
+html.light .bg-red-600.text-white,
+html.light .bg-red-500.text-white,
+html.light .bg-emerald-600.text-white,
+html.light .bg-amber-600.text-white,
+html.light .bg-red-600 .text-white {
+  color: #ffffff !important;
+}
+html.light .text-slate-100 {
+  color: #0f172a !important;
+}
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* 5. Borders */
+html.light .border-slate-800,
+html.light .border-slate-800\/90,
+html.light .border-slate-800\/80 {
+  border-color: #cbd5e1 !important;
+}
+html.light .border-slate-700,
+html.light .border-slate-700\/80,
+html.light .border-slate-600,
+html.light .border-slate-500 {
+  border-color: #94a3b8 !important;
+}
+
+/* 6. Status & Accent Text Colors on Light Surfaces */
+html.light .text-cyan-100,
+html.light .text-cyan-200,
+html.light .text-cyan-300,
+html.light .text-cyan-400 {
+  color: #0369a1 !important;
+}
+html.light .text-emerald-100,
+html.light .text-emerald-200,
+html.light .text-emerald-300,
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+html.light .text-amber-100,
+html.light .text-amber-200,
+html.light .text-amber-300,
+html.light .text-amber-400,
+html.light .text-amber-300\/90 {
+  color: #b45309 !important;
+}
+html.light .text-orange-100,
+html.light .text-orange-200,
+html.light .text-orange-300,
+html.light .text-orange-400 {
+  color: #c2410c !important;
+}
+html.light .text-red-100,
+html.light .text-red-200,
+html.light .text-red-300,
+html.light .text-red-400 {
+  color: #b91c1c !important;
+}
+html.light .text-purple-200,
+html.light .text-purple-300 {
+  color: #6d28d9 !important;
+}
+html.light .text-fuchsia-200,
+html.light .text-fuchsia-300 {
+  color: #a21caf !important;
+}
+
+/* 7. Translucent Status Tint Surfaces on Light Theme */
+html.light .bg-cyan-950,
+html.light .bg-cyan-950\/20,
+html.light .bg-cyan-950\/25,
+html.light .bg-cyan-950\/30,
+html.light .bg-cyan-950\/35 {
+  background-color: #e0f2fe !important;
+}
+html.light .bg-amber-950\/20,
+html.light .bg-amber-950\/25,
+html.light .bg-amber-950\/30,
+html.light .bg-amber-950\/35,
+html.light .bg-amber-950\/40,
+html.light .bg-amber-950\/60 {
+  background-color: #fef3c7 !important;
+}
+html.light .bg-orange-950\/45 {
+  background-color: #ffedd5 !important;
+}
+html.light .bg-red-900\/40,
+html.light .bg-red-900\/60,
+html.light .bg-red-900\/70,
+html.light .bg-red-950\/50,
+html.light .bg-red-950\/60 {
+  background-color: #fee2e2 !important;
+}
+html.light .bg-red-950\/95 {
+  background-color: rgba(254, 242, 242, 0.97) !important;
+}
+html.light .bg-emerald-950\/15,
+html.light .bg-emerald-950\/40,
+html.light .bg-emerald-950\/50,
+html.light .bg-emerald-950\/70 {
+  background-color: #d1fae5 !important;
+}
+html.light .bg-purple-950\/25,
+html.light .bg-purple-950\/50 {
+  background-color: #ede9fe !important;
+}
+html.light .bg-fuchsia-950\/40 {
+  background-color: #fae8ff !important;
 }

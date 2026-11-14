@@ -25,6 +25,23 @@ const AegisShell: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [selectedCrewId, setSelectedCrewId] = useState<CrewId>('C1');
   const [emergencyModalDismissed, setEmergencyModalDismissed] = useState<boolean>(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('aegis-theme') === 'light' ? 'light' : 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark', 'light');
+    root.classList.add(theme);
+    try {
+      localStorage.setItem('aegis-theme', theme);
+    } catch {
+      // ignore storage errors
+    }
+  }, [theme]);
 
   const { sim, crew, alerts, radiation, link } = state;
 
@@ -106,7 +123,7 @@ const AegisShell: React.FC = () => {
               </div>
             </div>
 
-            {/* Simulated Clock & Link Status */}
+            {/* Simulated Clock, Link Status & Theme Toggle */}
             <div className="flex items-center gap-2 text-xs font-mono">
               <span className="rounded-lg border border-slate-800 bg-space-900 px-2.5 py-1.5 text-slate-200">
                 MD-{sim.mission_day} · {sim.sim_ts.slice(11, 19)} UTC ({sim.speed}×)
@@ -122,6 +139,17 @@ const AegisShell: React.FC = () => {
                   ? '⚡ LINK BLACKOUT (ONBOARD AUTONOMOUS)'
                   : `One-Way Delay: ${formatDurationSeconds(sim.comm_delay_s)}`}
               </span>
+              <button
+                type="button"
+                onClick={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                data-testid="theme-toggle-btn"
+                className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-space-900 px-3 py-1.5 text-xs font-sans font-bold text-slate-200 hover:bg-space-800 transition-colors"
+                title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              >
+                <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
+                <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+              </button>
             </div>
           </div>
 
