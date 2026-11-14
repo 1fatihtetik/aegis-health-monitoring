@@ -61,3 +61,4 @@ class Alert(BaseModel):
     checklist: list[str] = Field(default_factory=list)
     notes: list[dict[str, Any]] = Field(default_factory=list)
     origin: str = "ONBOARD"
+    onboard_only: bool = False  # T-4: raised from a questionnaire answer; never sent to the ground

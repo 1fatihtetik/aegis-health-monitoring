@@ -221,9 +221,10 @@ rules:
   - id: cog.performance_risk
     type: COMPOUND
     title: "Cognitive performance risk (sleep loss + elevated CO2 or reaction-time lapses)"
-    # T-2: PVT-B lapses are an alternative to elevated CO2 as the second piece of evidence.
+    # T-2/T-4: PVT-B lapses or self-rated sleepiness are alternatives to elevated CO2 as the second piece of evidence.
+    # The sleepiness member is redacted when the alert goes to the ground (onboard-only questionnaire).
     all: [sleep.short_24h]
-    any: [env.co2.high_1h, cog.pvt.lapses]
+    any: [env.co2.high_1h, cog.pvt.lapses, cog.sleepiness]
     severity: CAUTION
     hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
     hrp_risks: [HRP-14, HRP-12]
@@ -444,3 +445,78 @@ rules:
       - "Have a second crew member double-check critical work"
       - "Protect the next sleep period"
       - "Repeat the reaction-time test after rest"
+
+  # ---- Block T, T-4: questionnaires. These signals are onboard only: the alerts below never reach the ground, and a
+  # compound rule that uses them is sent with the questionnaire member redacted.
+  - id: cog.sleepiness
+    type: THRESHOLD
+    title: "Feeling very sleepy (sleepiness scale)"
+    signal: kss
+    op: ">="
+    limit_ref: questionnaire.kss_sleepy_min
+    window: 12h
+    agg: last
+    severity: CAUTION
+    hazards: [ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-14]
+    rationale: "Self-rated sleepiness at or above the configured level on the Karolinska Sleepiness Scale."
+    action: "Avoid critical tasks until rested; take the reaction-time test; plan a sleep period."
+    checklist:
+      - "Avoid EVA and critical tasks until rested"
+      - "Take the reaction-time test"
+      - "Plan a protected sleep period"
+
+  - id: workload.high
+    type: THRESHOLD
+    title: "High workload reported"
+    signal: tlx_workload
+    op: ">="
+    limit_ref: questionnaire.tlx_workload_max
+    window: 24h
+    agg: last
+    severity: INFO
+    hazards: [ISOLATION_CONFINEMENT, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-14, HRP-15]
+    rationale: "Self-rated workload (raw NASA-TLX) at or above the configured level."
+    action: "Talk with the commander about tomorrow's task list; take the scheduled breaks."
+    checklist:
+      - "Review tomorrow's task list with the commander"
+      - "Take the scheduled breaks"
+      - "Ask a crewmate to share a task if you can"
+
+  - id: vestib.motion_sickness
+    type: THRESHOLD
+    title: "Motion sickness with nausea"
+    signal: motion_sickness
+    op: ">="
+    limit_ref: questionnaire.motion_sickness_misc_min
+    window: 6h
+    agg: last
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-02]
+    rationale: "Self-rated motion sickness at the nausea level, common in the first days after a gravity change."
+    action: "Keep head movements slow; rest with eyes on a fixed point; ask the CMO about medicine; no EVA or driving."
+    checklist:
+      - "Move your head slowly; avoid fast turns"
+      - "Rest and look at a fixed point"
+      - "Ask the CMO about motion sickness medicine"
+      - "No EVA, driving or ladder work until it settles"
+
+  - id: psych.mood.low
+    type: THRESHOLD
+    title: "Low mood reported"
+    signal: mood
+    op: "<="
+    limit_ref: questionnaire.mood_low_max
+    window: 24h
+    agg: last
+    severity: INFO
+    hazards: [ISOLATION_CONFINEMENT, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-12]
+    rationale: "Self-rated mood at or below the configured level. This stays on board; only you and the onboard team see it."
+    action: "Take a break, talk with someone you trust on board, and consider a private talk with the CMO."
+    checklist:
+      - "Take a break and do something you enjoy"
+      - "Talk with someone you trust on board"
+      - "Consider a private talk with the CMO"

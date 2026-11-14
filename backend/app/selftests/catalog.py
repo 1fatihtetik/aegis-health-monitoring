@@ -48,6 +48,23 @@ class Field_(BaseModel):
         return self
 
 
+class Item(BaseModel):
+    """T-4: one questionnaire item. The answers combine into the test's single field by `score`."""
+
+    model_config = ConfigDict(extra="forbid")
+    label: str
+    min: float
+    max: float
+    step: float = 1.0
+    anchors: dict[int, str] = Field(default_factory=dict)  # verbal labels at some scale points
+
+    @model_validator(mode="after")
+    def _range(self) -> "Item":
+        if self.min >= self.max:
+            raise ValueError(f"item '{self.label}': min must be below max")
+        return self
+
+
 class Schedule(BaseModel):
     """T-1: a slot every `every`, starting at `at` (UTC, sim clock); due for `due_window`, then overdue (INFO)."""
 
@@ -86,6 +103,21 @@ class SelfTest(BaseModel):
     schedule: Schedule | None = None
     after_gravity_increase: bool = False  # T-1: extra check after a gravity increase
     onboard_only: bool = False  # T-4: answers never leave the spacecraft
+    items: list[Item] = Field(default_factory=list)  # T-4 questionnaire items
+    score: Literal["mean"] | None = None  # how the item answers combine into the single field
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "SelfTest":
+        for f in self.fields:  # a questionnaire signal must be in an onboard-only test and nowhere else
+            if SIGNALS[f.signal].onboard_only != self.onboard_only:
+                raise ValueError(f"{self.id}: {f.signal} onboard_only does not match the test")
+        if self.kind == "questionnaire":
+            if not self.items or self.score is None or len(self.fields) != 1:
+                raise ValueError(f"{self.id}: a questionnaire needs items, a score and exactly one field")
+            f = self.fields[0]
+            if min(i.min for i in self.items) < f.input_min or max(i.max for i in self.items) > f.input_max:
+                raise ValueError(f"{self.id}: item ranges must fit the field range")
+        return self
 
 
 class Catalog(BaseModel):

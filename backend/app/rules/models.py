@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.enums import Hazard, HrpRisk, RuleType, Severity, Signal
+from app.domain.enums import SIGNALS, Hazard, HrpRisk, RuleType, Severity, Signal
 
 Op = Literal[">", "<", ">=", "<="]
 Agg = Literal["mean", "min", "max", "last"]
@@ -63,6 +63,12 @@ class Rule(BaseModel):
     @property
     def members(self) -> list[str | Predicate]:
         return [*self.all, *self.any, *self.none]
+
+    @property
+    def onboard_only(self) -> bool:
+        """T-4: a simple rule on a questionnaire signal; its alert stays on board. A compound rule is sent with the
+        questionnaire members redacted instead (world.py)."""
+        return self.signal is not None and SIGNALS[str(self.signal)].onboard_only
 
     @property
     def limit_refs(self) -> list[str]:

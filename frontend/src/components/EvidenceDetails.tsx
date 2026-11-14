@@ -75,6 +75,17 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
       {evidence.clauses && evidence.clauses.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           {evidence.clauses.map((cl, idx) => {
+            if (cl.redacted) {
+              return (
+                <div
+                  key={idx}
+                  data-testid="evidence-clause-redacted"
+                  className="rounded-lg border border-slate-700 bg-space-900 p-2.5 text-xs text-slate-300"
+                >
+                  🔒 {cl.redacted}
+                </div>
+              );
+            }
             // A negated member counts toward the alert when it is NOT firing.
             const ok = cl.negated ? cl.firing === false : cl.firing !== false;
             return (

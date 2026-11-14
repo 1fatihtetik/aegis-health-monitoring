@@ -38,6 +38,32 @@ from app.sim.core import EFFECT_TYPES, Simulator
 from app.sim.scenario import load_scenario
 from app.util import iso, parse_duration, parse_ts
 
+ONBOARD_ONLY = frozenset(name for name, meta in SIGNALS.items() if meta.onboard_only)
+REDACTED = "Onboard-only questionnaire answer; not sent to the ground."
+
+
+def strip_onboard_only(snap: dict[str, Any]) -> dict[str, Any]:
+    """Copy of a snapshot without onboard-only signals (T-4). Only the parts that name signals are copied."""
+    out = dict(snap)
+    out["crew"] = [{**c, "vitals": {k: v for k, v in c["vitals"].items() if k not in ONBOARD_ONLY},
+                    "trends": {k: v for k, v in c["trends"].items() if k not in ONBOARD_ONLY}} for c in snap["crew"]]
+    out["provenance"] = {k: v for k, v in snap["provenance"].items() if k not in ONBOARD_ONLY}
+    return out
+
+
+def redact_alert(payload: dict[str, Any]) -> dict[str, Any]:
+    """T-4: a questionnaire member of compound evidence is replaced by a placeholder (no value, no source)."""
+    members = payload.get("evidence", {}).get("members")
+    if not members:
+        return payload
+    redacted = []
+    for m in members:
+        if m.get("signal") in ONBOARD_ONLY:  # not even whether it fired, which would reveal the answer
+            m = {"signal": "redacted", "redacted": REDACTED}
+        redacted.append(m)
+    return {**payload, "evidence": {**payload["evidence"], "members": redacted}}
+
+
 RAD_SIGNALS = ("area_dose_rate_absorbed", "area_dose_rate_equivalent", "neutron_dose_equivalent_rate",
                "dose_rate_equivalent", "dose_rate_absorbed", "dose_mission")
 
@@ -93,8 +119,9 @@ class World:
         self.delay_override: float | None = None
         self.recommendations: list[dict[str, Any]] = []
         self.snapshot = self._build_snapshot()
-        self.ground = GroundNode(self.store.copy())  # data before T0 counts as already synced
-        self.ground.snapshot, self.ground.as_of = self.snapshot, self.start_ts
+        # Data before T0 counts as already synced, except questionnaire answers (T-4: never leave the spacecraft).
+        self.ground = GroundNode(self.store.copy(exclude=ONBOARD_ONLY))
+        self.ground.snapshot, self.ground.as_of = strip_onboard_only(self.snapshot), self.start_ts
 
     # ---- time ----------------------------------------------------------------------------
     @property
@@ -229,7 +256,7 @@ class World:
         self.snapshot = self._build_snapshot()
         for alert in result.alerts:
             self._send_alert(alert)
-        self.link.send(DOWN, "snapshot", PRIORITY_SNAPSHOT, self.snapshot, now, self.delay_s)
+        self.link.send(DOWN, "snapshot", PRIORITY_SNAPSHOT, self._downlink_snapshot(), now, self.delay_s)
 
         for msg in self.link.deliver(now):
             if msg.direction == DOWN:
@@ -244,8 +271,19 @@ class World:
 
     # ---- onboard actions -----------------------------------------------------------------
     def _send_alert(self, alert: Alert) -> None:
+        if alert.onboard_only:  # T-4: a questionnaire alert never leaves the spacecraft
+            return
         priority = PRIORITY_EMERGENCY if alert.severity == Severity.EMERGENCY else PRIORITY_ALERT
-        self.link.send(DOWN, "alert", priority, alert.model_dump(mode="json"), self.clock.now(), self.delay_s)
+        self.link.send(DOWN, "alert", priority, redact_alert(alert.model_dump(mode="json")), self.clock.now(),
+                       self.delay_s)
+
+    def _downlink_snapshot(self) -> dict[str, Any]:
+        """T-4: what the link may carry. Questionnaire signals and alerts raised from them stay on board; when such an
+        alert is open, status, top alert, hazards and readiness are rebuilt without it."""
+        snap = self.snapshot
+        if any(a.onboard_only for a in self.alerts.open_alerts()):
+            snap = self._build_snapshot(private=False)
+        return strip_onboard_only(snap)
 
     def ack_alert(self, alert_id: str) -> Alert:
         alert = self.alerts.ack(alert_id, self.clock.now())
@@ -321,10 +359,14 @@ class World:
         return self.send_recommendation(text, checklist, crew_id)
 
     # ---- snapshot ------------------------------------------------------------------------
-    def _build_snapshot(self) -> dict[str, Any]:
+    def _build_snapshot(self, private: bool = True) -> dict[str, Any]:
+        """private=False leaves out alerts that must stay on board (T-4), for the downlink copy."""
         now = self.clock.now()
         open_alerts = self.alerts.open_alerts() if hasattr(self, "alerts") else []
         all_alerts = list(self.alerts.alerts.values()) if hasattr(self, "alerts") else []
+        if not private:
+            open_alerts = [a for a in open_alerts if not a.onboard_only]
+            all_alerts = [a for a in all_alerts if not a.onboard_only]
         readiness = compute_readiness(self.cfg, self.store, open_alerts, self.crew_ids, now)
 
         def status(alerts: list[Alert]) -> tuple[str, Alert | None]:

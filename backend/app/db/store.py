@@ -49,7 +49,7 @@ class SeriesStore:
             found = value
         return found
 
-    def copy(self) -> "SeriesStore":
+    def copy(self, exclude: frozenset[str] = frozenset()) -> "SeriesStore":
         clone = SeriesStore(self._maxlen)
-        clone._d = {k: deque(v, maxlen=self._maxlen) for k, v in self._d.items()}
+        clone._d = {k: deque(v, maxlen=self._maxlen) for k, v in self._d.items() if k[1] not in exclude}
         return clone

@@ -1,5 +1,6 @@
 """Block T: crew self-tests (ROADMAP section 0, AGENTS.md sections 2b and 7)."""
 
+import json
 import re
 import shutil
 from pathlib import Path
@@ -11,11 +12,11 @@ from pydantic import ValidationError
 
 from app.config import CONFIG_DIR, Config
 from app.datasets.provenance import weakest
-from app.domain.enums import Provenance
+from app.domain.enums import SIGNALS, Provenance
 from app.domain.models import Observation
 from app.main import create_app
 from app.util import iso
-from app.world import World
+from app.world import REDACTED, World
 
 
 @pytest.fixture
@@ -210,7 +211,8 @@ def board_for(world, crew_id):
 def test_board_starts_clean_then_slots_come_due_and_go_overdue_as_info(cfg):
     w = World(cfg, "nominal")  # starts 20:00 UTC
     board = board_for(w, "C1")
-    assert {i["status"] for i in board.values()} == {"UPCOMING"}  # slots before T0 are not tracked
+    assert {i["status"] for i in board.values()} <= {"UPCOMING", "DUE"}  # slots before T0 are not tracked
+    assert board["bp_spo2"]["status"] == "UPCOMING" and board["mood"]["status"] == "DUE"  # 07:00 passed; 20:00 = T0
     for _ in range(61):  # 21:01: the 21:00 intake log is due
         w.tick()
     assert board_for(w, "C1")["intake"]["status"] == "DUE"
@@ -307,7 +309,8 @@ def test_pvt_lapses_plus_short_sleep_raise_cognitive_risk_without_co2(cfg):
     risk = open_alert(w, "cog.performance_risk", "C1")
     assert risk is not None
     members = {m.get("rule_id"): m["firing"] for m in risk.evidence["members"]}
-    assert members == {"sleep.short_24h": True, "env.co2.high_1h": False, "cog.pvt.lapses": True}
+    assert members == {"sleep.short_24h": True, "env.co2.high_1h": False, "cog.pvt.lapses": True,
+                       "cog.sleepiness": False}
 
 
 def test_cognitive_readiness_gains_a_pvt_component(client):
@@ -330,3 +333,84 @@ def test_pvt_catalog_names_the_protocol_and_labels_the_short_mode(cfg):
     assert short.params["duration_s"] < full.params["duration_s"]
     assert short.short_mode_note == "Demo length, not the 3-minute protocol" and short.schedule is None
     assert cfg.limit("cognition.pvt_lapse_ms").value == 355
+
+
+# ---- T-4: onboard-only questionnaires ----------------------------------------------------------------------------
+QUESTIONNAIRE = ("kss", "tlx_workload", "motion_sickness", "mood")
+
+
+def ground_text(world) -> str:
+    """Everything the ground node holds, as text: delivered alerts, snapshot and stored series keys."""
+    return json.dumps([world.ground.alerts, world.ground.snapshot, sorted(map(str, world.ground.store._d))],
+                      default=str)
+
+
+def test_questionnaire_answers_never_reach_the_ground_also_after_a_blackout(client):
+    w = client.rt.world
+    w.delay_override = 0.0
+    w.link.blackout = True
+    submit(client, "C2", "kss", {"kss": 8})
+    submit(client, "C2", "mood", {"mood": 1})
+    submit(client, "C2", "tlx", {"tlx_workload": 85})
+    submit(client, "C2", "motion_sickness", {"motion_sickness": 7})
+    for _ in range(5):
+        w.tick()
+    onboard = {a.rule_id for a in w.alerts.open_alerts() if a.crew_id == "C2"}
+    assert {"cog.sleepiness", "psych.mood.low", "workload.high", "vestib.motion_sickness"} <= onboard  # works onboard
+    w.link.blackout = False
+    for _ in range(5):
+        w.tick()
+    assert w.ground.as_of == w.clock.now() and not w.link.pending  # everything due has been delivered
+    for signal in QUESTIONNAIRE:
+        assert ("C2", signal) not in w.ground.store._d
+        assert all(signal not in c["vitals"] and signal not in c["trends"] for c in w.ground.snapshot["crew"])
+        assert signal not in w.ground.snapshot["provenance"]
+    assert not any(a["rule_id"] in onboard for a in w.ground.alerts.values())
+    c2 = next(c for c in w.ground.snapshot["crew"] if c["id"] == "C2")
+    assert c2["status"] == "NOMINAL" and c2["top_alert"] is None  # status rebuilt without the private alerts
+    assert all(a["onboard_only"] is False for a in w.ground.alerts.values())
+    # over the API too
+    ts = client.get("/api/v1/crew/C2/timeseries", params={"signal": "kss", "node": "ground"}).json()
+    assert ts["points"] == []
+
+
+def test_compound_alert_reaches_the_ground_with_the_questionnaire_member_redacted(cfg):
+    w = World(cfg, "insomnia_streak")
+    w.delay_override = 0.0
+    for _ in range(12 * 60):
+        w.tick()
+    w.ingest_observations([Observation(id="kss-1", ts=w.clock.now(), crew_id="C1", device_id="tablet-C1", signal="kss",
+                                       value=8, unit="1-9", provenance="CREW_ENTERED", entry_method="questionnaire",
+                                       test_id="kss")])
+    for _ in range(3):
+        w.tick()
+    risk = open_alert(w, "cog.performance_risk", "C1")
+    assert risk is not None
+    onboard_members = {m.get("rule_id"): m for m in risk.evidence["members"]}
+    assert onboard_members["cog.sleepiness"]["value"] == 8 and onboard_members["cog.sleepiness"]["firing"]
+    sent = w.ground.alerts[risk.id]
+    assert {"signal": "redacted", "redacted": REDACTED} in sent["evidence"]["members"]
+    assert '"kss"' not in ground_text(w) and "cog.sleepiness" not in ground_text(w)
+
+
+def test_questionnaire_catalog_is_consistent(tmp_path, cfg):
+    for t in cfg.selftests.tests:
+        if t.kind == "questionnaire":
+            assert t.onboard_only and t.items and t.score == "mean"
+            assert all(SIGNALS[f.signal].onboard_only for f in t.fields)
+    with pytest.raises((ValueError, ValidationError)):  # a questionnaire needs its items
+        Config(config_dir=_catalog_with_test(tmp_path, "kss", lambda t: t.update(items=[])))
+
+
+def test_questionnaire_signal_outside_an_onboard_only_test_is_refused(tmp_path):
+    with pytest.raises((ValueError, ValidationError)):
+        Config(config_dir=_catalog_with_test(tmp_path, "mood", lambda t: t.update(onboard_only=False)))
+
+
+def _catalog_with_test(tmp_path: Path, test_id: str, mutate) -> Path:
+    for f in CONFIG_DIR.glob("*.yaml"):
+        shutil.copy(f, tmp_path / f.name)
+    data = yaml.safe_load((tmp_path / "selftests.yaml").read_text(encoding="utf-8"))
+    mutate(next(t for t in data["tests"] if t["id"] == test_id))
+    (tmp_path / "selftests.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
+    return tmp_path

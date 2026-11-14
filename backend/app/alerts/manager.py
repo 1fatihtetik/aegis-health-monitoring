@@ -39,6 +39,7 @@ class AlertManager:
                         rule_id=rule.id, title=rule.title, crew_id=f.crew_id, severity=rule.severity,
                         raised_ts=now, hazards=rule.hazards, hrp_risks=rule.hrp_risks, evidence=f.evidence,
                         rationale=rule.rationale, action=rule.action, checklist=rule.checklist,
+                        onboard_only=rule.onboard_only,
                     )
                     self.alerts[alert.id] = alert
                     self._open[key] = alert.id

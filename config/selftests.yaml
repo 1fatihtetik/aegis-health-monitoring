@@ -170,3 +170,106 @@ tests:
     protocol: "Same rules as PVT-B (Basner et al. 2011), but only 30 s long."
     params: { duration_s: 30, isi_min_s: 1, isi_max_s: 4, false_start_ms: 100, timeout_ms: 30000 }
     short_mode_note: "Demo length, not the 3-minute protocol"
+
+  # ---- T-4: questionnaires. onboard_only: the answers and the alerts they raise never leave the spacecraft. --------
+  - id: kss
+    title: "Sleepiness check (KSS)"
+    kind: questionnaire
+    entry_method: questionnaire
+    onboard_only: true
+    fields:
+      - { signal: kss, label: "Sleepiness (Karolinska Sleepiness Scale)", input_min: 1, input_max: 9 }
+    items:
+      - label: "How sleepy have you felt in the last 10 minutes?"
+        min: 1
+        max: 9
+        anchors: { 1: "Extremely alert", 3: "Alert", 5: "Neither alert nor sleepy", 7: "Sleepy, but no effort to keep awake", 9: "Very sleepy, fighting sleep" }
+    score: mean
+    why: "Sleep in space is often short and broken. How sleepy you feel, together with the reaction-time test, shows whether you are fit for a critical task."
+    hazards: [ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-14]
+    steps:
+      - "Think about the last 10 minutes"
+      - "Tap the number that fits best"
+      - "Tap Save"
+    limit_refs: [questionnaire.kss_sleepy_min]
+    escalation: "Very sleepy before EVA or critical work: tell the commander so the task can move; take the reaction-time test."
+    protocol: "Karolinska Sleepiness Scale (Akerstedt and Gillberg 1990), 1-9."
+    schedule: { every: 1d, at: "07:15", due_window: 3h }
+
+  - id: tlx
+    title: "Workload check (NASA-TLX)"
+    kind: questionnaire
+    entry_method: questionnaire
+    onboard_only: true
+    fields:
+      - { signal: tlx_workload, label: "Workload (raw NASA-TLX, mean of 6)", input_min: 0, input_max: 100 }
+    items:
+      - { label: "Mental demand: how mentally demanding was today's work?", min: 0, max: 100, step: 5, anchors: { 0: "Very low", 100: "Very high" } }
+      - { label: "Physical demand: how physically demanding was it?", min: 0, max: 100, step: 5, anchors: { 0: "Very low", 100: "Very high" } }
+      - { label: "Time pressure: how hurried or rushed was the pace?", min: 0, max: 100, step: 5, anchors: { 0: "Very low", 100: "Very high" } }
+      - { label: "Performance: how well did you do what you were asked to do?", min: 0, max: 100, step: 5, anchors: { 0: "Perfect", 100: "Failure" } }
+      - { label: "Effort: how hard did you have to work to reach that level?", min: 0, max: 100, step: 5, anchors: { 0: "Very low", 100: "Very high" } }
+      - { label: "Frustration: how irritated, stressed or annoyed were you?", min: 0, max: 100, step: 5, anchors: { 0: "Very low", 100: "Very high" } }
+    score: mean
+    why: "Long, busy days far from Earth wear people down. A short end-of-day workload rating helps the crew spread tasks before fatigue builds up."
+    hazards: [ISOLATION_CONFINEMENT, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-14, HRP-15]
+    steps:
+      - "Think about today's work as a whole"
+      - "Move each of the six sliders"
+      - "Tap Save"
+    limit_refs: [questionnaire.tlx_workload_max]
+    escalation: "Workload high several days in a row: raise it with the commander at the daily planning conference."
+    protocol: "NASA Task Load Index, raw (unweighted) version (Hart and Staveland 1988; Hart 2006): mean of the 6 sub-scales, 0-100."
+    schedule: { every: 1d, at: "20:00", due_window: 3h }
+
+  - id: motion_sickness
+    title: "Motion sickness check"
+    kind: questionnaire
+    entry_method: questionnaire
+    onboard_only: true
+    fields:
+      - { signal: motion_sickness, label: "Motion sickness (MISC 0-10)", input_min: 0, input_max: 10 }
+    items:
+      - label: "How do you feel right now?"
+        min: 0
+        max: 10
+        anchors: { 0: "No problems", 1: "Uneasy, no symptoms", 3: "Vague dizziness, warmth or headache", 5: "Clear dizziness, warmth or headache, no nausea", 6: "Slight nausea", 8: "Severe nausea", 9: "Retching", 10: "Vomiting" }
+    score: mean
+    why: "A gravity change confuses the balance organs, so dizziness and nausea are common in the first days after arriving or landing. Rating it helps decide when EVA or driving is safe."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-02]
+    steps:
+      - "Sit still for a moment"
+      - "Tap the number that matches how you feel"
+      - "Tap Save"
+    limit_refs: [questionnaire.motion_sickness_misc_min]
+    escalation: "Nausea or vomiting: rest, sip fluids, tell the CMO about medicine; no EVA, driving or ladder work."
+    protocol: "Misery Scale, MISC (Bos et al. 2005), 0-10."
+    after_gravity_increase: true
+
+  - id: mood
+    title: "Mood check"
+    kind: questionnaire
+    entry_method: questionnaire
+    onboard_only: true
+    fields:
+      - { signal: mood, label: "Mood (1-5)", input_min: 1, input_max: 5 }
+    items:
+      - label: "How has your mood been today?"
+        min: 1
+        max: 5
+        anchors: { 1: "Very low", 2: "Low", 3: "OK", 4: "Good", 5: "Very good" }
+    score: mean
+    why: "Isolation, confinement and distance from home affect mood. A quick private check helps you notice a low stretch early. Your answer stays on board."
+    hazards: [ISOLATION_CONFINEMENT, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-12]
+    steps:
+      - "Think about today as a whole"
+      - "Tap the number that fits best"
+      - "Tap Save"
+    limit_refs: [questionnaire.mood_low_max]
+    escalation: "Low for several days, or thoughts of harming yourself: talk with the CMO in private today."
+    protocol: "Single-item mood self-rating, 1-5 (project heuristic)."
+    schedule: { every: 1d, at: "20:00", due_window: 3h }

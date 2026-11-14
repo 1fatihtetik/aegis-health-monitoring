@@ -13,6 +13,7 @@ import { useAegis } from '../api/useLiveSocket';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
 import { PvtTest } from '../components/PvtTest';
+import { OnboardOnlyBadge, Questionnaire } from '../components/Questionnaire';
 import { RoutineBoard } from '../components/RoutineBoard';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 
@@ -122,7 +123,9 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
             </button>
           </div>
           <SelfTestExplainer test={open} limits={state.limits} />
-          {open.kind === 'pvt' ? (
+          {open.kind === 'questionnaire' ? (
+            <Questionnaire key={`${open.id}-${crewId}`} test={open} connected={connected} onSubmit={onSubmit} />
+          ) : open.kind === 'pvt' ? (
             <PvtTest
               key={`${open.id}-${crewId}`}
               test={open}
@@ -161,6 +164,7 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
               <article key={t.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-800 bg-space-900/90 p-4" data-testid={`selftest-card-${t.id}`}>
                 <div className="space-y-1">
                   <h3 className="text-sm font-bold text-slate-100">{t.title}</h3>
+                  {t.onboard_only && <OnboardOnlyBadge />}
                   <p className="text-xs text-slate-400">{t.why}</p>
                   <p className="text-[11px] text-slate-500">
                     {t.hazards.map((h) => HAZARD_CATALOG[h].shortName).join(' · ')} · {t.hrp_risks.join(', ')}

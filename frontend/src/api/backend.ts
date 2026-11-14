@@ -68,6 +68,8 @@ export interface BackendEvidence {
   logic?: { all?: unknown[]; any?: unknown[]; none?: unknown[] };
   members?: BackendEvidence[];
   context?: { group: string; branch: string };
+  /** T-4: an onboard-only questionnaire member, replaced before the alert left the spacecraft. */
+  redacted?: string;
   provenance?: Provenance;
   dataset_id?: string | null;
   basis?: string;
@@ -571,6 +573,13 @@ function mapReadiness(
 /** Plain names for evidence signals (UI copy only). */
 const SIGNAL_LABEL: Record<string, string> = {
   ppco2: 'Cabin CO₂',
+  kss: 'Sleepiness (KSS 1–9)',
+  tlx_workload: 'Workload (NASA-TLX)',
+  motion_sickness: 'Motion sickness (MISC 0–10)',
+  mood: 'Mood (1–5)',
+  pvt_mean_rt: 'Reaction time (PVT-B mean)',
+  pvt_lapses: 'Reaction-time lapses',
+  pvt_false_starts: 'Reaction-time false starts',
   body_temp: 'Body temperature',
   glucose: 'Blood sugar (glucose)',
   fluid_intake: 'Fluid drunk today',
@@ -611,6 +620,19 @@ const OP_WORD: Record<string, string> = { '>': 'above', '>=': 'at or above', '<'
 
 function mapClause(m: BackendEvidence): AlertEvidenceClause {
   const what = `${signalLabel(m.signal)} ${OP_WORD[m.op ?? ''] ?? m.op ?? ''} limit`.trim();
+  if (m.redacted) {
+    return {
+      signal: m.signal,
+      label: 'Onboard-only answer',
+      value: NaN,
+      unit: '',
+      op: '',
+      limit: NaN,
+      limit_verified: false,
+      source_ref: '',
+      redacted: m.redacted,
+    };
+  }
   return {
     signal: m.signal,
     label: m.negated ? `${what}: must NOT be true` : what,

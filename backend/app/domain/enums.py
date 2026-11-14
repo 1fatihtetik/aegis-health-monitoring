@@ -124,6 +124,11 @@ SIGNALS: dict[str, SignalMeta] = {
     "pvt_mean_rt": SignalMeta("ms", "crew", "self_test", entry_only=True),
     "pvt_lapses": SignalMeta("count", "crew", "self_test", entry_only=True),
     "pvt_false_starts": SignalMeta("count", "crew", "self_test", entry_only=True),
+    # T-4: questionnaire answers. Onboard only: link/ never sends them, not even inside alert evidence or rollups.
+    "kss": SignalMeta("1-9", "crew", "questionnaire", entry_only=True, onboard_only=True),
+    "tlx_workload": SignalMeta("0-100", "crew", "questionnaire", entry_only=True, onboard_only=True),
+    "motion_sickness": SignalMeta("0-10", "crew", "questionnaire", entry_only=True, onboard_only=True),
+    "mood": SignalMeta("1-5", "crew", "questionnaire", entry_only=True, onboard_only=True),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]

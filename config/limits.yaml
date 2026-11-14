@@ -36,6 +36,13 @@ physiology:
 cognition:
   pvt_lapse_ms:        { value: 355, source_ref: "Basner, Mollicone & Dinges (2011) Acta Astronautica 69:949-959, PVT-B: a response slower than 355 ms is a lapse (method parameter, not a NASA-STD-3001 limit)", verified: false }
   pvt_lapses_max:      { value: 3, source_ref: "Project heuristic (more than 3 lapses in one 3-minute PVT-B)", verified: false }
+# Block T, T-4: questionnaire cut-offs (answers stay on board). Scale anchors from the cited papers; cut-offs are
+# project choices, not NASA-STD-3001 limits.
+questionnaire:
+  kss_sleepy_min:          { value: 7, source_ref: "Akerstedt & Gillberg (1990) Int J Neurosci 52:29-37, Karolinska Sleepiness Scale: 7 = sleepy, but no effort to keep awake (cut-off: project choice)", verified: false }
+  tlx_workload_max:        { value: 70, source_ref: "Project heuristic (raw NASA-TLX, Hart & Staveland 1988 / Hart 2006; no NASA-STD-3001 cut-off)", verified: false }
+  motion_sickness_misc_min: { value: 6, source_ref: "Bos, MacKinnon & Patterson (2005) Aviat Space Environ Med 76:1111-1118, MISC: 6 = slight nausea (cut-off: project choice)", verified: false }
+  mood_low_max:            { value: 2, source_ref: "Project heuristic (1-5 self-rating; 2 = low)", verified: false }
 # Block T, T-3: hand measurements. No NASA-STD-3001 clause has been read for these, so all are unverified.
 metabolic:
   glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }

@@ -451,6 +451,8 @@ export interface AlertEvidenceClause {
   dataset_id?: string | null;
   basis?: string;
   dataset?: DatasetMeta | null;
+  /** T-4: set when an onboard-only questionnaire member was removed before the alert reached the ground. */
+  redacted?: string;
 }
 
 /** Context-branching rules: same symptoms, different likely cause (e.g. CO2 vs hydration). */
@@ -866,6 +868,18 @@ export interface SelfTestDef {
   schedule: SelfTestSchedule | null;
   after_gravity_increase: boolean;
   onboard_only: boolean;
+  /** T-4 questionnaire items; their answers combine into the single field by `score`. */
+  items?: QuestionnaireItem[];
+  score?: 'mean' | null;
+}
+
+export interface QuestionnaireItem {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  /** Verbal labels at some scale points (keys are scale values). */
+  anchors: Record<string, string>;
 }
 
 export interface SelfTestResult {
