@@ -84,14 +84,42 @@ def test_demo_script_controls_speed_and_pauses(cfg):
     from app.world import World
 
     world = World(cfg, "demo_5min", 42)
-    speeds, paused = [], False
-    for _ in range(25 * 60):
+    speeds, paused, blackout_minutes = [], False, []
+    for minute in range(25 * 60):
         result = world.tick()
         if result.speed is not None:
             speeds.append(result.speed)
         paused = paused or result.pause
+        if world.link.blackout:
+            blackout_minutes.append(minute)
     assert speeds == [120, 3600, 60, 3600, 60] and paused
     assert world.snapshot["phase"]["name"] == "MARS_SURFACE"
+    # Scripted comm blackout from 20h45m to 21h10m, then the link is back.
+    assert blackout_minutes and blackout_minutes[0] == 20 * 60 + 45 and blackout_minutes[-1] == 21 * 60 + 9
+    assert not world.link.blackout
+
+
+def test_demo_blackout_delays_ground_but_not_onboard(cfg):
+    """Alerts still in transit when the demo blackout starts reach the ground only after it ends; onboard is on time."""
+    from app.world import World
+
+    world = World(cfg, "demo_5min", 42)
+    ground_seen = {}
+    for _ in range(22 * 60):
+        for alert in world.tick().ground_alerts:
+            ground_seen.setdefault((alert["rule_id"], alert["crew_id"]), world.clock.now())
+    dose = [a for a in world.alerts.alerts.values() if a.rule_id == "rad.dose.24h"]
+    assert len(dose) == 4
+    blackout_end = world.start_ts + parse_duration("21h10m")
+    for a in dose:
+        assert a.raised_ts < blackout_end  # onboard: raised on time
+        assert ground_seen[(a.rule_id, a.crew_id)] >= blackout_end  # ground: only after the link is back
+
+
+def test_demo_orthostatic_alert_does_not_flap(cfg):
+    world = run(cfg, "demo_5min", 25)
+    ortho = [a for a in world.alerts.alerts.values() if a.rule_id == "cardio.orthostatic"]
+    assert len(ortho) == 1 and ortho[0].crew_id == "C3" and ortho[0].resolved_ts is None
 
 
 def test_headache_branches_on_cabin_co2(cfg):

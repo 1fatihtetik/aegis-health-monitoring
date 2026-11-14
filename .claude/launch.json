@@ -25,6 +25,40 @@
         "8000"
       ],
       "port": 8000
+    },
+    {
+      "name": "backend-alt",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--app-dir",
+        "backend",
+        "--port",
+        "8010"
+      ],
+      "port": 8010,
+      "autoPort": false
+    },
+    {
+      "name": "frontend-alt",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "frontend",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5180",
+        "--strictPort"
+      ],
+      "port": 5180,
+      "env": {
+        "AEGIS_BACKEND_PORT": "8010"
+      },
+      "autoPort": false
     }
   ]
 }

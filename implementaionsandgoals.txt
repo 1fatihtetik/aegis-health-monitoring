@@ -1,9 +1,9 @@
 AEGIS HANDOFF: implementation log, goals and supervision (Claude implements, Antigravity supervises)
 Project: AEGIS, onboard-first astronaut health monitoring (NASA hackathon MVP)
-Last updated: 2026-11-14, Claude session that did G3-2, G3-4, G3-5, G3-7, G3-9, G3-8 and F-001..F-005.
-State: all Gate 3 items READY FOR REVIEW (section 7). 48 backend tests pass, ruff clean; tsc clean, 17 vitest
-       tests pass. Everything is committed on main and pushed to GitHub with a tag per milestone (section 11).
-       Next after Antigravity approves Gate 3: D-1 (rehearse demo_5min).
+Last updated: 2026-11-14, Claude session that did D-1 and D-2 (demo rehearsal + retune).
+State: Gate 3 APPROVED. D-1 and D-2 READY FOR REVIEW (section 7). 50 backend tests pass, ruff clean; tsc clean,
+       17 vitest tests pass. Committed on main and pushed to GitHub (tag gate3-approved on the Gate 3 commit).
+       Next: Antigravity reviews D-1/D-2; then D-3 (freeze) with the user's go-ahead.
 
 Read order for a new session: this file -> ROADMAP.md -> AGENTS.md -> PRD.md (only the sections you need).
 
@@ -144,6 +144,17 @@ Gate 3 session (Claude, 2026-11-14): G3-2, G3-4, G3-5, G3-7, G3-9, G3-8
 - Removed fields with no backend data (sleep efficiency, awakenings, workload, exercise minutes). Phase is shown,
   not chosen, while connected. headache_branching in the Scenario Dock. All buttons >= 44 px.
 
+D-1/D-2 session (Claude, 2026-11-14): demo rehearsal
+- New scenario control event `blackout {active: true|false}` (world.py, sim/scenario.py). The key is `active`
+  because YAML 1.1 reads a bare `on` key as boolean True.
+- demo_5min: C2 headache + raised HR at 19h05m (CO2 branch, ctx.headache_tachy.co2 at 19h16m); scripted link
+  blackout 20h45m-21h10m; slow segment extended to 21h10m; orthostatic sbp_drop 40 (also in
+  orthostatic_intolerance.yaml). README demo walkthrough rewritten (about 4 min, plays untouched).
+- vite.config.ts: AEGIS_BACKEND_PORT overrides the proxy target (default 8000). launch.json: backend-alt
+  (:8010) + frontend-alt (:5180) for when :8000 is held by another process.
+- Tests: demo blackout window, alerts in transit reach the ground only after the blackout, orthostatic alert
+  does not flap.
+
 
 4. SUPERVISOR FINDINGS (owned by Antigravity)
 
@@ -152,7 +163,7 @@ Format, one per finding:
     Finding: <what is wrong, which PRD/AGENTS rule>
     Claude:  <fix made, or reason for not fixing>
 
-[F-001] FIXED  MAJOR  frontend/src/views/Radiation.tsx (lines 229-233, 274)
+[F-001] CLOSED  MAJOR  frontend/src/views/Radiation.tsx (lines 229-233, 274)
   Finding: In the Crew Cumulative Effective Dose table, every crew card adds `radiation.cumulative_mission_mSv`
            (the cabin maximum across all 4 crew) to `member.career_dose_prior_mSv` instead of using
            `member.mission_dose_mSv` (already mapped per crew in `backend.ts:695`). When some crew shelter during
@@ -161,7 +172,7 @@ Format, one per finding:
   Claude:  Fixed in G3-2 (6ddb670). Each card uses member.mission_dose_mSv and prior + own mission dose. Browser
            check: SPE with only C1 sheltered -> C1 career 341.2 mSv, the others prior + 258.4 mSv.
 
-[F-002] FIXED  MINOR  frontend/src/views/GroundConsole.tsx, EmergencyTakeover.tsx, backend.ts, config/crew.yaml
+[F-002] CLOSED  MINOR  frontend/src/views/GroundConsole.tsx, EmergencyTakeover.tsx, backend.ts, config/crew.yaml
   Finding: (a) `GroundConsole.tsx:45` and `EmergencyTakeover.tsx:73` use `groundSnapshot.lag_s || sim.comm_delay_s`,
            which treats `lag_s === 0` (at T0 when pre-start data is synced, or in 0s-delay phases) as falsy and
            displays `T-12m 00s` instead of `T-0m 00s`. Use `groundSnapshot.lag_s` directly (or `??`).
@@ -174,7 +185,7 @@ Format, one per finding:
            `name`, the snapshot sends it, backend.ts maps it; Ground Console lists crew from state, alert notes take
            the CMO's name from state. Offline callsigns now match crew.yaml (Vega, Lyra, Orion, Altair).
 
-[F-003] FIXED  MAJOR  config/rules.yaml, frontend/src/views/AlertCenter.tsx, CrewDetail.tsx, CrewOverview.tsx
+[F-003] CLOSED  MAJOR  config/rules.yaml, frontend/src/views/AlertCenter.tsx, CrewDetail.tsx, CrewOverview.tsx
   Finding: Non-medical-expert astronaut usability in extreme environments (user directive + AGENTS.md §6, §8):
            Astronauts using AEGIS during degraded off-Earth conditions (CO2 exposure, sleep debt, landing g-load,
            comm blackout with no flight surgeon reachable) are not MDs.
@@ -194,7 +205,7 @@ Format, one per finding:
            and the offline simulation (cephalalgia, Trendelenburg, baroreflex/presyncopal, trabecular, hypercapnic,
            autonomic). EmergencyTakeover already rendered the checklist.
 
-[F-004] FIXED  MINOR  frontend/src/views/AlertCenter.tsx, Radiation.tsx, components/ScenarioDock.tsx
+[F-004] CLOSED  MINOR  frontend/src/views/AlertCenter.tsx, Radiation.tsx, components/ScenarioDock.tsx
   Finding: AGENTS.md §8 requires large touch targets (`>= 44 px`) for tablet operation in microgravity,
            vibration, or gloved/pressurized conditions. Several controls use `min-h-[34px]` (`ScenarioDock.tsx:126`
            speed buttons) or `min-h-[36px]` (`AlertCenter.tsx:59,80` filter buttons; `Radiation.tsx:247` shelter
@@ -202,7 +213,7 @@ Format, one per finding:
   Claude:  Fixed (6ddb670 Radiation, 63688ee ScenarioDock, cb6bda4 AlertCenter). A scan of every <button> in src/
            found none under 44 px; checklist rows and the headache buttons are 44 px too.
 
-[F-005] FIXED  MAJOR  frontend/src/components/ScenarioDock.tsx, api/types.ts (G3-7 scope)
+[F-005] CLOSED  MAJOR  frontend/src/components/ScenarioDock.tsx, api/types.ts (G3-7 scope)
   Finding: The context-branching differential rule (`ctx.headache_tachy.co2` vs `ctx.headache_tachy.hydration`)
            and `headache_branching.yaml` scenario are implemented in the backend, and are critical for showing
            how AEGIS helps a non-medical astronaut distinguish an environmental CO2 hazard from dehydration when
@@ -221,6 +232,31 @@ Format, one per finding:
 Format:
   <date> <item id> <one-line summary>
     Files: ...   Checks: pytest N pass, ruff ok, tsc ok, vitest N pass   Not verified: ...
+
+2026-11-14 D-1 + D-2  demo_5min rehearsed against the real UI, retuned, played twice untouched from the dock.
+    Files: backend/app/{world.py, sim/scenario.py}, backend/app/sim/scenarios/{demo_5min,orthostatic_intolerance}.yaml,
+           backend/tests/test_scenarios.py, frontend/vite.config.ts, .claude/launch.json, README.md.
+    Checks: pytest 50 pass (was 48), ruff ok, tsc ok, vitest 17 pass.
+    Rehearsal (backend :8010, frontend :5180 at 1024x768, seed 42) found and fixed:
+      1. cardio.orthostatic C3 flapped: raised 23h45m, resolved 24h15m, raised again 24h30m. Cause: 122 - 32 mmHg
+         put the 15-min BP right at the 90 mmHg limit, so noise crossed it. Now sbp_drop 40 (scenario param).
+      2. Timing clash: a ground recommendation sent at 20h21m (right after the ground sees the SPE) was due at
+         20h33m but a blackout starting at 20h32m held it until 21h01m. Blackout moved to 20h45m-21h10m.
+    Added (D-1 decision): headache branching in the demo (C2, CO2 branch) and a scripted blackout, so the
+    autonomy story (supervisor note) plays without a presenter toggling anything.
+    Final timeline (seed 42, onboard / ground): sleep.short_24h C1 5h56m / +12m; env.co2.high_1h +
+    cog.performance_risk C1 17h26m / +12m; ctx.headache_tachy.co2 C2 19h16m / +12m; rad.spe.dose_rate EMERGENCY
+    20h03m / +12m; rad.dose.24h x4 WARNING 20h37m / +34m (held by the blackout); cardio.orthostatic C3 23h45m /
+    +12m, stays raised. Pause at 24h30m.
+    D-2: run 1 and run 2 started with the dock button, no other input; both paused on their own after ~4 min
+    (run 2: 239 s) with the same 10 alerts, 0 HTTP errors, no console errors, no server errors. Run 2 ground age
+    grew to 37 min during the blackout and dropped back to 12 min at 21h10m. A manual pass before the retune
+    showed the SPE takeover at 20h04m and the ctx.headache_tachy.co2 card in the Alert Center (context badge,
+    3/3 members met with unverified markers, 4-step checklist).
+    Not verified: screenshots (the browser pane was hidden for most of the run; the in-page log was throttled,
+    so run 2 was recorded from the backend API); the recommendation after the retune (it was tested before:
+    sent 20h21m, due +12 min); the old backend from 11:49 still holds :8000 (Claude was not allowed to stop it;
+    stop it by hand before `npm run dev` with the default port).
 
 2026-11-14 G3-2..G3-9  Gate 3 items done; findings F-001..F-005 fixed; REST race fixed.
     Commits: 6ddb670 G3-2, 9905560 G3-4, 63688ee G3-5, cb6bda4 G3-7+G3-9, 94e8a81 async handlers.
@@ -278,8 +314,8 @@ Format:
   a penalty per open alert. Weights and anchors live in config/readiness.yaml.
 - The SPE rule uses the area dosimeter, so sheltering lowers personal dose but does not clear the alert.
 - demo_5min sets its own speed per segment and pauses at the end; a speed passed to /sim/scenario is
-  overridden by its first event. The headache branching rule is NOT in demo_5min (kept the demo timings
-  stable); show it with the headache_branching scenario, or add a symptom event after a rehearsal.
+  overridden by its first event. Since D-1 the demo shows the CO2 branch of the headache rule (C2) and a
+  scripted blackout; the hydration branch is shown with the headache_branching scenario.
 - All limits are verified: false except the BMD loss rate (NASA HRP page). Do not present the others as NASA values.
 - Tooling: ruff + pytest, tsc + vitest. No mypy gate, no Playwright, no generated client, no docker.
 - The in-browser simulation in useLiveSocket.ts stays only as an offline fallback; with the backend up the
@@ -290,38 +326,46 @@ Format:
 
 Backend gates: Gate 1 APPROVED 2026-11-14 | Gate 2 APPROVED 2026-11-14 | Gate 4 APPROVED 2026-11-14
 
-Gate 3: crew UI on live backend data (current gate)
+Gate 3: crew UI on live backend data (Gate 3 APPROVED 2026-11-14)
  G3-1 APPROVED  Render from the WebSocket snapshot when connected; switch the local simulation off.
             Approved by Antigravity 2026-11-14 (see F-001, F-002 for minor follow-ups in views/mapping).
- G3-2 READY FOR REVIEW  Remove the hardcoded limits copy in client.ts; read GET /api/v1/limits (or the limits[] in
-            timeseries / environment responses). AGENTS.md ground rule 2.
+ G3-2 APPROVED  Remove the hardcoded limits copy in client.ts; read GET /api/v1/limits (or the limits[] in
+            timeseries / environment responses). AGENTS.md ground rule 2. Approved by Antigravity 2026-11-14.
  G3-3 APPROVED  IN_TREATMENT now calls POST /alerts/{id}/treat (done inside G3-1; the old helper is gone).
- G3-4 READY FOR REVIEW  Partly done in G3-1: PHYSICAL readiness, spectrum bins, baselines (48 h means/sd), 7-night sleep
+ G3-4 APPROVED  Partly done in G3-1: PHYSICAL readiness, spectrum bins, baselines (48 h means/sd), 7-night sleep
             and adherence/BMD trends now come from the backend. Left: baseline cards should show z and
             `outside` from GET /crew/{id}/baselines and say "48 h baseline", not 14-day; round chart headers;
             also fix F-001 (per-crew mission dose in Radiation.tsx) and F-002 (lag_s === 0 and crew name/callsign).
- G3-5 READY FOR REVIEW  Drop UI elements with no backend data, or add the backend data: phase selector (phases change
+            Approved by Antigravity 2026-11-14 (F-001, F-002 CLOSED).
+ G3-5 APPROVED  Drop UI elements with no backend data, or add the backend data: phase selector (phases change
             only through scenario events), sleep efficiency / awakenings, workload score, exercise minutes,
-            shelter dose saved (can be computed from event_dose_mSv).
+            shelter dose saved (can be computed from event_dose_mSv). Approved by Antigravity 2026-11-14.
  G3-6 APPROVED  Payload shapes fixed inside G3-1: /link/blackout {on}, /sim/control {action, speed?},
             /alerts/{id}/note {text} (author is put into the text), /link/recommendation {text, checklist, crew_id}.
- G3-7 READY FOR REVIEW  Show new backend fields: context{group, branch} badge on ctx.headache_tachy.* alerts, `negated`
+ G3-7 APPROVED  Show new backend fields: context{group, branch} badge on ctx.headache_tachy.* alerts, `negated`
             members ("CO2 NOT high") in the compound breakdown, hysteresis_hold on evidence rows; plus F-005
             (`headache_branching` scenario button in ScenarioDock + quick headache 0-3 self-report via POST /observations).
- G3-9 READY FOR REVIEW  (added by Antigravity) Non-medical-expert astronaut usability in extreme environments (F-003, F-004):
+            Approved by Antigravity 2026-11-14 (F-005 CLOSED).
+ G3-9 APPROVED  (added by Antigravity) Non-medical-expert astronaut usability in extreme environments (F-003, F-004):
             1. Add 3-4 step plain-language `checklist:` entries to all remaining rules in `config/rules.yaml`.
             2. Render interactive checkable step-by-step checklists on alerts in `AlertCenter.tsx` (and `CrewDetail.tsx`).
             3. Replace/gloss dense clinical jargon (`cephalalgia`, `Trendelenburg`, `presyncopal`, etc.) with clear
                operational crew instructions suitable for stressed/fatigued non-MD crew.
             4. Enforce `min-h-[44px]` touch targets on all remaining buttons (`AlertCenter`, `Radiation`, `ScenarioDock`).
- G3-8 READY FOR REVIEW  Verify in the browser at 1024x768 with the backend running, link blacked out, and the ground view
+            Approved by Antigravity 2026-11-14 (F-003, F-004 CLOSED).
+ G3-8 APPROVED  Verify in the browser at 1024x768 with the backend running, link blacked out, and the ground view
             showing "Data as of T-Xm Ys". Then request the Gate 3 review.
-            Done 2026-11-14 (log in section 5). Claude requests the Gate 3 review.
+            Approved by Antigravity 2026-11-14.
 
 Demo and freeze (ROADMAP T+25 to T+30)
- D-1  TODO  Rehearse demo_5min against the real UI; retune event times in backend/app/sim/scenarios/demo_5min.yaml
+ D-1  READY FOR REVIEW  Rehearse demo_5min against the real UI; retune event times in backend/app/sim/scenarios/demo_5min.yaml
             (real-time budget in the comment at its top). Decide whether to add a symptom event for headache branching.
- D-2  TODO  End-to-end rehearsal: all checks green, play demo_5min twice untouched from the Scenario Dock.
+            Supervisor note (Antigravity): ensure the rehearsal highlights autonomous onboard operation for
+            non-medical-expert crew under degraded/blacked-out Earth comms (plain-language checklists, SPE takeover,
+            delayed/blacked-out Ground Console).
+            Done 2026-11-14 (log in section 5): two fixes, headache CO2 branch + scripted blackout added.
+ D-2  READY FOR REVIEW  End-to-end rehearsal: all checks green, play demo_5min twice untouched from the Scenario Dock.
+            Done 2026-11-14: both runs paused on their own with the same 10 alerts and no errors.
  D-3  TODO  Freeze: README run steps re-checked, final commit (with the user's go-ahead).
 
 Stretch (only if ahead, ROADMAP section 5)
@@ -430,7 +474,7 @@ heading as "Gate N APPROVED <date>".
 Remote: origin = https://github.com/1fatihtetik/aegis-health-monitoring (branch main).
 - One commit per work item; the message starts with the item id (G3-2, D-1, ...) and cites the PRD section.
 - Annotated tag per approved or stable point, pushed to GitHub: g3-1 (G3-1 approved), gate3-ready (all Gate 3
-  items ready for review). Next tags: gate3-approved, demo-ready, submission.
+  items ready for review), gate3-approved (Gate 3 approval, commit before D-1). Next tags: demo-ready, submission.
 - Look at an old version without changing anything:   git switch --detach <tag>      (back: git switch main)
 - Start new work from an old version:                 git switch -c rescue-<name> <tag>
 - Undo one bad commit on main and keep history:        git revert <commit>        (preferred over reset)

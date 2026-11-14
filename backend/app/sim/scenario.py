@@ -2,7 +2,7 @@
 
 Each event has `at` (offset from scenario start, may be negative to act during the prewarm history),
 `type`, optional `duration`, and `params`.
-Control events: speed {speed}, pause, phase {name}. Effect events: see sim.core.EFFECT_TYPES.
+Control events: speed {speed}, pause, phase {name}, blackout {active} (comm link). Effect events: see sim.core.EFFECT_TYPES.
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ import yaml
 from app.sim.core import EFFECT_TYPES
 
 SCENARIO_DIR = Path(__file__).resolve().parent / "scenarios"
-CONTROL_TYPES = {"speed", "pause", "phase"}
+CONTROL_TYPES = {"speed", "pause", "phase", "blackout"}
 
 
 def list_scenarios() -> list[dict[str, str]]:

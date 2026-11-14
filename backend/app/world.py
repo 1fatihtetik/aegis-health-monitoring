@@ -96,6 +96,8 @@ class World:
                 self.sim.add_effect(kind, ts, end, params)
             elif kind == "phase":
                 self.sim.set_phase(params["name"])
+            elif kind == "blackout" and not prewarm:
+                self.link.blackout = bool(params["active"])
             elif kind == "speed" and not prewarm:
                 result.speed = float(params["speed"])
             elif kind == "pause" and not prewarm:
