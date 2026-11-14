@@ -120,6 +120,10 @@ SIGNALS: dict[str, SignalMeta] = {
     "glucose": SignalMeta("mg/dL", "crew", "self_test", entry_only=True),
     "fluid_intake": SignalMeta("mL", "crew", "self_test", daily=True, entry_only=True),
     "sodium_intake": SignalMeta("mg", "crew", "self_test", daily=True, entry_only=True),
+    # T-2: PVT-B reaction-time test results (Basner et al. 2011), one value each per test.
+    "pvt_mean_rt": SignalMeta("ms", "crew", "self_test", entry_only=True),
+    "pvt_lapses": SignalMeta("count", "crew", "self_test", entry_only=True),
+    "pvt_false_starts": SignalMeta("count", "crew", "self_test", entry_only=True),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]

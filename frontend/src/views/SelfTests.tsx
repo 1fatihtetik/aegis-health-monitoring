@@ -1,9 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { backendApi, signalLabel } from '../api/backend';
-import { CrewId, HAZARD_CATALOG, Hazard, ScheduleItem, SelfTestDef, SelfTestResult } from '../api/types';
+import {
+  CrewId,
+  HAZARD_CATALOG,
+  Hazard,
+  ScheduleItem,
+  SelfTestDef,
+  SelfTestResult,
+  SubmitOutcome,
+} from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
+import { PvtTest } from '../components/PvtTest';
 import { RoutineBoard } from '../components/RoutineBoard';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 
@@ -54,6 +63,12 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
   }, [connected, refresh]);
 
   const open = tests?.find((t) => t.id === openId) ?? null;
+  const onSubmit = async (values: Record<string, number>): Promise<SubmitOutcome> => {
+    if (!open) return { ok: false, message: 'No test open.' };
+    const res = await submitSelfTest(crewId, open, values);
+    refresh();
+    return res;
+  };
   const shown = (tests ?? []).filter((t) => hazard === 'ALL' || t.hazards.includes(hazard));
 
   return (
@@ -107,16 +122,17 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
             </button>
           </div>
           <SelfTestExplainer test={open} limits={state.limits} />
-          <MeasurementForm
-            key={`${open.id}-${crewId}`}
-            test={open}
-            connected={connected}
-            onSubmit={async (values) => {
-              const res = await submitSelfTest(crewId, open, values);
-              refresh();
-              return res;
-            }}
-          />
+          {open.kind === 'pvt' ? (
+            <PvtTest
+              key={`${open.id}-${crewId}`}
+              test={open}
+              lapseMs={state.limits['cognition.pvt_lapse_ms']?.value ?? NaN}
+              connected={connected}
+              onSubmit={onSubmit}
+            />
+          ) : (
+            <MeasurementForm key={`${open.id}-${crewId}`} test={open} connected={connected} onSubmit={onSubmit} />
+          )}
         </article>
       ) : (
         <>

@@ -220,12 +220,14 @@ rules:
 
   - id: cog.performance_risk
     type: COMPOUND
-    title: "Cognitive performance risk (sleep loss + elevated CO2)"
-    all: [sleep.short_24h, env.co2.high_1h]
+    title: "Cognitive performance risk (sleep loss + elevated CO2 or reaction-time lapses)"
+    # T-2: PVT-B lapses are an alternative to elevated CO2 as the second piece of evidence.
+    all: [sleep.short_24h]
+    any: [env.co2.high_1h, cog.pvt.lapses]
     severity: CAUTION
     hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
     hrp_risks: [HRP-14, HRP-12]
-    rationale: "Short sleep and elevated CO2 together raise the risk of reduced cognitive performance."
+    rationale: "Short sleep together with elevated CO2 or slowed reactions (PVT-B lapses) raises the risk of reduced cognitive performance."
     action: "Postpone critical tasks and EVA for this crew member; fix CO2 first; protect sleep."
     checklist:
       - "Postpone EVA and critical tasks for this crew member"
@@ -422,3 +424,23 @@ rules:
       - "Pick lower-salt menu items tomorrow"
       - "Drink enough fluid through the day"
       - "Keep logging your daily intake"
+
+  # ---- Block T, T-2: PVT-B reaction-time test ----------------------------------------------------------------------
+  - id: cog.pvt.lapses
+    type: THRESHOLD
+    title: "Slowed reactions (reaction-time test lapses)"
+    signal: pvt_lapses
+    op: ">"
+    limit_ref: cognition.pvt_lapses_max
+    window: 12h
+    agg: last
+    severity: CAUTION
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    rationale: "Several slow responses (lapses) in the PVT-B reaction-time test: indicators consistent with fatigue or sleep loss."
+    action: "Postpone critical tasks and EVA for this crew member; protect the next sleep period; repeat the test after rest."
+    checklist:
+      - "Postpone EVA and critical tasks for this crew member"
+      - "Have a second crew member double-check critical work"
+      - "Protect the next sleep period"
+      - "Repeat the reaction-time test after rest"

@@ -859,6 +859,10 @@ export interface SelfTestDef {
   limits: SelfTestLimit[];
   escalation: string;
   protocol: string;
+  /** Protocol parameters the test screen runs with (e.g. PVT-B duration and gaps). */
+  params: Record<string, number>;
+  /** Set on demo-length variants: shown so nobody mistakes them for the real protocol. */
+  short_mode_note: string;
   schedule: SelfTestSchedule | null;
   after_gravity_increase: boolean;
   onboard_only: boolean;

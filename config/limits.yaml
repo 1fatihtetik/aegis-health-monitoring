@@ -32,6 +32,10 @@ physiology:
   hrv_rmssd_ms_min:    { value: 20, source_ref: "Project heuristic", verified: false }
   bp_diastolic_mmHg:   { min: 50, max: 100, source_ref: "Clinical heuristic (no NASA-STD-3001 clause read)", verified: false }
   body_temp_C:         { min: 35.0, max: 38.0, source_ref: "Clinical heuristic (fever commonly taken as 38.0 C or more, hypothermia below 35.0 C); no NASA-STD-3001 clause read", verified: false }
+# Block T, T-2: PVT-B reaction-time test. Not NASA-STD-3001 limits.
+cognition:
+  pvt_lapse_ms:        { value: 355, source_ref: "Basner, Mollicone & Dinges (2011) Acta Astronautica 69:949-959, PVT-B: a response slower than 355 ms is a lapse (method parameter, not a NASA-STD-3001 limit)", verified: false }
+  pvt_lapses_max:      { value: 3, source_ref: "Project heuristic (more than 3 lapses in one 3-minute PVT-B)", verified: false }
 # Block T, T-3: hand measurements. No NASA-STD-3001 clause has been read for these, so all are unverified.
 metabolic:
   glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }

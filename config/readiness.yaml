@@ -19,6 +19,9 @@ kinds:
     components:
       sleep: { signal: sleep_hours_24h, window: 10m, agg: last, limit_ref: sleep.min_sleep_h_24h, good: 8.0, weight: 0.6 }
       co2:   { signal: ppco2, window: 1h, agg: mean, limit_ref: environment.ppco2_mmHg_1h_max, good: 2.0, weight: 0.4 }
+      # T-2: newest PVT-B of the last 24 h. Scores 50 when the mean response is as slow as a lapse (355 ms); good
+      # (250 ms) is a project heuristic. Left out of the score until a PVT-B result exists.
+      pvt:   { signal: pvt_mean_rt, window: 24h, agg: last, limit_ref: cognition.pvt_lapse_ms, good: 250.0, weight: 0.4 }
   OVERALL:
     hazards: [GRAVITY_FIELDS, ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
     hrp_risks: [HRP-03, HRP-14, HRP-06]

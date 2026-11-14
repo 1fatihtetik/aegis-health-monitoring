@@ -80,6 +80,9 @@ class SelfTest(BaseModel):
     limit_refs: list[str] = Field(default_factory=list)
     escalation: str = Field(min_length=1)
     protocol: str = ""  # named method and source, e.g. "PVT-B (Basner et al. 2011)"
+    # Protocol parameters the test screen runs with (e.g. PVT-B duration and gaps). Medical limits stay in limits.yaml.
+    params: dict[str, float] = Field(default_factory=dict)
+    short_mode_note: str = ""  # a demo-length variant must say it is not the real protocol
     schedule: Schedule | None = None
     after_gravity_increase: bool = False  # T-1: extra check after a gravity increase
     onboard_only: bool = False  # T-4: answers never leave the spacecraft

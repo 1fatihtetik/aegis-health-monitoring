@@ -123,3 +123,50 @@ tests:
     limit_refs: [nutrition.fluid_intake_mL_day_min, nutrition.sodium_intake_mg_day_max]
     escalation: "Little fluid for two days, dark urine or flank pain: drink more and tell the CMO."
     schedule: { every: 1d, at: "21:00", due_window: 3h }
+
+  # ---- T-2: reaction-time test (PVT-B) -------------------------------------------------------------------------------
+  - id: pvt_b
+    title: "Reaction-time test (PVT-B, 3 minutes)"
+    kind: pvt
+    entry_method: pvt
+    fields:
+      - { signal: pvt_mean_rt, label: "Mean reaction time", input_min: 100, input_max: 30000 }
+      - { signal: pvt_lapses, label: "Lapses (responses slower than the lapse limit)", input_min: 0, input_max: 500 }
+      - { signal: pvt_false_starts, label: "False starts", input_min: 0, input_max: 500 }
+    why: "Sleep loss, long shifts and high CO2 slow reactions before you notice it yourself. This short test measures alertness the same way each time, so a slow day shows up before a critical task or an EVA."
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    steps:
+      - "Sit comfortably where you will not be interrupted for 3 minutes"
+      - "Tap Start and keep your eyes on the box"
+      - "When the counter appears, tap the box (or press Space) as fast as you can"
+      - "Do not tap before the counter appears; that counts as a false start"
+      - "Keep going until the test ends by itself, then tap Save result"
+    limit_refs: [cognition.pvt_lapse_ms, cognition.pvt_lapses_max]
+    escalation: "Many lapses, or you feel very sleepy: do not start EVA or critical work; tell the crew commander and the CMO, rest, and repeat the test after sleep."
+    protocol: "PVT-B (Basner, Mollicone and Dinges 2011, Acta Astronautica): 3 minutes, random gaps of 1-4 s, lapse = response slower than 355 ms, false start = response before the counter or faster than 100 ms. Used in NASA's Cognition test battery."
+    params: { duration_s: 180, isi_min_s: 1, isi_max_s: 4, false_start_ms: 100, timeout_ms: 30000 }
+    schedule: { every: 1d, at: "07:30", due_window: 3h }
+    after_gravity_increase: true
+
+  - id: pvt_b_short
+    title: "Reaction-time test, demo length (30 s)"
+    kind: pvt
+    entry_method: pvt
+    fields:
+      - { signal: pvt_mean_rt, label: "Mean reaction time", input_min: 100, input_max: 30000 }
+      - { signal: pvt_lapses, label: "Lapses (responses slower than the lapse limit)", input_min: 0, input_max: 500 }
+      - { signal: pvt_false_starts, label: "False starts", input_min: 0, input_max: 500 }
+    why: "A 30-second version of the reaction-time test for demonstrations. It shows how the test works; it is too short to judge alertness, so it never counts as the daily test."
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    steps:
+      - "Tap Start and keep your eyes on the box"
+      - "When the counter appears, tap the box (or press Space) as fast as you can"
+      - "Do not tap before the counter appears"
+      - "When it ends, tap Save result"
+    limit_refs: [cognition.pvt_lapse_ms, cognition.pvt_lapses_max]
+    escalation: "For a real check of alertness, take the 3-minute test."
+    protocol: "Same rules as PVT-B (Basner et al. 2011), but only 30 s long."
+    params: { duration_s: 30, isi_min_s: 1, isi_max_s: 4, false_start_ms: 100, timeout_ms: 30000 }
+    short_mode_note: "Demo length, not the 3-minute protocol"

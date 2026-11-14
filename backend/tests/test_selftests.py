@@ -288,3 +288,45 @@ def test_no_gamification_wording_in_self_test_copy():
             shown = line if path.suffix == ".yaml" else " ".join(
                 [m[1] for m in STRING.findall(line)] + JSX_TEXT.findall(line))
             assert not GAMIFICATION.search(shown), f"{path.name}:{n}: {line.strip()}"
+
+
+# ---- T-2: PVT-B reaction-time test ---------------------------------------------------------------------------------
+PVT_SLOW = {"pvt_mean_rt": 372.0, "pvt_lapses": 7, "pvt_false_starts": 1}
+
+
+def test_pvt_lapses_plus_short_sleep_raise_cognitive_risk_without_co2(cfg):
+    w = World(cfg, "insomnia_streak")
+    for _ in range(12 * 60):
+        w.tick()
+    assert any(a.rule_id == "sleep.short_24h" and a.crew_id == "C1" for a in w.alerts.open_alerts())
+    assert not any(a.rule_id == "cog.performance_risk" for a in w.alerts.alerts.values())  # CO2 is normal here
+    w._scripted_selftest(w.clock.now(), {"crew": "C1", "test": "pvt_b", "values": PVT_SLOW})
+    w.tick()
+    lapses = open_alert(w, "cog.pvt.lapses", "C1")
+    assert lapses is not None and lapses.evidence["value"] == 7 and lapses.evidence["provenance"] == "SYNTHETIC"
+    risk = open_alert(w, "cog.performance_risk", "C1")
+    assert risk is not None
+    members = {m.get("rule_id"): m["firing"] for m in risk.evidence["members"]}
+    assert members == {"sleep.short_24h": True, "env.co2.high_1h": False, "cog.pvt.lapses": True}
+
+
+def test_cognitive_readiness_gains_a_pvt_component(client):
+    w = client.rt.world
+    w.tick()
+    comp = w.snapshot["readiness"]["C2"]["COGNITIVE"]["components"]["pvt"]
+    assert comp["value"] is None and comp["score"] is None  # left out until a result exists
+    submit(client, "C2", "pvt_b", {"pvt_mean_rt": 302.5, "pvt_lapses": 1, "pvt_false_starts": 0})
+    w.tick()
+    comp = w.snapshot["readiness"]["C2"]["COGNITIVE"]["components"]["pvt"]
+    assert comp["value"] == 302.5 and comp["limit"] == 355 and comp["limit_verified"] is False
+    assert 50 < comp["score"] < 100  # between good (250 ms) and the lapse limit
+    assert open_alert(w, "cog.pvt.lapses", "C2") is None
+
+
+def test_pvt_catalog_names_the_protocol_and_labels_the_short_mode(cfg):
+    full, short = cfg.selftests.test("pvt_b"), cfg.selftests.test("pvt_b_short")
+    assert full.params == {"duration_s": 180, "isi_min_s": 1, "isi_max_s": 4, "false_start_ms": 100, "timeout_ms": 30000}
+    assert "Basner" in full.protocol and "355 ms" in full.protocol and full.short_mode_note == ""
+    assert short.params["duration_s"] < full.params["duration_s"]
+    assert short.short_mode_note == "Demo length, not the 3-minute protocol" and short.schedule is None
+    assert cfg.limit("cognition.pvt_lapse_ms").value == 355

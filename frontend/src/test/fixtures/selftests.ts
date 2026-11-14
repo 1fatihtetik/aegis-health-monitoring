@@ -72,6 +72,8 @@ export const bpTest: SelfTestDef = {
   limits: [],
   escalation: 'Tell the crew medical officer (CMO) now.',
   protocol: '',
+  params: {},
+  short_mode_note: '',
   schedule: null,
   after_gravity_increase: false,
   onboard_only: false,
