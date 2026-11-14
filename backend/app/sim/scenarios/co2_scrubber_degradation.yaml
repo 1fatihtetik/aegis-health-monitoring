@@ -1,0 +1,7 @@
+description: "CO2 scrubber degrades: cabin ppCO2 rises over several hours."
+phase: MARS_TRANSIT
+speed: 600
+events:
+  - { at: 0, type: co2_ramp, duration: 24h, params: { rate_per_h: 0.25, max_rise: 1.8 } }
+expected:
+  - { rule_id: env.co2.high_1h, severity: CAUTION, within: 7h }

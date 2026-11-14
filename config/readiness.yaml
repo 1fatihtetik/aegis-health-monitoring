@@ -1,0 +1,35 @@
+# Readiness scores (0-100). Transparent weighted formulas, every component is shown to the user.
+# Component score: 100 at `good`, 50 at the limit from limits.yaml, linear, clamped to 0-100.
+# Final score: weighted mean of components minus the penalty for each open alert on that crew member.
+# `good` anchors, weights and penalties are project heuristics, not NASA values.
+alert_penalty: { INFO: 0, CAUTION: 5, WARNING: 20, EMERGENCY: 100 }
+kinds:
+  EVA:
+    hazards: [HOSTILE_CLOSED_ENV, ISOLATION_CONFINEMENT, RADIATION]
+    hrp_risks: [HRP-08, HRP-14, HRP-06]
+    go_min_ref: readiness.eva_go_min
+    components:
+      sleep:      { signal: sleep_hours_24h, window: 10m, agg: last, limit_ref: sleep.min_sleep_h_24h, good: 8.0, weight: 0.35 }
+      co2:        { signal: ppco2, window: 1h, agg: mean, limit_ref: environment.ppco2_mmHg_1h_max, good: 2.0, weight: 0.25 }
+      spo2:       { signal: spo2, window: 10m, agg: mean, limit_ref: physiology.spo2_pct_min, good: 97.0, weight: 0.20 }
+      heart_rate: { signal: heart_rate, window: 30m, agg: mean, limit_ref: physiology.hr_bpm.max, good: 75.0, weight: 0.20 }
+  COGNITIVE:
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    components:
+      sleep: { signal: sleep_hours_24h, window: 10m, agg: last, limit_ref: sleep.min_sleep_h_24h, good: 8.0, weight: 0.6 }
+      co2:   { signal: ppco2, window: 1h, agg: mean, limit_ref: environment.ppco2_mmHg_1h_max, good: 2.0, weight: 0.4 }
+  OVERALL:
+    hazards: [GRAVITY_FIELDS, ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-03, HRP-14, HRP-06]
+    components:
+      sleep:      { signal: sleep_hours_24h, window: 10m, agg: last, limit_ref: sleep.min_sleep_h_24h, good: 8.0, weight: 0.4 }
+      spo2:       { signal: spo2, window: 10m, agg: mean, limit_ref: physiology.spo2_pct_min, good: 97.0, weight: 0.3 }
+      heart_rate: { signal: heart_rate, window: 30m, agg: mean, limit_ref: physiology.hr_bpm.max, good: 75.0, weight: 0.3 }
+  PHYSICAL:
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-11, HRP-09, HRP-03]
+    components:
+      bone:       { signal: bmd_estimate, window: 2d, agg: last, limit_ref: bone.bmd_pct_of_baseline_min, good: 100.0, weight: 0.4 }
+      hrv:        { signal: hrv_rmssd, window: 1h, agg: mean, limit_ref: physiology.hrv_rmssd_ms_min, good: 60.0, weight: 0.3 }
+      heart_rate: { signal: heart_rate, window: 30m, agg: mean, limit_ref: physiology.hr_bpm.max, good: 75.0, weight: 0.3 }

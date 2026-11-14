@@ -1,0 +1,8 @@
+description: "Solar particle event: dose rate rises about 80x for 6 hours."
+phase: MARS_TRANSIT
+speed: 60
+events:
+  - { at: 30m, type: spe, duration: 6h, params: { peak_factor: 80, ramp_s: 1200 } }
+expected:
+  - { rule_id: rad.spe.dose_rate, severity: EMERGENCY, within: 1h }
+  - { rule_id: rad.dose.24h, severity: WARNING, within: 4h }

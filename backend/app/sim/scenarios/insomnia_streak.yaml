@@ -1,0 +1,7 @@
+description: "C1 sleeps under half of each sleep period for three nights."
+phase: MARS_TRANSIT
+speed: 1800
+events:
+  - { at: 0, type: insomnia, duration: 72h, params: { crew: C1, sleep_fraction: 0.45 } }
+expected:
+  - { rule_id: sleep.short_24h, crew_id: C1, severity: CAUTION, within: 12h }

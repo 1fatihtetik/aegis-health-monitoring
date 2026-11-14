@@ -1,0 +1,31 @@
+# Mission timeline and simulator inputs. These are simulation parameters, not medical limits.
+# Radiation backgrounds are order-of-magnitude values for the simulator only (unverified).
+start_ts: "2026-11-14T20:00:00Z"
+mission_day: 142
+default_phase: MARS_TRANSIT
+tick_s: 60
+prewarm_h: 48
+baseline_window: 48h      # personal baseline window for GET /crew/{id}/baselines (onboard keeps ~48 h of 1-min data)
+sleep_report_hour: 12     # the daily sleep_night_h point is written at this hour (covers the previous 24 h)
+history_days: 180
+phases:
+  LEO:           { gravity_g: 0.0,  comm_delay_s: 0,   radiation_uSv_h: 21, neutron_fraction: 0.30 }
+  TRANSIT:       { gravity_g: 0.0,  comm_delay_s: 1.3, radiation_uSv_h: 60, neutron_fraction: 0.30 }
+  LUNAR_SURFACE: { gravity_g: 0.16, comm_delay_s: 1.3, radiation_uSv_h: 55, neutron_fraction: 0.30 }
+  MARS_TRANSIT:  { gravity_g: 0.0,  comm_delay_s: 720, radiation_uSv_h: 75, neutron_fraction: 0.30 }
+  MARS_SURFACE:  { gravity_g: 0.38, comm_delay_s: 720, radiation_uSv_h: 28, neutron_fraction: 0.30 }
+  RETURN:        { gravity_g: 0.0,  comm_delay_s: 720, radiation_uSv_h: 75, neutron_fraction: 0.30 }
+  POST_LANDING:  { gravity_g: 1.0,  comm_delay_s: 0,   radiation_uSv_h: 0.3, neutron_fraction: 0.30 }
+link:
+  max_msgs_per_tick: 20
+sim:
+  shelter_dose_factor: 0.2     # fraction of the area dose a sheltered crew member receives
+  quality_factor: 2.5          # dose equivalent / absorbed dose, simulator only
+  exercise_bmd_protection: 0.6 # share of bone loss prevented at 100% exercise adherence
+  # Neutron energy spectrum (CANS-style bins). Synthetic split of the neutron dose rate, simulator only (unverified).
+  neutron_spectrum:
+    - { energy_range: "Thermal (<0.5 eV)",           fraction: 0.12, quality_factor: 2.5 }
+    - { energy_range: "Epithermal (0.5 eV-100 keV)", fraction: 0.19, quality_factor: 5.0 }
+    - { energy_range: "Fast (0.1-2 MeV)",            fraction: 0.34, quality_factor: 20.0 }
+    - { energy_range: "Relativistic (2-20 MeV)",     fraction: 0.23, quality_factor: 10.0 }
+    - { energy_range: "High-energy (>20 MeV)",       fraction: 0.12, quality_factor: 5.0 }

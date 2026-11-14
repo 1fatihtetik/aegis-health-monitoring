@@ -1,0 +1,31 @@
+# All thresholds used by AEGIS (PRD section 9). Nothing here may be hardcoded elsewhere.
+# verified: false means the number is a placeholder and must NOT be presented as a NASA value.
+# The UI shows an "unverified" marker for those entries.
+radiation:
+  career_effective_dose_mSv: { value: 600, source_ref: "NASA-STD-3001 Vol 1 (career limit), VERIFY", verified: false }
+  spe_alert_dose_rate_uSv_h: { value: 500, source_ref: "Project heuristic", verified: false }
+  dose_24h_mSv_max:          { value: 5, source_ref: "Project heuristic", verified: false }
+environment:
+  ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2, VERIFY", verified: false }
+  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic", verified: false }
+  ppo2_kPa_min:        { value: 19.5, source_ref: "VERIFY", verified: false }
+  cabin_temp_C:        { min: 18, max: 27, source_ref: "VERIFY", verified: false }
+  humidity_pct:        { min: 25, max: 75, source_ref: "VERIFY", verified: false }
+  noise_dBA_sleep_max: { value: 50, source_ref: "NASA-STD-3001 Vol 2, VERIFY", verified: false }
+physiology:
+  spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false }
+  hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false }
+  hr_orthostatic_bpm:  { value: 95, source_ref: "Project heuristic", verified: false }
+  bp_systolic_mmHg:    { min: 90, max: 160, source_ref: "Clinical heuristic", verified: false }
+  baseline_z_alert:    { value: 3.0, source_ref: "Project heuristic", verified: false }
+  hr_tachycardia_bpm:  { value: 100, source_ref: "Clinical heuristic", verified: false }
+  hrv_rmssd_ms_min:    { value: 20, source_ref: "Project heuristic", verified: false }
+symptoms:
+  headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
+sleep:
+  min_sleep_h_24h:     { value: 6, source_ref: "Project heuristic", verified: false }
+bone:
+  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields page", verified: true }
+  bmd_pct_of_baseline_min: { value: 95, source_ref: "Project heuristic", verified: false }
+readiness:
+  eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false }

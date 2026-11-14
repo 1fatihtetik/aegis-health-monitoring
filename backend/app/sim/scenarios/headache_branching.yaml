@@ -1,0 +1,13 @@
+description: "Same symptoms, different cause: headache + raised heart rate with normal CO2 (C2), then with high CO2 (C4)."
+phase: MARS_TRANSIT
+speed: 600
+events:
+  # C2 reports a headache with a raised heart rate while the cabin is nominal -> hydration branch.
+  - { at: 30m, type: symptom, duration: 2h, params: { crew: C2, headache: 2, hr_rise: 45 } }
+  # The scrubber degrades; once the 1 h CO2 mean is over its limit, C4 reports the same symptoms -> CO2 branch.
+  - { at: 3h, type: co2_ramp, duration: 12h, params: { rate_per_h: 0.5, max_rise: 1.8 } }
+  - { at: 10h, type: symptom, duration: 2h, params: { crew: C4, headache: 2, hr_rise: 45 } }
+expected:
+  - { rule_id: ctx.headache_tachy.hydration, crew_id: C2, severity: CAUTION, within: 1h30m }
+  - { rule_id: env.co2.high_1h, severity: CAUTION, within: 7h }
+  - { rule_id: ctx.headache_tachy.co2, crew_id: C4, severity: CAUTION, within: 11h }

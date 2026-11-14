@@ -1,0 +1,203 @@
+# Rule definitions. Every rule must carry hazards + hrp_risks (AGENTS.md ground rule 3).
+# Limits are referenced by path into limits.yaml: section.name or section.name.min|max.
+rules:
+  - id: env.co2.high_1h
+    type: THRESHOLD
+    title: "Cabin CO2 elevated (1 h mean)"
+    signal: ppco2
+    op: ">"
+    limit_ref: environment.ppco2_mmHg_1h_max
+    window: 1h
+    agg: mean
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-12, HRP-14]
+    rationale: "Elevated CO2 is linked to headache and reduced cognitive performance."
+    action: "Check CDRA/scrubber status; increase ventilation; monitor symptoms."
+
+  - id: env.co2.critical
+    type: THRESHOLD
+    title: "Cabin CO2 high"
+    signal: ppco2
+    op: ">"
+    limit_ref: environment.ppco2_mmHg_critical
+    window: 10m
+    agg: mean
+    severity: WARNING
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-12, HRP-14, HRP-08]
+    rationale: "Sustained high CO2 threatens crew performance and health."
+    action: "Start the CO2 removal contingency procedure; move crew to a ventilated module."
+
+  - id: env.o2.low
+    type: THRESHOLD
+    title: "Cabin O2 partial pressure low"
+    signal: ppo2
+    op: "<"
+    limit_ref: environment.ppo2_kPa_min
+    window: 10m
+    agg: mean
+    severity: WARNING
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-06]
+    rationale: "Low O2 partial pressure is a hypoxia risk."
+    action: "Check O2 supply and cabin pressure; prepare portable breathing apparatus."
+
+  - id: physio.spo2.low
+    type: THRESHOLD
+    title: "Blood oxygen saturation low"
+    signal: spo2
+    op: "<"
+    limit_ref: physiology.spo2_pct_min
+    window: 5m
+    agg: mean
+    severity: WARNING
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-06, HRP-08]
+    rationale: "Indicators consistent with reduced oxygenation."
+    action: "Check sensor placement; check cabin O2; recommend CMO review."
+
+  - id: physio.hr.high
+    type: THRESHOLD
+    title: "Heart rate above limit"
+    signal: heart_rate
+    op: ">"
+    limit_ref: physiology.hr_bpm.max
+    window: 10m
+    agg: mean
+    severity: WARNING
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03]
+    rationale: "Sustained heart rate above the configured limit."
+    action: "Stop exertion and rest; recommend CMO review."
+
+  - id: physio.hr.low
+    type: THRESHOLD
+    title: "Heart rate below limit"
+    signal: heart_rate
+    op: "<"
+    limit_ref: physiology.hr_bpm.min
+    window: 10m
+    agg: mean
+    severity: WARNING
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03]
+    rationale: "Sustained heart rate below the configured limit."
+    action: "Check the crew member and the sensor; recommend CMO review."
+
+  - id: physio.temp.baseline_dev
+    type: BASELINE
+    title: "Skin temperature above personal baseline"
+    signal: skin_temp
+    op: ">"
+    limit_ref: physiology.baseline_z_alert
+    window: 30m
+    baseline_window: 48h
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-01, HRP-05]
+    rationale: "Temperature well above this crew member's own rolling baseline."
+    action: "Log symptoms; repeat the measurement; recommend CMO review."
+
+  - id: sleep.short_24h
+    type: THRESHOLD
+    title: "Short sleep in the last 24 h"
+    signal: sleep_hours_24h
+    op: "<"
+    limit_ref: sleep.min_sleep_h_24h
+    window: 10m
+    agg: last
+    severity: CAUTION
+    hazards: [ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-14]
+    rationale: "Sleep loss lowers performance and builds sleep debt."
+    action: "Protect the next sleep period; adjust the light schedule; review workload."
+
+  - id: rad.spe.dose_rate
+    type: THRESHOLD
+    title: "Solar particle event: dose rate above SPE threshold"
+    signal: area_dose_rate_equivalent
+    op: ">"
+    limit_ref: radiation.spe_alert_dose_rate_uSv_h
+    window: 5m
+    agg: mean
+    severity: EMERGENCY
+    hazards: [RADIATION]
+    hrp_risks: [HRP-17]
+    rationale: "Area dose rate is far above background, consistent with a solar particle event."
+    action: "All crew go to the storm shelter now."
+    checklist:
+      - "Go to the storm shelter"
+      - "Log each crew member as sheltered (headcount)"
+      - "Stop any EVA preparation"
+      - "Read personal dosimeters every 15 minutes"
+      - "Stay sheltered until the dose rate is back under the threshold"
+
+  - id: rad.dose.24h
+    type: CUMULATIVE
+    title: "24 h radiation dose above limit"
+    signal: dose_rate_equivalent
+    op: ">"
+    limit_ref: radiation.dose_24h_mSv_max
+    window: 24h
+    scale: 0.001
+    unit: mSv
+    severity: WARNING
+    hazards: [RADIATION]
+    hrp_risks: [HRP-17]
+    rationale: "Dose accumulated in the last 24 hours is above the configured limit."
+    action: "Keep time outside the shelter to a minimum; log the dose; recommend CMO review."
+
+  - id: cog.performance_risk
+    type: COMPOUND
+    title: "Cognitive performance risk (sleep loss + elevated CO2)"
+    all: [sleep.short_24h, env.co2.high_1h]
+    severity: CAUTION
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    rationale: "Short sleep and elevated CO2 together raise the risk of reduced cognitive performance."
+    action: "Postpone critical tasks and EVA for this crew member; fix CO2 first; protect sleep."
+
+  - id: cardio.orthostatic
+    type: COMPOUND
+    title: "Indicators consistent with orthostatic intolerance"
+    all:
+      - { signal: bp_systolic, op: "<", limit_ref: physiology.bp_systolic_mmHg.min, window: 15m, agg: mean }
+      - { signal: heart_rate, op: ">", limit_ref: physiology.hr_orthostatic_bpm, window: 15m, agg: mean }
+    severity: WARNING
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-02]
+    rationale: "Low blood pressure together with a raised heart rate after a gravity transition."
+    action: "Sit or lie down; fluids; avoid standing tasks; recommend CMO review."
+
+  # Context-branching pair (ROADMAP section 5.1): the same symptoms point to different causes.
+  # Both need a reported headache + raised resting heart rate; cabin CO2 decides the branch.
+  - id: ctx.headache_tachy.co2
+    type: COMPOUND
+    title: "Headache + raised heart rate with elevated cabin CO2"
+    context: headache_tachy
+    branch: co2
+    all:
+      - { signal: symptom_headache, op: ">=", limit_ref: symptoms.headache_report_min, window: 15m, agg: max }
+      - { signal: heart_rate, op: ">", limit_ref: physiology.hr_tachycardia_bpm, window: 15m, agg: mean }
+      - env.co2.high_1h
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-12, HRP-14]
+    rationale: "Headache and a raised heart rate while cabin CO2 is above its limit: indicators consistent with a CO2 effect."
+    action: "Treat the environment first: check CDRA/scrubber, increase ventilation; recheck symptoms in 30 min; recommend CMO review."
+
+  - id: ctx.headache_tachy.hydration
+    type: COMPOUND
+    title: "Headache + raised heart rate, cabin CO2 normal"
+    context: headache_tachy
+    branch: hydration
+    all:
+      - { signal: symptom_headache, op: ">=", limit_ref: symptoms.headache_report_min, window: 15m, agg: max }
+      - { signal: heart_rate, op: ">", limit_ref: physiology.hr_tachycardia_bpm, window: 15m, agg: mean }
+    none: [env.co2.high_1h]
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-03, HRP-07]
+    rationale: "Headache and a raised heart rate with normal cabin CO2: indicators consistent with low fluid intake or another non-environmental cause."
+    action: "Drink fluids and rest; log fluid intake; recheck in 30 min; recommend CMO review."

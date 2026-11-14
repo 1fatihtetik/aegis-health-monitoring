@@ -1,0 +1,247 @@
+AEGIS HANDOFF: implementations and next goals (Claude + Gemini, combined)
+Project: AEGIS, onboard-first astronaut health monitoring (NASA hackathon MVP)
+Last updated: 2026-11-14, end of the Claude session that merged the two handoff files.
+Replaces: claudeslastimplementationsandgoals.txt and geminislastimplementationsandgoals.txt (both deleted).
+State: backend complete for roadmap steps 1-6 plus the ROADMAP section 5.1 stretch rule. 47 backend tests pass,
+       ruff clean. Frontend built, tsc clean, 4 vitest tests pass, but it does not yet render backend data
+       (section 6). README.md written. Nothing committed.
+
+Read order for a new session: this file -> ROADMAP.md -> AGENTS.md -> PRD.md (only the sections you need).
+
+
+1. WHO OWNS WHAT
+
+Gemini Argon 4: everything under frontend/ (React + TS + Vite + Tailwind + Recharts + TanStack Query),
+                UX, charts, the Scenario Dock, component tests.
+Claude:         backend/, config/, Makefile, backend tests, scenarios, demo script, README.md.
+                (Gemini's old file called the backend agent "Fable 5.2"; that is Claude.)
+Shared boundary: the contract in section 5. Any change to it is written here first.
+Claude does not edit frontend/. Gemini does not edit backend/ or config/.
+Both agents update this one file at the end of their session (section 9).
+
+
+2. WHAT IS DONE: CLAUDE (backend, config, docs)
+
+Planning session
+- ROADMAP.md written; AGENTS.md and PRD.md sections 11 and 13 updated to the 30-hour scope.
+- ASTRA-MED files (*byargon.md) sent to the Recycle Bin.
+
+Backend build session (all in backend/app unless noted)
+- git init (no commits yet), .gitignore, Makefile, backend/pyproject.toml, backend/requirements.txt.
+- config/: limits.yaml, rules.yaml, mission.yaml, crew.yaml, readiness.yaml.
+- domain/enums.py (Hazard, HrpRisk, Severity, AlertState, RuleType, SIGNALS table), domain/models.py.
+- clock.py (SimClock), util.py, config.py (Config.limit(ref) is the only way to read a limit).
+- db/store.py: in-memory ring buffers per (crew_id, signal).
+- sim/core.py: simulator, 60 s tick, seeded. sim/scenario.py + sim/scenarios/*.yaml.
+- rules/models.py, rules/engine.py: THRESHOLD, BASELINE, CUMULATIVE, COMPOUND with hysteresis.
+- alerts/manager.py: one open alert per (rule, crew), auto-resolve, ack/resolve/note, audit notes.
+- scores/readiness.py (component scores), scores/radiation.py (summary + SPE state).
+- link/link.py: delay queue, priority, bandwidth cap, blackout, GroundNode.
+- world.py: one scenario run; tick() = sim -> store -> rules -> alerts -> snapshot -> link.
+- runtime.py: real-time loop, speed/pause, WebSocket broadcast. api/routes.py: all REST. main.py: app + /ws/live.
+- tests/: test_rules.py, test_scenarios.py, test_link.py, test_api.py.
+
+Integration-support session (this session, 2026-11-14), closes most of the old "UI features with no backend data":
+- PHYSICAL readiness kind (readiness.yaml): bone (bmd_estimate), hrv, heart_rate. HRP-11/09/03, GRAVITY_FIELDS.
+  New limits: bone.bmd_pct_of_baseline_min, physiology.hrv_rmssd_ms_min (both verified: false).
+- IN_TREATMENT transition: POST /alerts/{id}/treat (RAISED or ACKNOWLEDGED -> IN_TREATMENT, sets ack_ts if empty).
+- Personal baselines: GET /crew/{id}/baselines (mean, sd, current 10-min mean, z, outside) for 7 vitals.
+  Window defaults to mission.yaml baseline_window = 48h (onboard only keeps ~48 h of 1-min data, so not 14 days).
+- Daily signals with ~140 days of history: sleep_night_h (written at 12:00, hours slept in the previous 24 h)
+  and exercise_adherence_pct (written at 00:00 for the previous day, 0/50/100 with two planned sessions).
+  The simulator now skips exercise sessions according to each crew member's exercise_adherence (seeded per date).
+- Neutron energy spectrum: radiation.area.neutron_spectrum[5] (energy_range, flux_fraction, quality_factor,
+  dose_rate_uSv_h). Bin fractions are simulator parameters in mission.yaml (synthetic, unverified).
+- Context-branching compound rule (ROADMAP 5.1): ctx.headache_tachy.co2 and ctx.headache_tachy.hydration.
+  Same symptoms (headache report + HR > physiology.hr_tachycardia_bpm), cabin CO2 decides the branch.
+  New pieces: COMPOUND `none:` members (must NOT fire), rule fields `context` + `branch`, signal
+  symptom_headache (0-3 self-report), sim effect `symptom` {crew, headache, hr_rise}, limit
+  symptoms.headache_report_min, scenario headache_branching.yaml (C2 -> hydration, then C4 -> CO2).
+- Evidence now carries `hysteresis_hold: true` when a member still fires only because of hysteresis
+  (value back inside the limit but not past the clear margin). Show it so "97.9 > 100, firing" is not confusing.
+- README.md: run steps, checks, scenario table, demo walkthrough.
+- Tick cost measured at about 2.1 ms (10,000x = 167 ticks/s still fits).
+
+Measured demo_5min alert times (seed 42, offsets from start):
+  sleep.short_24h C1 at 5h56m; env.co2.high_1h + cog.performance_risk C1 at 17h26m (C1 EVA NO-GO);
+  rad.spe.dose_rate at 20h03m; rad.dose.24h (all crew) at 20h37m; cardio.orthostatic C3 at 23h45m
+  (was 23h30m before the exercise-adherence change; still inside the 60x landing segment).
+
+
+3. WHAT IS DONE: GEMINI (frontend/)
+
+A. Typed API & live layer (frontend/src/api/)
+   - types.ts: strict types (no `any`) for Hazard, HrpRiskId (HRP-01..17 with names), Severity,
+     OperationalStatus with colorblind-safe symbols (✓ ▲ ■ ✖), AlertItem (evidence, hazards, hrp_risks,
+     limit_verified, source_ref), ReadinessScore (OVERALL, EVA, COGNITIVE, PHYSICAL), CrewMemberSummary,
+     EnvironmentState, RadiationSummary (neutron fraction + spectrum bins), LinkStatus, RecommendationMessage.
+   - client.ts: hand-written REST client for /api/v1/* and /health; a hardcoded copy of the limits
+     (must go, see section 6); seeded Mulberry32 PRNG for an offline fallback simulation.
+   - useLiveSocket.ts: connects to WS /ws/live when the backend is up, otherwise runs its own in-browser
+     simulation of the 5 scenarios, speeds 1x-10,000x, phases, delay queue and blackout.
+B. Components (frontend/src/components/)
+   - StatusRing (readiness gauge + icon/badge), Sparkline (threshold line + unverified marker),
+     LimitBandChart (band, min/max lines, HRP chips, verified/unverified badge + source_ref),
+     AlertBanner (hazards, HRP risks, evidence, rationale, 1-tap Acknowledge, >= 44 px),
+     EmergencyTakeover (EMERGENCY only: klaxon mute, SPE timer, dose/neutron rate, shelter dose saved,
+     4-crew headcount, "Confirm all 4 in shelter", checklist, ack/resolve),
+     ScenarioDock (5 scenarios, speed, pause/resume, seed, phase selector, blackout toggle).
+C. Views (frontend/src/views/)
+   - CrewOverview: 5 RIDGE tiles; Hostile Env tile opens the cabin environment drill-down; 4 crew cards;
+     EVA Go/No-Go inspector with weighted components.
+   - CrewDetail: 14-day baseline z-score cards, HR/BP/HRV/SpO2 LimitBandCharts, 7-night sleep chart,
+     180-day BMD + exercise adherence chart.
+   - Radiation: CANS module (total vs neutron), 5-bin neutron spectrum, cumulative dose bars vs career limit.
+   - AlertCenter: CMO triage + audit log, filters, compound clause breakdown, RAISED -> ACKNOWLEDGED ->
+     IN_TREATMENT -> RESOLVED, notes.
+   - GroundConsole: "Data as of T-Xm Ys" banner, autonomy lag callout, blackout toggle, send-recommendation
+     form with delivery countdown.
+D. Tests: frontend/src/test/components.test.tsx (StatusRing, AlertBanner, EmergencyTakeover, App flows).
+
+
+4. DECISIONS ALREADY MADE (do not reopen)
+
+- One FastAPI process, two stores (onboard, ground). Ground is written only by delivered link messages.
+- Simulator feeds the engine in-process. Tick is 60 s of simulated time; default speed is 60x (one tick per second).
+- Every scenario start builds a new World: 180 days of daily trend history (clipped at mission day 0, so
+  ~142 days at T0) + 48 h of prewarm at 1-minute resolution, then T0. Negative `at` events act during the prewarm.
+- Rule types: THRESHOLD, BASELINE, CUMULATIVE, COMPOUND. No TREND. Compound rules may reference simple rules
+  and inline predicates, not other compound rules. Compound members: all / any / none (none needs all or any).
+- Readiness formula: component = 100 at `good`, 50 at the limit, linear, clamped; score = weighted mean minus
+  a penalty per open alert. Weights and anchors live in config/readiness.yaml.
+- The SPE rule uses the area dosimeter, so sheltering lowers personal dose but does not clear the alert.
+- demo_5min sets its own speed per segment and pauses at the end; a speed passed to /sim/scenario is
+  overridden by its first event. The headache branching rule is NOT in demo_5min (kept the demo timings
+  stable); show it with the headache_branching scenario, or add a symptom event to the demo after a rehearsal.
+- All limits are verified: false except the BMD loss rate (NASA HRP page). Do not present the others as NASA values.
+- Tooling: ruff + pytest, tsc + vitest. No mypy gate, no Playwright, no generated client, no docker.
+
+
+5. CONTRACT BETWEEN BACKEND AND UI (implemented and tested)
+
+Run:  cd backend ; python -m uvicorn app.main:app --port 8000      (frontend: cd frontend ; npm run dev, port 5173)
+Docs: http://localhost:8000/docs (OpenAPI).   CORS is open. Vite proxies /api and /ws to :8000.
+
+Every GET takes ?node=onboard|ground (default onboard) and returns
+  { node, now, as_of, age_s, ...data }
+For ground, as_of/age_s give "Data as of T-Xm Ys" (age_s seconds behind onboard time).
+
+REST, all under /api/v1:
+  GET  /health                       (also /health without the prefix)
+  GET  /crew                         crew[], hazards{}, phase, mission_day
+  GET  /crew/{id}/summary            crew, units, readiness, alerts (open), radiation
+  GET  /crew/{id}/timeseries?signal=&from=&to=&max_points=    points [[ts, value]], unit, limits[]
+  GET  /crew/{id}/baselines?window=  NEW. window default 48h. {window, z_limit{value,source_ref,verified},
+                                     baselines{signal: {unit, n, mean, sd, current, z, outside}}}
+                                     signals: heart_rate hrv_rmssd spo2 resp_rate skin_temp bp_systolic bp_diastolic
+  GET  /environment/current          environment{signal: {value, unit, limits[]}}
+  GET  /environment/timeseries?signal=...                     same shape as crew timeseries
+  GET  /radiation/summary            crew{}, area{}, limits{}, spe{}
+  POST /radiation/shelter            {crew_id, sheltered}  headcount during an SPE
+  GET  /readiness?kind=EVA|COGNITIVE|OVERALL|PHYSICAL
+  GET  /alerts?state=OPEN|RAISED|ACKNOWLEDGED|IN_TREATMENT|RESOLVED&severity=
+  POST /alerts/{id}/ack | /treat (NEW) | /resolve | /note {text}      onboard only, no body except /note
+  GET  /rules        GET /limits     limits tree, by_signal bands, signal units
+  GET  /sim/status                   scenario, seed, speed, paused, now, scenarios[]
+  POST /sim/scenario                 {name, seed?, speed?}  restarts the world
+  POST /sim/control                  {action: pause|resume|speed, speed?}   speed 1-10000
+  GET  /link/status                  delay_s, blackout, queue_down, queue_up, ground_as_of, ground_age_s
+  POST /link/blackout {on}           POST /link/delay {delay_s|null}
+  POST /link/recommendation          {text, checklist?, crew_id?}  ground -> crew, arrives after the delay
+  GET  /link/recommendations         onboard: delivered ones; ground: sent ones with deliver_ts
+  POST /observations                 list of Observation, idempotent on id (also how to post symptom_headache)
+
+WebSocket /ws/live?node=onboard|ground, messages:
+  {type: "snapshot", node, now, as_of, age_s, sim{}, link{}, ts, scenario, seed, mission_day, phase{},
+   crew[], environment{}, hazards{}, readiness{}, radiation{}}
+     sent on connect and about 5 times per second. This one message can drive every view.
+  {type: "alert", node, alert}                  when an alert is raised, acknowledged, treated or resolved
+  {type: "recommendation", node: "onboard", recommendation}   when a ground recommendation arrives
+
+Shapes worth knowing:
+  crew[i]:  {id, callsign, role, status, top_alert{id,title,severity}|null, alert_count,
+             vitals{signal: value}   (now includes symptom_headache),
+             trends{bmd_estimate, body_mass, vo2max_proxy, sleep_night_h, exercise_adherence_pct},
+             readiness{EVA, COGNITIVE, OVERALL, PHYSICAL}, eva_go}
+  status / hazards[*].status:  NOMINAL | INFO | CAUTION | WARNING | EMERGENCY
+  hazards: {RADIATION|ISOLATION_CONFINEMENT|DISTANCE_FROM_EARTH|GRAVITY_FIELDS|HOSTILE_CLOSED_ENV:
+            {status, alert_ids[]}}   (use link status for the DISTANCE tile)
+  alert:   {id, rule_id, title, crew_id|null, severity, state, raised_ts, ack_ts, resolved_ts, hazards[],
+            hrp_risks[], evidence{}, rationale, action, checklist[], notes[], origin}
+  evidence (simple rule): {signal, value, unit, op, limit, limit_ref, limit_verified, limit_source_ref,
+            window, agg, hysteresis_hold?}.
+           Compound: {signal: "compound", logic{all, any, none}, value (conditions met), limit (conditions
+            needed), members[] each with the fields above + firing (+ negated: true for `none` members),
+            context?{group, branch}}
+  readiness[crew][kind]: {value, base, alert_penalty, components{name: {value, unit, good, limit,
+            limit_verified, score, weight}}, hazards, hrp_risks, formula, go?, go_min?}
+  radiation.spe: {active, threshold, alert_id, since, ended, elapsed_s, checklist[], headcount{crew: bool},
+            all_sheltered}.   radiation.crew[id]: dose_rate_uSv_h, dose_24h_mSv, dose_30d_mSv,
+            dose_mission_mSv, dose_career_mSv, career_pct_of_limit, sheltered, event_dose_mSv
+  radiation.area: {dose_rate_uSv_h, neutron_rate_uSv_h, neutron_fraction,
+            neutron_spectrum[{energy_range, flux_fraction, quality_factor, dose_rate_uSv_h}], neutron_spectrum_note}
+  limits: every limit carries {value, source_ref, verified}. Show the unverified marker when verified is false.
+  Only EMERGENCY may take over the screen. Long-term trends: timeseries for bmd_estimate, body_mass,
+  vo2max_proxy, dose_mission, sleep_night_h, exercise_adherence_pct return about 140 daily points.
+
+
+6. FRONTEND INTEGRATION GAPS (for Gemini; found by Claude reading frontend/)
+
+The frontend was built before the backend existed and still shows its own simulation:
+- useLiveSocket.ts runs an in-browser simulation, rules and link queue. With the backend up, the WebSocket
+  handler only reads type "alert"; "snapshot" is ignored. Needed: when connected, render from the backend
+  snapshot and switch the local simulation off (keep it only as the offline fallback).
+- client.ts carries a hardcoded copy of the limits. That breaks AGENTS.md ground rule 2.
+  Needed: read GET /api/v1/limits (or the limits[] in timeseries / environment responses).
+- client.ts updateAlertState sends 'in_treatment' to /ack. Use POST /alerts/{id}/treat instead.
+- Data the UI needs that now exists (map these instead of the local fakes):
+  PHYSICAL readiness -> readiness[crew].PHYSICAL;  spectrum bins -> radiation.area.neutron_spectrum;
+  baseline cards -> GET /crew/{id}/baselines (label it "48 h baseline", not 14-day);
+  7-night sleep chart -> timeseries signal=sleep_night_h;  adherence -> timeseries signal=exercise_adherence_pct.
+- Still no backend data for: the phase selector (no endpoint to change phase; phases change only through
+  scenario events), sleep efficiency / awakenings, workload score, exercise minutes, shelter dose saved
+  (compute it from event_dose_mSv if needed). Drop these from the UI or ask Claude.
+- New things worth showing: context{group, branch} badge on the ctx.headache_tachy.* alerts,
+  `negated` members ("CO2 NOT high") in the compound breakdown, and hysteresis_hold on evidence rows.
+- Payload shapes to check: /link/blackout body is {on: bool}; /sim/control body is {action, speed?};
+  /alerts/{id}/note body is {text}.
+
+
+7. NEXT STEPS (in order)
+
+Claude
+ a. Commit the backend once the user says so (nothing is committed).
+ b. Support the UI integration: fix contract gaps Gemini reports, add fields the views need (section 6 list).
+ c. Rehearse demo_5min against the real UI once it renders backend snapshots; retune the event times in
+    backend/app/sim/scenarios/demo_5min.yaml (the comment at the top has the real-time budget). Decide whether
+    to add a symptom event so the headache branching shows in the demo.
+ d. If time (ROADMAP section 5): verify 3-4 limits against NASA-STD-3001 and flip them to verified: true
+    (needs the STD-3001 PDFs; do not guess values), arrhythmia scenario, reaction-time test backend
+    (POST a result signal that feeds COGNITIVE readiness).
+ e. Not done from the PRD and not planned: SQLite persistence, research export, rules editor,
+    surveys/journal, per-role views.
+
+Gemini
+ 1. Backend integration (section 6): render from the WebSocket snapshot when connected, read limits from
+    the API, switch the local simulation off, use the new endpoints.
+ 2. Stretch UI (only if ahead, ROADMAP section 5): context-branching badge (backend part is done),
+    30-second reaction-time self-test widget for cognitive readiness, both states of the verified badge
+    once Claude flips 3-4 limits.
+ 3. End-to-end rehearsal (ROADMAP T+25 to T+30): run backend + frontend checks, play demo_5min twice
+    untouched from the Scenario Dock.
+
+
+8. OPEN ITEMS
+
+- Submission deadline and required format (video, slides, repo link) are unknown.
+- EXTRACTNOTION.txt is empty.
+- Start time of the 30 hours (T+0) is not recorded.
+- `make` is not installed on this Windows machine; run the commands from the Makefile by hand (README.md).
+- Python here is 3.14 with packages installed globally (no venv).
+
+
+9. KEEPING THIS FILE CURRENT
+
+At the end of every session, the agent that worked updates this file: move finished steps from section 7
+to section 2 (Claude) or section 3 (Gemini), record any contract change in section 5 before using it,
+update section 6 when a gap is closed or found, and update the "Last updated" line.

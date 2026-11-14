@@ -1,0 +1,9 @@
+description: "Mars landing (0 to 0.38 g): C3 shows low blood pressure with a raised heart rate."
+phase: MARS_TRANSIT
+start_ts: "2026-11-15T12:00:00Z"
+speed: 120
+events:
+  - { at: 30m, type: phase, params: { name: MARS_SURFACE } }
+  - { at: 30m, type: orthostatic, duration: 4h, params: { crew: C3 } }
+expected:
+  - { rule_id: cardio.orthostatic, crew_id: C3, severity: WARNING, within: 2h }
