@@ -96,10 +96,10 @@ def test_demo_script_controls_speed_and_pauses(cfg):
         paused = paused or result.pause
         if world.link.blackout:
             blackout_minutes.append(minute)
-    assert speeds == [120, 3600, 60, 3600, 60] and paused
+    assert speeds == [60, 120, 3600, 60, 3600, 60] and paused
     assert world.snapshot["phase"]["name"] == "MARS_SURFACE"
-    # Scripted comm blackout from 20h45m to 21h10m, then the link is back.
-    assert blackout_minutes and blackout_minutes[0] == 20 * 60 + 45 and blackout_minutes[-1] == 21 * 60 + 9
+    # Scripted comm blackout from 20h45m to 21h20m, then the link is back.
+    assert blackout_minutes and blackout_minutes[0] == 20 * 60 + 45 and blackout_minutes[-1] == 21 * 60 + 19
     assert not world.link.blackout
 
 
@@ -114,7 +114,7 @@ def test_demo_blackout_delays_ground_but_not_onboard(cfg):
             ground_seen.setdefault((alert["rule_id"], alert["crew_id"]), world.clock.now())
     dose = [a for a in world.alerts.alerts.values() if a.rule_id == "rad.dose.24h"]
     assert len(dose) == 4
-    blackout_end = world.start_ts + parse_duration("21h10m")
+    blackout_end = world.start_ts + parse_duration("21h20m")
     for a in dose:
         assert a.raised_ts < blackout_end  # onboard: raised on time
         assert ground_seen[(a.rule_id, a.crew_id)] >= blackout_end  # ground: only after the link is back
@@ -150,3 +150,27 @@ def test_lunar_surface_switches_radiation_and_gravity(cfg):
     g = world.snapshot["phase"]["gravity"]
     assert g["gravity_g"] == 0.16 and g["load_factor"] == 0.84
     assert g["transition"] and g["transition"]["to_g"] == 0.16
+
+
+def test_demo_opens_with_iss_and_lunar_tour(cfg):
+    """P-7 part 2: ISS (one SAA notice, no SPE alarm) -> Moon (0.16 g, CRaTER) -> Mars transit by 50 min."""
+    from app.world import World
+
+    world = World(cfg, "demo_5min", 42)
+    seen: dict[str, dict] = {}
+    for _ in range(60):
+        world.tick()
+        phase = world.snapshot["phase"]
+        if phase["name"] not in seen:
+            src = world.snapshot["provenance"]["area_dose_rate_equivalent"]
+            seen[phase["name"]] = {"src": (src["provenance"], src["dataset_id"]), "gravity": phase["gravity"],
+                                   "delay": phase["comm_delay_s"], "t": world.clock.now() - world.start_ts}
+    assert list(seen) == ["LEO", "LUNAR_SURFACE", "MARS_TRANSIT"]
+    assert seen["LEO"]["src"] == ("NASA_DERIVED", "iss_dostel1_2019_01") and seen["LEO"]["delay"] == 0
+    assert seen["LUNAR_SURFACE"]["src"] == ("NASA_DERIVED", "lro_crater_surface_2019_01")
+    lunar_g = seen["LUNAR_SURFACE"]["gravity"]
+    assert lunar_g["gravity_g"] == 0.16 and lunar_g["transition"]["to_g"] == 0.16
+    assert seen["MARS_TRANSIT"]["t"] <= parse_duration("51m") and seen["MARS_TRANSIT"]["delay"] > 600
+    alerts = list(world.alerts.alerts.values())
+    assert [(a.rule_id, a.severity.value) for a in alerts] == [("rad.saa.transit", "INFO")]
+    assert alerts[0].resolved_ts is not None and alerts[0].resolved_ts <= world.start_ts + parse_duration("30m")

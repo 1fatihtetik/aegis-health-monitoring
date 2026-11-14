@@ -505,7 +505,10 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 5. **Mars landing** (0 → 0.38 g) → orthostatic WARNING for one crew member (BP Reg-style prediction), sensorimotor caution.
 6. **Long-term trend view**: BMD and fitness slopes against exercise adherence. Close with the Earth-benefit angle (aging, osteoporosis, remote care).
 
-*v1.2 (P-7):* the demo is extended to show the new phases (proposal: a short LEO opening with ISS-dosimeter radiation before departure; gravity-dependent drifts visible in the trend view). The exact segments are agreed once P-1..P-6 land; `README.md` keeps the rehearsed timings.
+*v1.2 (P-7, built):* the demo opens with a time-compressed phase tour before step 1 (the crew history stays in Mars transit, so the later steps replay the same data):
+0. **ISS (LEO, 0 g).** Measured ISS DOSTEL-1 radiation (DLR instrument, NASA OSDR archive). The station crosses the South Atlantic Anomaly: the dose spike raises one plain INFO notice that clears by itself, never the SPE emergency.
+0b. **Lunar surface stop (0.16 g).** Radiation switches to the LRO CRaTER surface dose (NASA-derived); the Gravity tile shows bone loss at 84 % of the 0 g rate and the fainting risk recorded for the gravity increase. Then on to Mars transit, where the comm delay jumps from 1.3 s to ~11 min.
+`README.md` keeps the rehearsed timings.
 
 ## 15. Success metrics
 

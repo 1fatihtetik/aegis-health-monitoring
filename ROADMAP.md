@@ -101,4 +101,4 @@ If something already built breaks late, drop in this order: landing orthostatic 
 - ~~P-2~~ answered: NASA ISWA publishes CRaTER D1+D2 already ×1.333 (Si → water) and altitude-corrected to the surface, so no project-made correction. `TRANSIT` keeps the MSL/RAD cruise replay (free space). Replay gives 1,169 µSv/day vs Chang'e-4 1,369 (−15 %, inside 267).
 - ~~P-3~~ answered: Houston TX (where crews return), 2024-06-03..12; RadNet now reports dose equivalent in nSv/h directly. Label says terrestrial gamma, EPA, not NASA.
 - P-4: the partial-gravity model (user decision).
-- P-7: the exact demo segments (user decision once P-1..P-6 land).
+- ~~P-7~~ answered (2026-11-14): LEO + lunar stop. A short ISS opening with one South Atlantic Anomaly notice, then a short lunar-surface stop (0.16 g), before the Mars segments. Built 2026-11-14 (P-7 part 2: ISS 0-30m, Moon 30m-50m, then Mars transit; README has the timings).

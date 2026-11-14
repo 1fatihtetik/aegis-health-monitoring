@@ -90,13 +90,21 @@ The same scenario and seed always produce the same alerts.
 | `leo_baseline` | ISS day (LEO, 0 g), measured DOSTEL-1 radiation | `rad.saa.transit` INFO per South Atlantic Anomaly pass; no SPE alarm |
 | `lunar_surface` | Lunar landing (0 -> 0.16 g), CRaTER surface dose | none (radiation switches to LRO CRaTER, bone loss slows to 84 % of the 0 g rate) |
 
-## Demo walkthrough (`demo_5min`, about 4 minutes, plays untouched)
+## Demo walkthrough (`demo_5min`, about 4 min 40 s, plays untouched)
 
 The scenario sets its own speed per segment, scripts a comm blackout and pauses at the end. Times are
 simulated offsets from the start. The story: the crew handles everything onboard, without a flight surgeon.
 
-1. **0 to 1 h, 120x, ~30 s.** Normal evening in Mars transit (0 g, ~11-min delay from JPL Horizons). Everything is green.
-   Point out the neutron share on the radiation tile.
+0. **0 to 30m, 60x, ~30 s. ISS (LEO, 0 g).** A time-compressed phase tour opens the demo (the crew history stays
+   in Mars transit). Radiation is the measured ISS DOSTEL-1 replay ("ISS DOSTEL-1 (DLR) 2019", NASA OSDR archive).
+   At 0h05m the station crosses the South Atlantic Anomaly: the dose spike raises one INFO notice
+   (`rad.saa.transit`) with a short checklist, never the SPE emergency; it clears by itself at 0h28m.
+   Comm delay 0 s.
+0b. **30m to 50m, 60x, ~20 s. Lunar surface stop (0.16 g).** Radiation switches to the LRO CRaTER surface dose
+   (NASA-derived). The Gravity tile shows bone loss at 84 % of the 0 g rate and the fainting risk recorded for the
+   0 to 0.16 g step. Comm delay 1.3 s. No alerts.
+1. **50m to 1 h, 120x, ~5 s.** Normal evening in Mars transit (0 g, the delay jumps to ~11 min from JPL Horizons).
+   Everything is green. Point out the neutron share on the radiation tile.
 2. **1 to 19 h, 3600x, ~18 s.** Fast-forward. C1 sleeps badly (`sleep.short_24h` at 5h56m), then cabin CO2
    creeps up. At 17h26m `env.co2.high_1h` and the compound `cog.performance_risk` fire for C1, and C1's EVA
    readiness drops to NO-GO.
@@ -104,15 +112,15 @@ simulated offsets from the start. The story: the crew handles everything onboard
    marker, plus a plain-language checklist. At 19h16m C2 reports a headache with a raised heart rate:
    `ctx.headache_tachy.co2` says the cabin CO2 is the likely cause (with normal CO2 the same symptoms would
    point to hydration, see `headache_branching`).
-4. **20 to 21h10m, 60x, ~70 s.** Solar particle event: the real MSL/RAD March 2012 measurement, replayed x20.
+4. **20 to 21h20m, 60x, ~80 s.** Solar particle event: the real MSL/RAD March 2012 measurement, replayed x20.
    Full-screen EMERGENCY at 20h09m, with the RAD replay line, shelter checklist, headcount and dose counter.
    The ground console sees it at 20h20m (one light time, ~11 simulated minutes), with "Data as of T-Xm Ys",
    the one-way delay "(JPL Horizons, 2026-11-14)" and the space-weather card (DONKI flare/CME/SEP, OMNI2
    flux with a marker at the replayed time). Forward the space-weather brief or send a recommendation before
    ~20h33m; it arrives onboard one light time later. At 20h45m the link blacks out (scripted): the crew UI
-   keeps working and the ground's data age grows until the link returns at 21h10m. `rad.dose.24h` WARNINGs
-   fire onboard at 21h09m and reach the ground at 21h20m.
-5. **21h10m to 23h30m, 3600x, ~2 s.** Fast-forward.
+   keeps working and the ground's data age grows until the link returns at 21h20m. `rad.dose.24h` WARNINGs
+   fire onboard at 21h16m (during the blackout) and reach the ground at 21h27m.
+5. **21h20m to 23h30m, 3600x, ~2 s.** Fast-forward.
 6. **23h30m to 24h30m, 60x, ~1 min.** Mars landing (0 to 0.38 g). `cardio.orthostatic` WARNING for C3 at 23h45m.
    Close on the long-term trends (BMD, body mass, VO2max proxy, exercise adherence over ~140 days).
    The simulation pauses at 24h30m.
