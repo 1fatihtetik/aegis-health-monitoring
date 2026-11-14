@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { backendApi, signalLabel } from '../api/backend';
-import { CrewId, HAZARD_CATALOG, Hazard, SelfTestDef, SelfTestResult } from '../api/types';
+import { CrewId, HAZARD_CATALOG, Hazard, ScheduleItem, SelfTestDef, SelfTestResult } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
+import { RoutineBoard } from '../components/RoutineBoard';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 
 const CREW: CrewId[] = ['C1', 'C2', 'C3', 'C4'];
@@ -37,11 +38,20 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
   const [hazard, setHazard] = useState<Hazard | 'ALL'>('ALL');
   const [openId, setOpenId] = useState<string | null>(null);
   const [results, setResults] = useState<SelfTestResult[]>([]);
+  const [routine, setRoutine] = useState<ScheduleItem[]>([]);
 
   const refresh = useCallback(() => {
-    if (connected) void backendApi.selftestResults(crewId).then(setResults);
+    if (!connected) return;
+    void backendApi.selftestResults(crewId).then(setResults);
+    void backendApi.selftestSchedule(crewId).then((items) => setRoutine(items ?? []));
   }, [connected, crewId]);
   useEffect(refresh, [refresh]);
+  // The routine follows the simulation clock, so refresh it every few seconds while the view is open.
+  useEffect(() => {
+    if (!connected) return;
+    const id = window.setInterval(refresh, 3000);
+    return () => window.clearInterval(id);
+  }, [connected, refresh]);
 
   const open = tests?.find((t) => t.id === openId) ?? null;
   const shown = (tests ?? []).filter((t) => hazard === 'ALL' || t.hazards.includes(hazard));
@@ -125,6 +135,11 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
               </button>
             ))}
           </div>
+          <RoutineBoard
+            items={routine.filter((i) => hazard === 'ALL' || i.hazards.includes(hazard))}
+            onStart={setOpenId}
+          />
+          <h3 className="text-sm font-bold text-slate-100">All tests</h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {shown.map((t) => (
               <article key={t.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-800 bg-space-900/90 p-4" data-testid={`selftest-card-${t.id}`}>

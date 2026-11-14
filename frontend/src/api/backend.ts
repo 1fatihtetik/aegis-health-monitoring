@@ -35,6 +35,7 @@ import {
   RadReplayInfo,
   ReadinessScore,
   RecommendationMessage,
+  ScheduleItem,
   SelfTestDef,
   SelfTestResult,
   Severity,
@@ -300,6 +301,10 @@ export const backendApi = {
   async selftests(): Promise<SelfTestDef[] | null> {
     const res = await getJson<{ tests: SelfTestDef[] }>('/selftests?node=onboard');
     return res?.tests ?? null;
+  },
+  async selftestSchedule(crewId: CrewId): Promise<ScheduleItem[] | null> {
+    const res = await getJson<{ schedule: Record<string, ScheduleItem[]> }>(`/selftests/schedule?crew_id=${crewId}`);
+    return res?.schedule[crewId] ?? null;
   },
   async selftestResults(crewId: CrewId): Promise<SelfTestResult[]> {
     const res = await getJson<{ results: SelfTestResult[] }>(`/selftests/results?crew_id=${crewId}`);

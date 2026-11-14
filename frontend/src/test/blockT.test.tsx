@@ -2,8 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { BUNDLED_LIMITS } from '../api/limits';
 import { bandText, buildObservations, needsConfirmation, parseEntry, rulesTripped } from '../api/selftests';
-import { SignalSource } from '../api/types';
+import { ScheduleItem, SignalSource } from '../api/types';
 import { MeasurementForm } from '../components/MeasurementForm';
+import { RoutineBoard } from '../components/RoutineBoard';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 import { bpTest, spo2Field, sysField } from './fixtures/selftests';
 import { DataSourceBadge, dataSourcesLine } from '../components/DataSourceBadge';
@@ -136,5 +137,52 @@ describe('T-3 MeasurementForm', () => {
     render(<MeasurementForm test={bpTest} connected={false} onSubmit={vi.fn()} />);
     expect(screen.getByTestId('selftest-done')).toBeDisabled();
     expect(screen.getByText(/Earth link is not needed/)).toBeInTheDocument();
+  });
+});
+
+// ---- T-1 routine board -----------------------------------------------------------------------------------------
+const item = (over: Partial<ScheduleItem>): ScheduleItem => ({
+  test_id: 'bp_spo2',
+  title: 'Blood pressure and oxygen check',
+  kind: 'measurement',
+  hazards: ['GRAVITY_FIELDS'],
+  reason: 'routine',
+  status: 'DUE',
+  level: null,
+  slot_start: '2026-11-15T07:00:00Z',
+  due_until: '2026-11-15T10:00:00Z',
+  next_due: '2026-11-16T07:00:00Z',
+  done_ts: null,
+  done_provenance: null,
+  ...over,
+});
+
+describe('T-1 RoutineBoard', () => {
+  it('shows due / done / not done yet in plain, neutral words and starts a test', () => {
+    const onStart = vi.fn();
+    render(
+      <RoutineBoard
+        onStart={onStart}
+        items={[
+          item({}),
+          item({ test_id: 'intake', title: 'Daily fluid and salt log', status: 'OVERDUE', level: 'INFO' }),
+          item({ test_id: 'body_mass', title: 'Body mass', status: 'DONE', done_ts: '2026-11-15T08:05:00Z' }),
+          item({ test_id: 'bp_spo2', reason: 'after gravity increase', status: 'DUE' }),
+        ]}
+      />
+    );
+    expect(screen.getByTestId('routine-bp_spo2')).toHaveTextContent('Due now, until 10:00 UTC');
+    const overdue = screen.getByTestId('routine-intake');
+    expect(overdue).toHaveTextContent('info only');
+    expect(overdue.innerHTML).not.toMatch(/red-|EMERGENCY|WARNING|CAUTION/);
+    expect(screen.getByTestId('routine-body_mass')).toHaveTextContent('Done at 08:05 UTC');
+    expect(screen.getByTestId('routine-bp_spo2-gravity')).toHaveTextContent('Extra check after a gravity increase');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Start' })[0]);
+    expect(onStart).toHaveBeenCalledWith('bp_spo2');
+  });
+
+  it('never shows points, streaks, scores or counts of tests done', () => {
+    render(<RoutineBoard onStart={vi.fn()} items={[item({ status: 'DONE', done_ts: '2026-11-15T07:30:00Z' })]} />);
+    expect(screen.getByTestId('routine-board').textContent).not.toMatch(/point|streak|badge|level|score|\d+\s*\/\s*\d+/i);
   });
 });

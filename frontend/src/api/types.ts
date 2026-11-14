@@ -879,3 +879,21 @@ export interface SubmitOutcome {
   /** Plain message for the crew (the server's reason when refused). */
   message: string;
 }
+
+/** T-1 routine board item (GET /api/v1/selftests/schedule). OVERDUE is information only, never scored. */
+export type ScheduleStatus = 'DUE' | 'DONE' | 'OVERDUE' | 'UPCOMING';
+
+export interface ScheduleItem {
+  test_id: string;
+  title: string;
+  kind: SelfTestKind;
+  hazards: Hazard[];
+  reason: 'routine' | 'after gravity increase';
+  status: ScheduleStatus;
+  level: 'INFO' | null;
+  slot_start: string | null;
+  due_until: string | null;
+  next_due: string | null;
+  done_ts: string | null;
+  done_provenance: Provenance | null;
+}

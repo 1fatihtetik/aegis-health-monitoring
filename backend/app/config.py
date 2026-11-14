@@ -77,6 +77,7 @@ class Config:
                 except KeyError as exc:
                     raise ValueError(f"selftests.yaml {test.id}: {exc.args[0]}") from exc
         parse_duration(self.selftests.setting("manual_override"))
+        parse_duration(self.selftests.setting("after_gravity_window"))
         for kind, spec in self.readiness["kinds"].items():
             if not spec.get("hazards") or not spec.get("hrp_risks"):
                 raise ValueError(f"readiness.yaml {kind} needs hazards and hrp_risks")

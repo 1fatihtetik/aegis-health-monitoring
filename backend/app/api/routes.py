@@ -444,6 +444,18 @@ async def selftests(request: Request, node: Node = "onboard") -> dict[str, Any]:
     return _envelope(rt, node, tests=_selftest_catalog(rt), settings=settings)
 
 
+@router.get("/selftests/schedule")
+async def selftest_schedule(request: Request, crew_id: str | None = None) -> dict[str, Any]:
+    """Onboard: T-1 due / done / overdue per crew member for the current sim time. Overdue is INFO only."""
+    rt = _rt(request)
+    if crew_id is not None and crew_id not in rt.world.crew_ids:
+        raise HTTPException(404, f"Unknown crew member '{crew_id}'")
+    board = rt.world.selftest_schedule()
+    if crew_id is not None:
+        board = {crew_id: board[crew_id]}
+    return _envelope(rt, "onboard", schedule=board)
+
+
 @router.get("/selftests/results")
 async def selftest_results(request: Request, crew_id: str | None = None) -> dict[str, Any]:
     """Onboard only: self-test results so far (crew-entered and scripted), oldest first. In memory only."""

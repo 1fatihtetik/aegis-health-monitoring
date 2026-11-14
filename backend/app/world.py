@@ -33,6 +33,7 @@ from app.rules.engine import RuleEngine
 from app.scores.radiation import radiation_summary
 from app.scores.readiness import compute_readiness
 from app.selftests.entries import EntryLog
+from app.selftests.schedule import build_schedule
 from app.sim.core import EFFECT_TYPES, Simulator
 from app.sim.scenario import load_scenario
 from app.util import iso, parse_duration, parse_ts
@@ -283,6 +284,12 @@ class World:
                 self.provenance.set(obs.signal.value, obs.provenance, obs.dataset_id, obs.ts)
             accepted += 1
         return accepted, len(observations) - accepted
+
+    def selftest_schedule(self) -> dict[str, list[dict[str, Any]]]:
+        """T-1: due / done / overdue per crew member at the current sim time (overdue is INFO only)."""
+        transition = self.sim.transition["ts"] if self.sim.transition else None
+        return build_schedule(self.cfg.selftests, self.entries.results, self.crew_ids, self.start_ts,
+                              self.clock.now(), transition)
 
     def _scripted_selftest(self, ts: datetime, params: dict[str, Any]) -> None:
         """Scenario event `selftest` {crew, test, values: {signal: value}}: a scripted result for the synthetic crew.

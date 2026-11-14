@@ -11,6 +11,9 @@ settings:
   manual_override:
     value: 30m
     source_ref: "Project setting: a value the crew measures by hand replaces the continuous wearable stream of that crew member and signal for this long, so the rules judge the hand measurement"
+  after_gravity_window:
+    value: 2h
+    source_ref: "Project setting (T-1): tests marked after_gravity_increase are due for this long after a gravity increase (e.g. a landing); overdue afterwards is INFO only"
 
 tests:
   - id: headache
@@ -50,6 +53,7 @@ tests:
     limit_refs: [physiology.bp_systolic_mmHg.min, physiology.bp_systolic_mmHg.max, physiology.bp_diastolic_mmHg.min, physiology.bp_diastolic_mmHg.max, physiology.spo2_pct_min]
     escalation: "SpO2 below the band twice in a row, or chest pain, shortness of breath or fainting: stop, sit down, tell the crew medical officer (CMO) now and check the cabin O2. The CMO informs the ground when the link allows."
     schedule: { every: 1d, at: "07:00", due_window: 3h }
+    after_gravity_increase: true
 
   - id: temperature
     title: "Body temperature"
