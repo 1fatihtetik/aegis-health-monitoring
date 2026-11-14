@@ -1,10 +1,9 @@
 AEGIS HANDOFF: implementation log, goals and supervision (Claude implements, Antigravity supervises)
 Project: AEGIS, onboard-first astronaut health monitoring (NASA hackathon MVP)
-Last updated: 2026-11-14, Claude session that did G3-1 (UI renders backend snapshots).
-State: backend complete for roadmap steps 1-6 plus the ROADMAP section 5.1 stretch rule. 47 backend tests pass,
-       ruff clean. Frontend now renders from the backend when it is up (G3-1, READY FOR REVIEW); tsc clean,
-       9 vitest tests pass. Remaining Gate 3 items in section 7. G3-1 work is not committed yet;
-       c93b778 on main has everything before it.
+Last updated: 2026-11-14, Claude session that did G3-2, G3-4, G3-5, G3-7, G3-9, G3-8 and F-001..F-005.
+State: all Gate 3 items READY FOR REVIEW (section 7). 48 backend tests pass, ruff clean; tsc clean, 17 vitest
+       tests pass. Everything is committed on main and pushed to GitHub with a tag per milestone (section 11).
+       Next after Antigravity approves Gate 3: D-1 (rehearse demo_5min).
 
 Read order for a new session: this file -> ROADMAP.md -> AGENTS.md -> PRD.md (only the sections you need).
 
@@ -108,6 +107,7 @@ Frontend (built earlier by Gemini Argon 4, inherited by Claude; under frontend/s
 
 Housekeeping
 - Initial commit c93b778 "Initial AEGIS MVP: backend, frontend, config and docs" on main.
+- Remote: https://github.com/1fatihtetik/aegis-health-monitoring (main + tags, see section 11).
 
 G3-1 session (Claude, 2026-11-14): UI on live backend data
 - frontend/src/api/backend.ts (new): typed wire types for the snapshot, alerts, readiness, radiation, link and
@@ -128,6 +128,22 @@ G3-1 session (Claude, 2026-11-14): UI on live backend data
   (src/test/fixtures/backend_spe.json). tsconfig: resolveJsonModule.
 - .claude/launch.json: "frontend" dev server config for the in-app browser preview.
 
+Gate 3 session (Claude, 2026-11-14): G3-2, G3-4, G3-5, G3-7, G3-9, G3-8
+- frontend/src/api/limits.ts (new): config/limits.yaml bundled raw (strict parser, throws on unknown lines) for the
+  offline fallback; GET /api/v1/limits replaces it on connect. formatLimit(); LIMIT_META has labels/units only.
+  All numeric limit copies and `?? 3.0`-style fallbacks removed from views and the offline simulation.
+  components/LimitBadge.tsx shows verified / unverified per limit. vite.config.ts: server.fs.allow ['..'].
+- Backend: radiation.crew[id].event_dose_saved_mSv (area dose minus personal dose since the SPE was raised);
+  fixed the event-dose slice when the SPE alert is resolved. crew.yaml `name` (synthetic) sent in snapshot crew[].
+  REST handlers are async (run on the loop thread with the tick; fixes "deque mutated during iteration" 500s).
+- Crew Detail: 48 h baseline cards with mean +/- sd, z and `outside` from /crew/{id}/baselines (refreshed every
+  4 s), headache 0-3 self-report (POST /observations), checklists on member alerts.
+- Alert Center: context badge, met / not met per compound member, `none:` members read "must NOT be true",
+  hysteresis holds marked (components/EvidenceDetails.tsx); tickable checklists (components/AlertChecklist.tsx).
+- config/rules.yaml: every rule has a 3-5 step plain-language checklist (test_rules enforces it, bans jargon).
+- Removed fields with no backend data (sleep efficiency, awakenings, workload, exercise minutes). Phase is shown,
+  not chosen, while connected. headache_branching in the Scenario Dock. All buttons >= 44 px.
+
 
 4. SUPERVISOR FINDINGS (owned by Antigravity)
 
@@ -136,15 +152,16 @@ Format, one per finding:
     Finding: <what is wrong, which PRD/AGENTS rule>
     Claude:  <fix made, or reason for not fixing>
 
-[F-001] OPEN  MAJOR  frontend/src/views/Radiation.tsx (lines 229-233, 274)
+[F-001] FIXED  MAJOR  frontend/src/views/Radiation.tsx (lines 229-233, 274)
   Finding: In the Crew Cumulative Effective Dose table, every crew card adds `radiation.cumulative_mission_mSv`
            (the cabin maximum across all 4 crew) to `member.career_dose_prior_mSv` instead of using
            `member.mission_dose_mSv` (already mapped per crew in `backend.ts:695`). When some crew shelter during
            an SPE and others do not, per-crew mission doses diverge; the table must display each crew member's
            own `member.mission_dose_mSv` and `career_dose_prior_mSv + member.mission_dose_mSv`.
-  Claude:  (pending)
+  Claude:  Fixed in G3-2 (6ddb670). Each card uses member.mission_dose_mSv and prior + own mission dose. Browser
+           check: SPE with only C1 sheltered -> C1 career 341.2 mSv, the others prior + 258.4 mSv.
 
-[F-002] OPEN  MINOR  frontend/src/views/GroundConsole.tsx, EmergencyTakeover.tsx, backend.ts, config/crew.yaml
+[F-002] FIXED  MINOR  frontend/src/views/GroundConsole.tsx, EmergencyTakeover.tsx, backend.ts, config/crew.yaml
   Finding: (a) `GroundConsole.tsx:45` and `EmergencyTakeover.tsx:73` use `groundSnapshot.lag_s || sim.comm_delay_s`,
            which treats `lag_s === 0` (at T0 when pre-start data is synced, or in 0s-delay phases) as falsy and
            displays `T-12m 00s` instead of `T-0m 00s`. Use `groundSnapshot.lag_s` directly (or `??`).
@@ -153,9 +170,11 @@ Format, one per finding:
            while `GroundConsole.tsx:229-232` and `AlertCenter.tsx:36` still hardcode the offline names (Vance,
            Chen, Al-Mansoor, Tremblay). Add `name` to `crew.yaml` + backend crew payload (or map consistently)
            so crew identity is unambiguous across all views.
-  Claude:  (pending)
+  Claude:  Fixed in G3-4 (9905560). (a) `??` in GroundConsole and EmergencyTakeover. (b) crew.yaml has a synthetic
+           `name`, the snapshot sends it, backend.ts maps it; Ground Console lists crew from state, alert notes take
+           the CMO's name from state. Offline callsigns now match crew.yaml (Vega, Lyra, Orion, Altair).
 
-[F-003] OPEN  MAJOR  config/rules.yaml, frontend/src/views/AlertCenter.tsx, CrewDetail.tsx, CrewOverview.tsx
+[F-003] FIXED  MAJOR  config/rules.yaml, frontend/src/views/AlertCenter.tsx, CrewDetail.tsx, CrewOverview.tsx
   Finding: Non-medical-expert astronaut usability in extreme environments (user directive + AGENTS.md §6, §8):
            Astronauts using AEGIS during degraded off-Earth conditions (CO2 exposure, sleep debt, landing g-load,
            comm blackout with no flight surgeon reachable) are not MDs.
@@ -169,16 +188,21 @@ Format, one per finding:
                `"baroreflex deconditioning / presyncopal"` -> `"post-landing blood-pressure drop / fainting risk"`,
                `"trabecular bone remodeling"` -> `"0g bone density loss"`) so a stressed or hypoxic crew member
                can act immediately without medical training.
-  Claude:  (pending)
+  Claude:  Fixed in cb6bda4. (a) all 14 rules have 3-5 plain steps; test_every_rule_has_a_plain_language_checklist
+           enforces count and bans the listed jargon in action/rationale/checklist. Tickable 44 px steps in Alert
+           Center and Crew Detail (ticks are local to the screen, not sent anywhere). (b) jargon replaced in UI copy
+           and the offline simulation (cephalalgia, Trendelenburg, baroreflex/presyncopal, trabecular, hypercapnic,
+           autonomic). EmergencyTakeover already rendered the checklist.
 
-[F-004] OPEN  MINOR  frontend/src/views/AlertCenter.tsx, Radiation.tsx, components/ScenarioDock.tsx
+[F-004] FIXED  MINOR  frontend/src/views/AlertCenter.tsx, Radiation.tsx, components/ScenarioDock.tsx
   Finding: AGENTS.md §8 requires large touch targets (`>= 44 px`) for tablet operation in microgravity,
            vibration, or gloved/pressurized conditions. Several controls use `min-h-[34px]` (`ScenarioDock.tsx:126`
            speed buttons) or `min-h-[36px]` (`AlertCenter.tsx:59,80` filter buttons; `Radiation.tsx:247` shelter
            toggle). Increase all interactive button heights to `min-h-[44px]`.
-  Claude:  (pending)
+  Claude:  Fixed (6ddb670 Radiation, 63688ee ScenarioDock, cb6bda4 AlertCenter). A scan of every <button> in src/
+           found none under 44 px; checklist rows and the headache buttons are 44 px too.
 
-[F-005] OPEN  MAJOR  frontend/src/components/ScenarioDock.tsx, api/types.ts (G3-7 scope)
+[F-005] FIXED  MAJOR  frontend/src/components/ScenarioDock.tsx, api/types.ts (G3-7 scope)
   Finding: The context-branching differential rule (`ctx.headache_tachy.co2` vs `ctx.headache_tachy.hydration`)
            and `headache_branching.yaml` scenario are implemented in the backend, and are critical for showing
            how AEGIS helps a non-medical astronaut distinguish an environmental CO2 hazard from dehydration when
@@ -186,7 +210,10 @@ Format, one per finding:
            or `ScenarioDock.tsx` (`SCENARIO_BUTTONS`). Add `headache_branching` to `ScenarioDock.tsx` (and
            a quick headache self-report 0-3 control in `CrewDetail.tsx` posting to `POST /observations`)
            as part of G3-7 / G3-9.
-  Claude:  (pending)
+  Claude:  Fixed (63688ee button, cb6bda4 self-report). Browser check: headache_branching raised
+           ctx.headache_tachy.hydration for C2 and later ctx.headache_tachy.co2 for C4; a "2 Moderate" tap stored
+           symptom_headache = 2 for C1 at the current sim time. Offline (no backend) the buttons are disabled; the
+           in-browser fallback has no headache scenario.
 
 
 5. IMPLEMENTATION LOG (owned by Claude, newest first)
@@ -194,6 +221,25 @@ Format, one per finding:
 Format:
   <date> <item id> <one-line summary>
     Files: ...   Checks: pytest N pass, ruff ok, tsc ok, vitest N pass   Not verified: ...
+
+2026-11-14 G3-2..G3-9  Gate 3 items done; findings F-001..F-005 fixed; REST race fixed.
+    Commits: 6ddb670 G3-2, 9905560 G3-4, 63688ee G3-5, cb6bda4 G3-7+G3-9, 94e8a81 async handlers.
+    Files: frontend/src/api/{limits.ts (new), backend.ts, client.ts, types.ts, useLiveSocket.ts},
+           components/{LimitBadge, AlertChecklist, EvidenceDetails, HeadacheReport}.tsx (new), LimitBandChart,
+           EmergencyTakeover, ScenarioDock, views/*, vite.config.ts, src/vite-env.d.ts (new),
+           test/{limits.test.ts, evidence.test.tsx} (new); backend/app/{scores/radiation.py, world.py,
+           api/routes.py}, tests/{test_rules,test_scenarios,test_api}.py; config/{rules.yaml, crew.yaml};
+           .claude/launch.json (backend entry).
+    Checks: pytest 48 pass (was 47), ruff ok, tsc ok, vitest 17 pass (was 9).
+    G3-8 browser check (1024x768, backend :8000, frontend :5173): limits load from /api/v1/limits; headache_branching
+    -> hydration (C2) then CO2 (C4) alerts with context badge, met/not-met members, negated CO2 member "not true",
+    hysteresis hold marked; checklist tick 1/4; Crew Detail baseline cards with z and outside; headache report
+    stored; blackout on -> Ground Console "DATA AS OF T-112M 00S" growing while onboard alerts kept firing; restore
+    -> T-12M 00S; SPE with C1 sheltered -> per-crew career totals differ, "dose avoided ... 2.172 mSv"; SPE takeover
+    shows the backend checklist. Found and fixed: intermittent 500 on /crew/{id}/baselines (thread race); a 30 s
+    soak at 3600x afterwards had no server errors and demo_5min still raised sleep.short_24h on time.
+    Not verified: offline fallback in the browser (vitest App flow only); 10,000x rendering load; reconnect after
+    a backend restart beyond the one restart done here.
 
 2026-11-14 G3-1  UI renders from backend snapshots; local simulation is the offline fallback only.
     Files: frontend/src/api/backend.ts (new), api/useLiveSocket.ts, api/client.ts, api/types.ts
@@ -247,29 +293,30 @@ Backend gates: Gate 1 APPROVED 2026-11-14 | Gate 2 APPROVED 2026-11-14 | Gate 4 
 Gate 3: crew UI on live backend data (current gate)
  G3-1 APPROVED  Render from the WebSocket snapshot when connected; switch the local simulation off.
             Approved by Antigravity 2026-11-14 (see F-001, F-002 for minor follow-ups in views/mapping).
- G3-2 TODO  Remove the hardcoded limits copy in client.ts; read GET /api/v1/limits (or the limits[] in
+ G3-2 READY FOR REVIEW  Remove the hardcoded limits copy in client.ts; read GET /api/v1/limits (or the limits[] in
             timeseries / environment responses). AGENTS.md ground rule 2.
  G3-3 APPROVED  IN_TREATMENT now calls POST /alerts/{id}/treat (done inside G3-1; the old helper is gone).
- G3-4 TODO  Partly done in G3-1: PHYSICAL readiness, spectrum bins, baselines (48 h means/sd), 7-night sleep
+ G3-4 READY FOR REVIEW  Partly done in G3-1: PHYSICAL readiness, spectrum bins, baselines (48 h means/sd), 7-night sleep
             and adherence/BMD trends now come from the backend. Left: baseline cards should show z and
             `outside` from GET /crew/{id}/baselines and say "48 h baseline", not 14-day; round chart headers;
             also fix F-001 (per-crew mission dose in Radiation.tsx) and F-002 (lag_s === 0 and crew name/callsign).
- G3-5 TODO  Drop UI elements with no backend data, or add the backend data: phase selector (phases change
+ G3-5 READY FOR REVIEW  Drop UI elements with no backend data, or add the backend data: phase selector (phases change
             only through scenario events), sleep efficiency / awakenings, workload score, exercise minutes,
             shelter dose saved (can be computed from event_dose_mSv).
  G3-6 APPROVED  Payload shapes fixed inside G3-1: /link/blackout {on}, /sim/control {action, speed?},
             /alerts/{id}/note {text} (author is put into the text), /link/recommendation {text, checklist, crew_id}.
- G3-7 TODO  Show new backend fields: context{group, branch} badge on ctx.headache_tachy.* alerts, `negated`
+ G3-7 READY FOR REVIEW  Show new backend fields: context{group, branch} badge on ctx.headache_tachy.* alerts, `negated`
             members ("CO2 NOT high") in the compound breakdown, hysteresis_hold on evidence rows; plus F-005
             (`headache_branching` scenario button in ScenarioDock + quick headache 0-3 self-report via POST /observations).
- G3-9 TODO  (added by Antigravity) Non-medical-expert astronaut usability in extreme environments (F-003, F-004):
+ G3-9 READY FOR REVIEW  (added by Antigravity) Non-medical-expert astronaut usability in extreme environments (F-003, F-004):
             1. Add 3-4 step plain-language `checklist:` entries to all remaining rules in `config/rules.yaml`.
             2. Render interactive checkable step-by-step checklists on alerts in `AlertCenter.tsx` (and `CrewDetail.tsx`).
             3. Replace/gloss dense clinical jargon (`cephalalgia`, `Trendelenburg`, `presyncopal`, etc.) with clear
                operational crew instructions suitable for stressed/fatigued non-MD crew.
             4. Enforce `min-h-[44px]` touch targets on all remaining buttons (`AlertCenter`, `Radiation`, `ScenarioDock`).
- G3-8 TODO  Verify in the browser at 1024x768 with the backend running, link blacked out, and the ground view
+ G3-8 READY FOR REVIEW  Verify in the browser at 1024x768 with the backend running, link blacked out, and the ground view
             showing "Data as of T-Xm Ys". Then request the Gate 3 review.
+            Done 2026-11-14 (log in section 5). Claude requests the Gate 3 review.
 
 Demo and freeze (ROADMAP T+25 to T+30)
  D-1  TODO  Rehearse demo_5min against the real UI; retune event times in backend/app/sim/scenarios/demo_5min.yaml
@@ -331,7 +378,7 @@ WebSocket /ws/live?node=onboard|ground, messages:
   {type: "recommendation", node: "onboard", recommendation}   when a ground recommendation arrives
 
 Shapes worth knowing:
-  crew[i]:  {id, callsign, role, status, top_alert{id,title,severity}|null, alert_count,
+  crew[i]:  {id, callsign, name (synthetic), role, status, top_alert{id,title,severity}|null, alert_count,
              vitals{signal: value}   (includes symptom_headache),
              trends{bmd_estimate, body_mass, vo2max_proxy, sleep_night_h, exercise_adherence_pct},
              readiness{EVA, COGNITIVE, OVERALL, PHYSICAL}, eva_go}
@@ -349,7 +396,8 @@ Shapes worth knowing:
             limit_verified, score, weight}}, hazards, hrp_risks, formula, go?, go_min?}
   radiation.spe: {active, threshold, alert_id, since, ended, elapsed_s, checklist[], headcount{crew: bool},
             all_sheltered}.   radiation.crew[id]: dose_rate_uSv_h, dose_24h_mSv, dose_30d_mSv,
-            dose_mission_mSv, dose_career_mSv, career_pct_of_limit, sheltered, event_dose_mSv
+            dose_mission_mSv, dose_career_mSv, career_pct_of_limit, sheltered, event_dose_mSv,
+            event_dose_saved_mSv (area dose minus personal dose since the last SPE was raised)
   radiation.area: {dose_rate_uSv_h, neutron_rate_uSv_h, neutron_fraction,
             neutron_spectrum[{energy_range, flux_fraction, quality_factor, dose_rate_uSv_h}], neutron_spectrum_note}
   limits: every limit carries {value, source_ref, verified}. Show the unverified marker when verified is false.
@@ -364,7 +412,7 @@ Shapes worth knowing:
 - Start time of the 30 hours (T+0) is not recorded.
 - `make` is not installed on this Windows machine; run the commands from the Makefile by hand (README.md).
 - Python here is 3.14 with packages installed globally (no venv).
-- Commit policy: Claude commits only when the user allows it. Say if per-item commits are fine.
+- Commit policy: the user allowed commits and pushes (2026-11-14). One commit per item, tag per milestone (section 11).
 
 
 10. KEEPING THIS FILE CURRENT
@@ -375,3 +423,16 @@ finding in section 4, and update the "Last updated" and "State" lines.
 Antigravity, after every review: add findings to section 4, set reviewed items in section 7 to APPROVED
 or leave them READY FOR REVIEW with a finding id, and note gate approvals in section 7 next to the gate
 heading as "Gate N APPROVED <date>".
+
+
+11. VERSIONS AND ROLLBACK (git)
+
+Remote: origin = https://github.com/1fatihtetik/aegis-health-monitoring (branch main).
+- One commit per work item; the message starts with the item id (G3-2, D-1, ...) and cites the PRD section.
+- Annotated tag per approved or stable point, pushed to GitHub: g3-1 (G3-1 approved), gate3-ready (all Gate 3
+  items ready for review). Next tags: gate3-approved, demo-ready, submission.
+- Look at an old version without changing anything:   git switch --detach <tag>      (back: git switch main)
+- Start new work from an old version:                 git switch -c rescue-<name> <tag>
+- Undo one bad commit on main and keep history:        git revert <commit>        (preferred over reset)
+- Every tag on GitHub can also be downloaded as a zip from the repo's Tags page.
+Never force-push main; rollbacks are new commits (revert) so the other agent's copy stays valid.

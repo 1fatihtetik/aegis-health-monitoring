@@ -40,8 +40,9 @@ frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Rechar
     views/          CrewOverview (includes RIDGE tiles; Environment is the Hostile-Env
                     drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole
     components/     StatusRing, Sparkline, LimitBandChart, AlertBanner, EmergencyTakeover,
-                    ScenarioDock
-    api/            hand-written typed client + WebSocket hook
+                    ScenarioDock, AlertChecklist, EvidenceDetails, HeadacheReport, LimitBadge
+    api/            hand-written typed client + WebSocket hook; limits.ts bundles config/limits.yaml
+                    for the offline fallback (GET /api/v1/limits replaces it when connected)
 config/
   limits.yaml       all thresholds (PRD §9)
   rules.yaml        rule definitions
