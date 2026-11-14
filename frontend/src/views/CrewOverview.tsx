@@ -269,12 +269,14 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
               <div className="flex items-center justify-between text-[11px] text-slate-400">
                 <span>Total Pressure</span>
-                
+                <LimitBadge limit={limits['environment.cabin_pressure_kPa']} />
               </div>
               <div className="mt-1 text-lg font-bold font-mono text-white">
                 {environment.cabin_pressure_kPa} <span className="text-xs font-normal">kPa</span>
               </div>
-              <div className="text-[10px] text-slate-400 font-mono">No limit configured</div>
+              <div className="text-[10px] text-slate-400 font-mono">
+                Band: {formatLimit(limits['environment.cabin_pressure_kPa']) || 'no limit configured'}
+              </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">
@@ -313,6 +315,10 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
               </div>
               <div className="text-[10px] text-slate-400 font-mono">
                 Sleep max: {formatLimit(limits['environment.noise_dBA_sleep_max'], '<=') || 'no limit configured'}
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                <span>Hazard max: &lt; {formatLimit(limits['environment.noise_dBA_hazardous_max']) || '–'}</span>
+                <LimitBadge limit={limits['environment.noise_dBA_hazardous_max']} />
               </div>
             </div>
           </div>

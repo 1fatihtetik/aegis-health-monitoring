@@ -41,11 +41,13 @@ def test_crew_and_summary(client):
 def test_timeseries_and_limits(client):
     ts = client.get("/api/v1/environment/timeseries", params={"signal": "ppco2", "max_points": 100}).json()
     assert 0 < len(ts["points"]) <= 100 and ts["unit"] == "mmHg"
-    assert ts["limits"][0]["verified"] is False and ts["limits"][0]["source_ref"]
+    by_rule = {lim["rule_id"]: lim for lim in ts["limits"]}
+    assert by_rule["env.co2.high_1h"]["verified"] is True and "[V2 6004]" in by_rule["env.co2.high_1h"]["source_ref"]
+    assert by_rule["env.co2.critical"]["verified"] is False  # the demo shows both marker states
     trend = client.get("/api/v1/crew/C3/timeseries", params={"signal": "bmd_estimate"}).json()
     assert len(trend["points"]) > 100 and trend["points"][0][1] > trend["points"][-1][1]
     limits = client.get("/api/v1/limits").json()
-    assert limits["limits"]["bone"]["bmd_loss_pct_per_month_expected_0g"]["verified"] is True
+    assert limits["limits"]["bone"]["bmd_pct_of_baseline_min"]["verified"] is True
     assert "ppco2" in limits["by_signal"]
 
 

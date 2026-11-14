@@ -232,6 +232,8 @@ const AegisShell: React.FC = () => {
           onAcknowledge={acknowledgeAlert}
           onInspectAlert={() => setActiveTab('alerts')}
           onOpenEmergencyModal={() => setEmergencyModalDismissed(false)}
+          linkBlackout={link.blackout}
+          commDelaySeconds={link.one_way_delay_s}
         />
 
         {/* Active View */}

@@ -36,7 +36,8 @@ def test_threshold_fires_with_evidence(cfg, store):
     assert f.evidence["signal"] == "ppco2"
     assert f.evidence["value"] == 3.5
     assert f.evidence["limit"] == 3.0
-    assert f.evidence["limit_verified"] is False
+    assert f.evidence["limit_verified"] is True
+    assert "[V2 6004]" in f.evidence["limit_source_ref"]
     assert f.evidence["window"] == "1m"
     assert f.evidence["limit_source_ref"]
 
@@ -182,6 +183,36 @@ def test_rule_without_traceability_is_rejected():
     with pytest.raises(ValidationError):
         Rule(id="x", type="THRESHOLD", title="t", signal="ppco2", limit_ref="environment.ppco2_mmHg_1h_max",
              severity="CAUTION", hazards=["RADIATION"], rationale="r", action="a")
+
+
+def test_verified_limits_name_a_clause_id(cfg):
+    """R-1: verified: true implies document + revision + clause id in source_ref (AGENTS.md section 7)."""
+    import re
+
+    verified = [(f"{sec}.{name}", e) for sec, entries in cfg.limits.items() for name, e in entries.items() if e["verified"]]
+    assert len(verified) >= 6
+    for ref, entry in verified:
+        src = entry["source_ref"]
+        assert re.search(r"\[V[12] \d{4,5}\]", src), ref
+        assert "NASA-STD-3001" in src and re.search(r"Rev [A-Z]", src), ref
+    unverified = [e for entries in cfg.limits.values() for e in entries.values() if not e["verified"]]
+    assert unverified and all("VERIFY" not in e["source_ref"] for e in unverified)
+
+
+def test_verified_limit_without_clause_fails_to_load(tmp_path):
+    import shutil
+
+    from app.config import CONFIG_DIR, Config
+
+    for f in CONFIG_DIR.glob("*.yaml"):
+        shutil.copy(f, tmp_path / f.name)
+    text = (tmp_path / "limits.yaml").read_text(encoding="utf-8")
+    (tmp_path / "limits.yaml").write_text(
+        text.replace('source_ref: "Project heuristic", verified: false }', 'source_ref: "trust me", verified: true }', 1),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="no clause id"):
+        Config(tmp_path)
 
 
 def test_config_limits_and_rules_are_traceable(cfg):

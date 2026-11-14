@@ -19,6 +19,8 @@ import {
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { AlertChecklist } from '../components/AlertChecklist';
+import { AutonomyNotice } from '../components/AutonomyNotice';
+import { DataSourceBadge } from '../components/DataSourceBadge';
 import { ContextBadge } from '../components/EvidenceDetails';
 import { HeadacheReport } from '../components/HeadacheReport';
 import { LimitBandChart } from '../components/LimitBandChart';
@@ -68,6 +70,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
   ).toFixed(1);
 
   const bmdLimit = limits['bone.bmd_loss_pct_per_month_expected_0g'];
+  const bmdFloor = limits['bone.bmd_pct_of_baseline_min'];
   const zLimit = limits['physiology.baseline_z_alert'];
   const stats = member.baseline_stats && Object.keys(member.baseline_stats).length ? member.baseline_stats : null;
   const sleepLimit = limits['sleep.min_sleep_h_24h'];
@@ -154,6 +157,10 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
               <p className="text-xs text-slate-400">
                 Compares the last 10 minutes with this crew member&apos;s own normal, before population limits are crossed.
               </p>
+              <p className="text-[11px] text-cyan-200" data-testid="hint-zscore">
+                Plain words: z (σ) says how far a reading is outside this astronaut&apos;s own 48 h normal. Above{' '}
+                {zLimit?.value ?? 'the limit'} is unusual for them.
+              </p>
             </div>
             {zLimit && (
               <span
@@ -209,6 +216,9 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
               </div>
               <div className="rounded-xl border border-slate-800 bg-space-950/90 p-3">
                 <div className="text-[11px] text-slate-400">HRV RMSSD vs Baseline</div>
+                <div className="text-[10px] text-cyan-200" data-testid="hint-hrv">
+                  Beat-to-beat heart rhythm variation; higher usually means better rested.
+                </div>
                 <div className="mt-1 text-base font-bold font-mono text-white">
                   {member.vitals.hrv_rmssd} <span className="text-xs text-slate-400">ms</span>
                 </div>
@@ -246,6 +256,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           <h2 className="text-sm font-bold uppercase tracking-wider text-amber-200">
             Active Alerts Affecting {member.id} ({memberAlerts.length})
           </h2>
+          <AutonomyNotice blackout={state.link.blackout} delaySeconds={state.link.one_way_delay_s} compact />
           <div className="space-y-2.5">
             {memberAlerts.map((alert) => {
               const st = STATUS_DISPLAY[severityToStatus(alert.severity)];
@@ -366,6 +377,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                 <h3 className="text-sm font-semibold text-slate-100">
                   7-Night Sleep Duration (Wrist Actigraphy)
                 </h3>
+                <DataSourceBadge compact source={state.provenance.sleep_night_h} />
                 <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
                   HRP-14
                 </span>
@@ -427,6 +439,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                 <h3 className="text-sm font-semibold text-slate-100">
                   180-Day Bone Mineral Density (BMD) & Exercise Adherence (US-6)
                 </h3>
+                <DataSourceBadge compact source={state.provenance.bmd_estimate} />
                 <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
                   HRP-11 · HRP-09
                 </span>
@@ -435,11 +448,28 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                 0 g bone density loss, slowed by regular resistance exercise
               </p>
             </div>
-            {bmdLimit && (
-              <span className="rounded bg-emerald-500/15 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-                ✓ verified rate: {bmdLimit.min}–{bmdLimit.max} {bmdLimit.unit} ({bmdLimit.source_ref})
-              </span>
-            )}
+            <div className="flex flex-col items-end gap-1">
+              {bmdFloor && (
+                <span
+                  className={`rounded border px-2 py-0.5 text-[10px] font-semibold ${
+                    bmdFloor.verified
+                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                      : 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                  }`}
+                  title={bmdFloor.source_ref}
+                >
+                  {bmdFloor.verified ? '✓ NASA limit' : '⚠ unverified'}: keep ≥ {bmdFloor.value} {bmdFloor.unit}
+                </span>
+              )}
+              {bmdLimit && (
+                <span
+                  className="rounded bg-slate-800/80 border border-slate-600 px-2 py-0.5 text-[10px] font-semibold text-slate-200"
+                  title={bmdLimit.source_ref}
+                >
+                  Expected 0 g loss: {bmdLimit.min}–{bmdLimit.max} {bmdLimit.unit} (NASA HRP reference, not a limit)
+                </span>
+              )}
+            </div>
           </div>
 
           <div style={{ width: '100%', height: 210 }}>

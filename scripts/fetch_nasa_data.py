@@ -100,7 +100,7 @@ def cmd_download(args: argparse.Namespace) -> int:
     dest = inside_data(DATA / "raw" / args.dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(args.url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=120) as resp:  # noqa: S310 (https checked above)
+    with urllib.request.urlopen(req, timeout=120) as resp:  # https only, checked above
         data = resp.read(MAX_BYTES + 1)
     if len(data) > MAX_BYTES:
         sys.exit(f"{args.url} is larger than {MAX_BYTES} bytes; bundle a smaller window")

@@ -1,5 +1,6 @@
 """Loads config/*.yaml. All medical limits come from limits.yaml and carry source_ref + verified."""
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,8 @@ from app.datasets.registry import DATA_DIR, DatasetRegistry
 from app.rules.models import Rule
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
+# A verified limit must name a NASA-STD-3001 clause, e.g. "[V2 6004]" (AGENTS.md section 2a).
+CLAUSE_ID = re.compile(r"\[V[12] \d{4,5}\]")
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,8 @@ class Config:
             for name, entry in entries.items():
                 if "source_ref" not in entry or "verified" not in entry:
                     raise ValueError(f"limits.yaml {section}.{name} needs source_ref and verified")
+                if entry["verified"] and not CLAUSE_ID.search(str(entry["source_ref"])):
+                    raise ValueError(f"limits.yaml {section}.{name} is verified but source_ref names no clause id")
         ids = {r.id for r in self.rules}
         if len(ids) != len(self.rules):
             raise ValueError("rules.yaml has duplicate rule ids")

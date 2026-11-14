@@ -5,9 +5,9 @@ describe('limits from config/limits.yaml (G3-2)', () => {
   it('bundles every entry with source_ref and verified', () => {
     const co2 = BUNDLED_LIMITS['environment.ppco2_mmHg_1h_max'];
     expect(co2.value).toBeGreaterThan(0);
-    expect(co2.verified).toBe(false);
+    expect(co2.verified).toBe(true);
     expect(co2.source_ref).toContain('STD-3001');
-    expect(BUNDLED_LIMITS['bone.bmd_loss_pct_per_month_expected_0g'].verified).toBe(true);
+    expect(BUNDLED_LIMITS['bone.bmd_pct_of_baseline_min'].verified).toBe(true);
     for (const l of Object.values(BUNDLED_LIMITS)) {
       expect(l.source_ref).toBeTruthy();
       expect(l.value !== undefined || (l.min !== undefined && l.max !== undefined)).toBe(true);

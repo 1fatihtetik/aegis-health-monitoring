@@ -94,7 +94,12 @@ def radiation_summary(
             "neutron_spectrum": spectrum,
             "neutron_spectrum_note": "Synthetic split of the neutron dose rate (simulator parameter, unverified).",
         },
-        "limits": {"career": career.as_dict(), "dose_24h": limit_24h.as_dict(), "spe_dose_rate": spe_limit.as_dict()},
+        "limits": {
+            "career": career.as_dict(), "dose_24h": limit_24h.as_dict(), "spe_dose_rate": spe_limit.as_dict(),
+            "spe_event": cfg.limit("radiation.spe_event_effective_dose_mSv").as_dict(),
+            "gcr_rate_free_space": cfg.limit("radiation.gcr_rate_free_space_mSv_day").as_dict(),
+            "gcr_rate_surface": cfg.limit("radiation.gcr_rate_surface_mSv_day").as_dict(),
+        },
         "spe": spe,
         "hazards": HAZARDS,
         "hrp_risks": HRP_RISKS,

@@ -8,6 +8,7 @@ import {
   HRP_RISK_CATALOG,
   RadiationSummary,
 } from '../api/types';
+import { DataSourceBadge } from './DataSourceBadge';
 
 export interface EmergencyTakeoverProps {
   alert: AlertItem | null;
@@ -133,6 +134,10 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-200">
                   Rule Evidence ({alert.rule_id})
                 </span>
+                <DataSourceBadge
+                  compact
+                  source={{ provenance: alert.evidence.provenance, dataset_id: alert.evidence.dataset_id }}
+                />
                 {!alert.evidence.limit_verified && (
                   <span className="rounded bg-amber-500/25 border border-amber-300/60 px-2 py-0.5 text-xs font-bold text-amber-100">
                     ⚠ unverified limit · {alert.evidence.source_ref ?? 'config/limits.yaml'}

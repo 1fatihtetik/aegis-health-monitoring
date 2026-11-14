@@ -8,6 +8,7 @@ import {
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
 import { AlertChecklist } from '../components/AlertChecklist';
+import { AutonomyNotice } from '../components/AutonomyNotice';
 import { ContextBadge, EvidenceDetails } from '../components/EvidenceDetails';
 
 export const AlertCenter: React.FC = () => {
@@ -210,6 +211,9 @@ export const AlertCenter: React.FC = () => {
                   <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/25 px-3.5 py-2.5 text-xs text-cyan-100">
                     <strong>Recommended action:</strong> {alert.action}
                   </div>
+                  {alert.state !== 'RESOLVED' && (
+                    <AutonomyNotice blackout={state.link.blackout} delaySeconds={state.link.one_way_delay_s} compact />
+                  )}
                   {alert.state !== 'RESOLVED' && <AlertChecklist alertId={alert.id} steps={alert.checklist} />}
                 </div>
 

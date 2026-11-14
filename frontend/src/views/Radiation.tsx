@@ -2,7 +2,8 @@ import React from 'react';
 import { formatDurationSeconds } from '../api/client';
 import { STATUS_DISPLAY } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
-import { formatLimit } from '../api/limits';
+import { clauseId, formatLimit } from '../api/limits';
+import { DataSourceBadge } from '../components/DataSourceBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 
 export interface RadiationProps {
@@ -15,6 +16,8 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
 
   const careerLimit = limits['radiation.career_effective_dose_mSv'];
   const speLimit = limits['radiation.spe_alert_dose_rate_uSv_h'];
+  const gcrDesign = limits['radiation.gcr_rate_free_space_mSv_day'];
+  const speEventLimit = limits['radiation.spe_event_effective_dose_mSv'];
   const statusMeta = STATUS_DISPLAY[radiation.status];
   const shelteredCount = crew.filter((c) => c.in_shelter).length;
 
@@ -72,6 +75,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
               <span className="text-amber-300 font-mono text-[10px]">⚠ unverified limit</span>
             )}
           </div>
+          <div className="mt-1">
+            <DataSourceBadge compact source={state.provenance.area_dose_rate_equivalent} />
+          </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span
               className={`text-2xl font-black font-mono ${
@@ -94,6 +100,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
               CSA CANS
             </span>
           </div>
+          <div className="mt-1">
+            <DataSourceBadge compact source={state.provenance.neutron_dose_equivalent_rate} />
+          </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-2xl font-black font-mono text-purple-200">
               {radiation.neutron_dose_equivalent_rate_uSv_h}
@@ -110,6 +119,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             <span>Absorbed Tissue Dose Rate</span>
             <span className="font-mono text-[10px] text-slate-400">Personal Dosimeter</span>
           </div>
+          <div className="mt-1">
+            <DataSourceBadge compact source={state.provenance.dose_rate_absorbed} />
+          </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-2xl font-black font-mono text-cyan-300">
               {radiation.dose_rate_absorbed_uGy_h}
@@ -119,11 +131,17 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
             Mean quality factor Q ≈ {(radiation.dose_rate_equivalent_uSv_h / Math.max(0.1, radiation.dose_rate_absorbed_uGy_h)).toFixed(1)}
           </div>
+          <div className="mt-0.5 text-[10px] text-cyan-200" data-testid="hint-quality-factor">
+            Q = how much more biological damage this radiation mix does per unit of energy absorbed.
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4">
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Highest Crew Mission Dose</span>
+          </div>
+          <div className="mt-1">
+            <DataSourceBadge compact source={state.provenance.dose_mission} />
           </div>
           <div className="mt-1.5 flex items-baseline gap-1.5">
             <span className="text-2xl font-black font-mono text-emerald-300">
@@ -134,6 +152,12 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
             24h: {radiation.cumulative_24h_mSv} mSv · 30d: {radiation.cumulative_30d_mSv} mSv
           </div>
+          {gcrDesign && (
+            <div className="mt-0.5 text-[10px] text-slate-400" title={gcrDesign.source_ref}>
+              Habitat design target (deep space): &lt; {gcrDesign.value} {gcrDesign.unit}{' '}
+              {gcrDesign.verified ? `✓ NASA ${clauseId(gcrDesign.source_ref) ?? ''}` : '⚠ unverified'}
+            </div>
+          )}
         </div>
       </div>
 
@@ -212,6 +236,16 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             {careerLimit && !careerLimit.verified && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 text-xs font-semibold text-amber-200">
                 ⚠ unverified limit: {careerLimit.value} {careerLimit.unit} ({careerLimit.source_ref})
+              </span>
+            )}
+            {careerLimit?.verified && (
+              <span
+                className="rounded bg-emerald-500/15 border border-emerald-400/50 px-2.5 py-1 text-xs font-semibold text-emerald-200"
+                title={careerLimit.source_ref}
+                data-testid="career-limit-verified"
+              >
+                ✓ NASA limit {clauseId(careerLimit.source_ref)}: career &lt; {careerLimit.value} {careerLimit.unit}
+                {speEventLimit?.verified ? ` · SPE design event < ${speEventLimit.value} ${speEventLimit.unit}` : ''}
               </span>
             )}
             <button

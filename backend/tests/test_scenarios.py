@@ -68,7 +68,9 @@ def test_spe_radiation_summary_and_shelter(cfg):
     rad = world.snapshot["radiation"]
     assert rad["spe"]["active"] and rad["spe"]["checklist"] and not rad["spe"]["all_sheltered"]
     assert rad["area"]["neutron_fraction"] == pytest.approx(0.30, abs=0.03)
-    assert rad["limits"]["career"]["verified"] is False
+    assert rad["limits"]["career"]["verified"] is True and "[V1 4030]" in rad["limits"]["career"]["source_ref"]
+    assert rad["limits"]["spe_dose_rate"]["verified"] is False  # heuristic alert threshold
+    assert rad["limits"]["spe_event"]["value"] == 250
     world.set_sheltered("C1", True)
     for _ in range(60):
         world.tick()

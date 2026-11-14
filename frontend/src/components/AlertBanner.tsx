@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AlertItem,
   HAZARD_CATALOG,
@@ -6,12 +6,19 @@ import {
   STATUS_DISPLAY,
   severityToStatus,
 } from '../api/types';
+import { clauseId } from '../api/limits';
+import { AlertChecklist } from './AlertChecklist';
+import { AutonomyNotice } from './AutonomyNotice';
+import { DataSourceBadge } from './DataSourceBadge';
 
 export interface AlertBannerProps {
   alerts: AlertItem[];
   onAcknowledge: (alertId: string) => void;
   onInspectAlert?: (alertId: string) => void;
   onOpenEmergencyModal?: () => void;
+  /** Earth link state, for the "act onboard now" notice (F-007). */
+  linkBlackout?: boolean;
+  commDelaySeconds?: number;
 }
 
 export const AlertBanner: React.FC<AlertBannerProps> = ({
@@ -19,7 +26,10 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
   onAcknowledge,
   onInspectAlert,
   onOpenEmergencyModal,
+  linkBlackout = false,
+  commDelaySeconds = 0,
 }) => {
+  const [stepsOpen, setStepsOpen] = useState<boolean>(true);
   const activeAlerts = alerts.filter(
     (a) => a.state === 'RAISED' || a.state === 'ACKNOWLEDGED' || a.state === 'IN_TREATMENT'
   );
@@ -112,6 +122,20 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
               {top.evidence.unit ? ` ${top.evidence.unit}` : ''} over {top.evidence.window})
             </span>
 
+            <DataSourceBadge
+              compact
+              source={{ provenance: top.evidence.provenance, dataset_id: top.evidence.dataset_id }}
+            />
+
+            {top.evidence.limit_verified && (
+              <span
+                className="rounded bg-emerald-500/15 border border-emerald-400/50 px-2 py-1 text-[11px] font-semibold text-emerald-200"
+                title={top.evidence.source_ref}
+              >
+                ✓ NASA limit {clauseId(top.evidence.source_ref) ?? ''}
+              </span>
+            )}
+
             {!top.evidence.limit_verified && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-1 text-[11px] font-semibold text-amber-200">
                 ⚠ unverified limit ({top.evidence.source_ref ?? 'config/limits.yaml'})
@@ -122,6 +146,22 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
           <p className="text-xs font-medium text-cyan-200">
             Suggested CMO Action: <span className="font-normal text-slate-200">{top.action}</span>
           </p>
+
+          <AutonomyNotice blackout={linkBlackout} delaySeconds={commDelaySeconds} compact />
+
+          {top.checklist && top.checklist.length > 0 && (
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                aria-expanded={stepsOpen}
+                onClick={() => setStepsOpen((o) => !o)}
+                className="min-h-[44px] rounded-lg border border-cyan-500/50 bg-cyan-950/40 px-3 py-2 text-xs font-bold text-cyan-100 hover:bg-cyan-900/40"
+              >
+                {stepsOpen ? '▾ Hide steps' : `▸ Show what to do now (${top.checklist.length} steps)`}
+              </button>
+              {stepsOpen && <AlertChecklist alertId={top.id} steps={top.checklist} compact />}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">

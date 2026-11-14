@@ -1,17 +1,26 @@
 # All thresholds used by AEGIS (PRD section 9). Nothing here may be hardcoded elsewhere.
-# verified: false means the number is a placeholder and must NOT be presented as a NASA value.
-# The UI shows an "unverified" marker for those entries.
+# verified: true  = the number was read in a NASA document; source_ref names document, revision and clause id.
+# verified: false = project heuristic or not yet traced to a clause. It must NOT be presented as a NASA value;
+#                   the UI shows an "unverified" marker for those entries.
+# R-1 (2026-11-14) sources read: OCHMO-TB-004 Rev D (CO2), OCHMO-TB-020 Rev G (radiation), OCHMO-TB-002 Rev B
+# (ECLSS), OCHMO-TB-003 Rev A (habitable atmosphere), OCHMO-TB-035 Rev C (acoustics), OCHMO-MTB-013 Rev D (bone).
+# The briefs quote NASA-STD-3001 Vol 1 Rev C and Vol 2 Rev D. Keep one entry per line (frontend/src/api/limits.ts).
 radiation:
-  career_effective_dose_mSv: { value: 600, source_ref: "NASA-STD-3001 Vol 1 (career limit), VERIFY", verified: false }
-  spe_alert_dose_rate_uSv_h: { value: 500, source_ref: "Project heuristic", verified: false }
-  dose_24h_mSv_max:          { value: 5, source_ref: "Project heuristic", verified: false }
+  career_effective_dose_mSv:  { value: 600, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4030] Career Space Permissible Exposure Limit, via OCHMO-TB-020 Rev G", verified: true }
+  spe_event_effective_dose_mSv: { value: 250, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4031] Short-Term Radiation Limits - Solar Particle Events (design event), via OCHMO-TB-020 Rev G", verified: true }
+  gcr_rate_free_space_mSv_day: { value: 1.3, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (free-space design rate), via OCHMO-TB-020 Rev G", verified: true }
+  gcr_rate_surface_mSv_day:   { value: 0.9, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (planetary-surface design rate), via OCHMO-TB-020 Rev G", verified: true }
+  spe_alert_dose_rate_uSv_h:  { value: 500, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false }
+  dose_24h_mSv_max:           { value: 5, source_ref: "Project heuristic", verified: false }
 environment:
-  ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2, VERIFY", verified: false }
-  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic", verified: false }
-  ppo2_kPa_min:        { value: 19.5, source_ref: "VERIFY", verified: false }
-  cabin_temp_C:        { min: 18, max: 27, source_ref: "VERIFY", verified: false }
-  humidity_pct:        { min: 25, max: 75, source_ref: "VERIFY", verified: false }
-  noise_dBA_sleep_max: { value: 50, source_ref: "NASA-STD-3001 Vol 2, VERIFY", verified: false }
+  ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
+  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic (OCHMO-TB-004 lists worsening symptoms above 4.5 mmHg; not a limit)", verified: false }
+  ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic ([V2 6003] Table 6.2-1 values not yet read)", verified: false }
+  cabin_pressure_kPa:  { min: 34.5, max: 103, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6006] Total Pressure Tolerance Range for Indefinite Crew Exposure, via OCHMO-TB-003 Rev A", verified: true }
+  cabin_temp_C:        { min: 18, max: 27, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
+  humidity_pct:        { min: 25, max: 75, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
+  noise_dBA_hazardous_max: { value: 85, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6077] Hazardous Noise Limits, via OCHMO-TB-035 Rev C", verified: true }
+  noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic ([V2 6079] sets the NC-40 octave-band curve for sleep areas, not a dBA value)", verified: false }
 physiology:
   spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false }
   hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false }
@@ -25,7 +34,7 @@ symptoms:
 sleep:
   min_sleep_h_24h:     { value: 6, source_ref: "Project heuristic", verified: false }
 bone:
-  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields page", verified: true }
-  bmd_pct_of_baseline_min: { value: 95, source_ref: "Project heuristic", verified: false }
+  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate; no NASA-STD-3001 clause)", verified: false }
+  bmd_pct_of_baseline_min: { value: 95, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4027] Pre-mission Bone Countermeasures (hip and spine >= 95% of pre-mission BMD), via OCHMO-MTB-013 Rev D", verified: true }
 readiness:
   eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false }

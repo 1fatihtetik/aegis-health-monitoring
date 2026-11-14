@@ -28,6 +28,11 @@ const LIMIT_META: Record<string, { label: string; unit: string }> = {
   'environment.cabin_temp_C': { label: 'Cabin temperature band', unit: '°C' },
   'environment.humidity_pct': { label: 'Cabin humidity band', unit: '%RH' },
   'environment.noise_dBA_sleep_max': { label: 'Cabin noise (sleep) max', unit: 'dBA' },
+  'environment.noise_dBA_hazardous_max': { label: 'Hazardous noise limit', unit: 'dBA' },
+  'environment.cabin_pressure_kPa': { label: 'Cabin total pressure band', unit: 'kPa' },
+  'radiation.spe_event_effective_dose_mSv': { label: 'SPE design event dose limit', unit: 'mSv' },
+  'radiation.gcr_rate_free_space_mSv_day': { label: 'GCR design dose rate (free space)', unit: 'mSv/day' },
+  'radiation.gcr_rate_surface_mSv_day': { label: 'GCR design dose rate (surface)', unit: 'mSv/day' },
   'physiology.spo2_pct_min': { label: 'SpO₂ minimum', unit: '%' },
   'physiology.hr_bpm': { label: 'Heart rate band', unit: 'bpm' },
   'physiology.hr_orthostatic_bpm': { label: 'Heart rate on standing', unit: 'bpm' },
@@ -41,6 +46,12 @@ const LIMIT_META: Record<string, { label: string; unit: string }> = {
   'bone.bmd_pct_of_baseline_min': { label: 'Bone density minimum', unit: '% of baseline' },
   'readiness.eva_go_min': { label: 'EVA GO minimum readiness', unit: 'score' },
 };
+
+/** Pulls the NASA-STD-3001 clause id ("[V2 6004]") out of a source_ref, if there is one. */
+export function clauseId(sourceRef: string | undefined): string | null {
+  const m = /\[V[12] \d{4,5}\]/.exec(sourceRef ?? '');
+  return m ? m[0] : null;
+}
 
 function labelFromKey(key: string): string {
   const leaf = key.split('.').pop() ?? key;
