@@ -7,6 +7,8 @@ import {
   severityToStatus,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { AlertChecklist } from '../components/AlertChecklist';
+import { ContextBadge, EvidenceDetails } from '../components/EvidenceDetails';
 
 export const AlertCenter: React.FC = () => {
   const {
@@ -58,7 +60,7 @@ export const AlertCenter: React.FC = () => {
                 key={sev}
                 type="button"
                 onClick={() => setSeverityFilter(sev)}
-                className={`min-h-[36px] rounded px-2.5 py-1 text-xs font-bold transition-colors ${
+                className={`min-h-[44px] rounded px-3 py-1 text-xs font-bold transition-colors ${
                   severityFilter === sev
                     ? 'bg-cyan-500 text-slate-950'
                     : 'text-slate-300 hover:bg-space-800'
@@ -75,7 +77,7 @@ export const AlertCenter: React.FC = () => {
                 key={st}
                 type="button"
                 onClick={() => setStateFilter(st)}
-                className={`min-h-[36px] rounded px-2.5 py-1 text-xs font-bold transition-colors ${
+                className={`min-h-[44px] rounded px-3 py-1 text-xs font-bold transition-colors ${
                   stateFilter === st
                     ? 'bg-purple-500 text-white'
                     : 'text-slate-300 hover:bg-space-800'
@@ -152,6 +154,8 @@ export const AlertCenter: React.FC = () => {
                       Lifecycle: {alert.state}
                     </span>
 
+                    <ContextBadge evidence={alert.evidence} />
+
                     <span className="rounded bg-space-950 border border-slate-700 px-2.5 py-1 text-xs font-mono text-cyan-300">
                       Rule: {alert.rule_id}
                     </span>
@@ -204,8 +208,9 @@ export const AlertCenter: React.FC = () => {
                   <h2 className="text-lg font-bold text-white">{alert.title}</h2>
                   <p className="text-xs text-slate-300 leading-relaxed">{alert.rationale}</p>
                   <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/25 px-3.5 py-2.5 text-xs text-cyan-100">
-                    <strong>Recommended CMO Protocol:</strong> {alert.action}
+                    <strong>Recommended action:</strong> {alert.action}
                   </div>
+                  {alert.state !== 'RESOLVED' && <AlertChecklist alertId={alert.id} steps={alert.checklist} />}
                 </div>
 
                 {/* Hazard & HRP Risk Traceability Chips */}
@@ -246,36 +251,7 @@ export const AlertCenter: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="text-xs font-mono text-slate-200">
-                    Primary Signal: <strong>{alert.evidence.signal}</strong> ={' '}
-                    <strong className="text-amber-300">
-                      {alert.evidence.value} {alert.evidence.unit ?? ''}
-                    </strong>{' '}
-                    | Operator: <strong>{alert.evidence.op ?? '>'}</strong> | Configured Limit:{' '}
-                    <strong>
-                      {alert.evidence.limit} {alert.evidence.unit ?? ''}
-                    </strong>{' '}
-                    | Window: <strong>{alert.evidence.window}</strong>
-                  </div>
-
-                  {alert.evidence.clauses && alert.evidence.clauses.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1">
-                      {alert.evidence.clauses.map((cl, idx) => (
-                        <div
-                          key={idx}
-                          className="rounded-lg border border-slate-800 bg-space-900 p-2.5 text-xs font-mono"
-                        >
-                          <div className="font-sans font-semibold text-slate-200">{cl.label}</div>
-                          <div className="mt-0.5 text-amber-300">
-                            {cl.signal}: {cl.value} {cl.unit} ({cl.op} {cl.limit} {cl.unit})
-                          </div>
-                          <div className="mt-0.5 text-[10px] text-slate-400">
-                            {cl.limit_verified ? '✓ verified' : '⚠ unverified'} · {cl.source_ref}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <EvidenceDetails evidence={alert.evidence} />
                 </div>
 
                 {/* Audit Notes & CMO Annotation Input */}

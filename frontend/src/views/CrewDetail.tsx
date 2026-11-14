@@ -18,6 +18,9 @@ import {
   severityToStatus,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { AlertChecklist } from '../components/AlertChecklist';
+import { ContextBadge } from '../components/EvidenceDetails';
+import { HeadacheReport } from '../components/HeadacheReport';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
@@ -275,6 +278,8 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                     </div>
                     <div className="text-sm font-bold text-white">{alert.title}</div>
                     <div className="text-xs text-slate-300">{alert.rationale}</div>
+                    <ContextBadge evidence={alert.evidence} />
+                    <AlertChecklist alertId={alert.id} steps={alert.checklist} compact />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {alert.state === 'RAISED' && (
@@ -301,6 +306,8 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
         </div>
       )}
 
+      <HeadacheReport crewId={member.id} />
+
       {/* Limit-Band Physiological Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <LimitBandChart
@@ -326,7 +333,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
         />
 
         <LimitBandChart
-          title="Heart Rate Variability (RMSSD Autonomic Recovery)"
+          title="Heart Rate Variability (RMSSD, recovery)"
           subtitle={`Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
           data={member.timeseries.hrv_rmssd}
           unit="ms"
@@ -421,7 +428,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                0g trabecular bone loss (-1.0 to -1.5%/mo) mitigated by ARED resistive exercise adherence
+                0 g bone density loss, slowed by regular resistance exercise
               </p>
             </div>
             {bmdLimit && (

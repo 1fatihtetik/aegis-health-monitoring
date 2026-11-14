@@ -91,7 +91,7 @@ export const HAZARD_CATALOG: Record<Hazard, HazardMeta> = {
     letter: 'I',
     shortName: 'Isolation',
     fullName: 'Isolation & Confinement',
-    summary: 'Circadian desynchronization, sleep debt, behavioral stress, and workload pressure.',
+    summary: 'Body clock out of sync, sleep debt, stress and workload pressure.',
     primaryRisks: ['HRP-12', 'HRP-13', 'HRP-14', 'HRP-01'],
   },
   DISTANCE_FROM_EARTH: {
@@ -295,6 +295,18 @@ export interface AlertEvidenceClause {
   op: string;
   limit_verified: boolean;
   source_ref: string;
+  /** Compound members: whether this condition is currently met. */
+  firing?: boolean;
+  /** A `none:` member: the alert needs this condition to be NOT met. */
+  negated?: boolean;
+  /** Still counted as met only because of hysteresis (value already back inside the limit). */
+  hysteresis_hold?: boolean;
+}
+
+/** Context-branching rules: same symptoms, different likely cause (e.g. CO2 vs hydration). */
+export interface AlertContext {
+  group: string;
+  branch: string;
 }
 
 export interface AlertEvidence {
@@ -308,6 +320,8 @@ export interface AlertEvidence {
   window: string;
   z_score?: number;
   clauses?: AlertEvidenceClause[];
+  context?: AlertContext;
+  hysteresis_hold?: boolean;
 }
 
 export interface AlertNote {

@@ -506,13 +506,36 @@ function mapReadiness(
   };
 }
 
+/** Plain names for evidence signals (UI copy only). */
+const SIGNAL_LABEL: Record<string, string> = {
+  ppco2: 'Cabin CO₂',
+  ppo2: 'Cabin O₂',
+  heart_rate: 'Heart rate',
+  hrv_rmssd: 'Heart rate variability',
+  spo2: 'Blood oxygen (SpO₂)',
+  skin_temp: 'Skin temperature',
+  bp_systolic: 'Blood pressure (top number)',
+  sleep_hours_24h: 'Sleep in last 24 h',
+  symptom_headache: 'Headache report (0–3)',
+  dose_rate_equivalent: 'Personal radiation dose rate',
+  area_dose_rate_equivalent: 'Cabin radiation dose rate',
+  dose_24h: 'Radiation dose, last 24 h',
+};
+
+export function signalLabel(signal: string): string {
+  return SIGNAL_LABEL[signal] ?? signal.replace(/_/g, ' ');
+}
+
+const OP_WORD: Record<string, string> = { '>': 'above', '>=': 'at or above', '<': 'below', '<=': 'at or below' };
+
 function mapClause(m: BackendEvidence): AlertEvidenceClause {
-  const name = m.rule_id ?? m.signal;
+  const what = `${signalLabel(m.signal)} ${OP_WORD[m.op ?? ''] ?? m.op ?? ''} limit`.trim();
   return {
     signal: m.signal,
-    label: `${m.negated ? 'NOT: ' : ''}${name}${m.firing ? '' : ' (not met)'}${
-      m.hysteresis_hold ? ' (hysteresis hold)' : ''
-    }`,
+    label: m.negated ? `${what}: must NOT be true` : what,
+    firing: m.firing,
+    negated: m.negated,
+    hysteresis_hold: m.hysteresis_hold,
     value: m.value,
     unit: m.unit ?? '',
     op: m.op ?? '',
@@ -534,6 +557,8 @@ export function mapAlert(a: BackendAlert): AlertItem {
     source_ref: e.limit_source_ref ?? (e.members ? 'see members' : undefined),
     window: e.window ?? '',
     clauses: e.members?.map(mapClause),
+    context: e.context,
+    hysteresis_hold: e.hysteresis_hold,
   };
   if (e.signal === 'compound') {
     evidence.unit = 'conditions';

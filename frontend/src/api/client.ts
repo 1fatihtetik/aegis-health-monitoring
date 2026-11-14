@@ -218,7 +218,7 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
         },
         {
           id: 'cardio',
-          label: 'Autonomic / HRV Recovery (RMSSD)',
+          label: 'Heart rate variability (recovery)',
           score: 89,
           weight: 0.25,
           rawValue: `${p.hrv_rmssd} ms`,
@@ -384,7 +384,7 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
         author: 'Flight Surgeon (MCC-Houston)',
         title: 'Maintain ARED resistive load protocol during Mars Transit Week 15',
         rationale:
-          'Indicators consistent with expected 0g trabecular bone remodeling (-1.1%/mo). Current exercise adherence (92%) is mitigating steeper decline.',
+          'Indicators consistent with the expected 0 g bone density loss (-1.1%/month). Current exercise adherence (92%) is slowing the loss.',
         checklist: [
           'Continue ARED squat + deadlift series 6x/week',
           'Log daily Vitamin D3 + calcium intake',

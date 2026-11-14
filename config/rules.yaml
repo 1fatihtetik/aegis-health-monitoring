@@ -14,6 +14,11 @@ rules:
     hrp_risks: [HRP-12, HRP-14]
     rationale: "Elevated CO2 is linked to headache and reduced cognitive performance."
     action: "Check CDRA/scrubber status; increase ventilation; monitor symptoms."
+    checklist:
+      - "Check the CO2 scrubber (CDRA) status panel for a fault"
+      - "Turn cabin fans and module ventilation up"
+      - "Ask each crew member: headache, tiredness, trouble focusing?"
+      - "Recheck the CO2 reading in 30 minutes"
 
   - id: env.co2.critical
     type: THRESHOLD
@@ -28,6 +33,11 @@ rules:
     hrp_risks: [HRP-12, HRP-14, HRP-08]
     rationale: "Sustained high CO2 threatens crew performance and health."
     action: "Start the CO2 removal contingency procedure; move crew to a ventilated module."
+    checklist:
+      - "Start the CO2 removal contingency procedure"
+      - "Move crew to the best-ventilated module"
+      - "Wear portable breathing gear if anyone feels unwell"
+      - "Recheck CO2 every 10 minutes until it is back under the limit"
 
   - id: env.o2.low
     type: THRESHOLD
@@ -42,6 +52,11 @@ rules:
     hrp_risks: [HRP-06]
     rationale: "Low O2 partial pressure is a hypoxia risk."
     action: "Check O2 supply and cabin pressure; prepare portable breathing apparatus."
+    checklist:
+      - "Check the O2 supply and the cabin pressure readout"
+      - "Get the portable breathing apparatus ready"
+      - "Stop heavy exercise until O2 is back to normal"
+      - "Recheck O2 every 10 minutes"
 
   - id: physio.spo2.low
     type: THRESHOLD
@@ -56,6 +71,11 @@ rules:
     hrp_risks: [HRP-06, HRP-08]
     rationale: "Indicators consistent with reduced oxygenation."
     action: "Check sensor placement; check cabin O2; recommend CMO review."
+    checklist:
+      - "Check the finger sensor is on properly and re-measure"
+      - "Check the cabin O2 reading"
+      - "Sit and rest; breathe slowly"
+      - "If still low after 5 minutes, contact the crew medical officer (CMO)"
 
   - id: physio.hr.high
     type: THRESHOLD
@@ -70,6 +90,11 @@ rules:
     hrp_risks: [HRP-03]
     rationale: "Sustained heart rate above the configured limit."
     action: "Stop exertion and rest; recommend CMO review."
+    checklist:
+      - "Stop exercise or heavy work now"
+      - "Sit or lie down and rest for 10 minutes"
+      - "Check the sensor fit and re-measure"
+      - "If still high, contact the crew medical officer (CMO)"
 
   - id: physio.hr.low
     type: THRESHOLD
@@ -84,6 +109,11 @@ rules:
     hrp_risks: [HRP-03]
     rationale: "Sustained heart rate below the configured limit."
     action: "Check the crew member and the sensor; recommend CMO review."
+    checklist:
+      - "Check on the crew member: are they awake and alert?"
+      - "Check the sensor fit and re-measure"
+      - "If they feel dizzy or faint, lie down with feet raised"
+      - "Contact the crew medical officer (CMO)"
 
   - id: physio.temp.baseline_dev
     type: BASELINE
@@ -98,6 +128,11 @@ rules:
     hrp_risks: [HRP-01, HRP-05]
     rationale: "Temperature well above this crew member's own rolling baseline."
     action: "Log symptoms; repeat the measurement; recommend CMO review."
+    checklist:
+      - "Re-measure temperature in 10 minutes"
+      - "Ask about chills, aches, sore throat or other symptoms and log them"
+      - "Drink fluids and rest"
+      - "If it stays high, contact the crew medical officer (CMO)"
 
   - id: sleep.short_24h
     type: THRESHOLD
@@ -112,6 +147,11 @@ rules:
     hrp_risks: [HRP-14]
     rationale: "Sleep loss lowers performance and builds sleep debt."
     action: "Protect the next sleep period; adjust the light schedule; review workload."
+    checklist:
+      - "Protect the next sleep period: no tasks scheduled into it"
+      - "Dim cabin lights 1 hour before sleep; screens off"
+      - "Move critical tasks to a well-rested crew member if possible"
+      - "Log how rested you feel after the next sleep"
 
   - id: rad.spe.dose_rate
     type: THRESHOLD
@@ -147,6 +187,11 @@ rules:
     hrp_risks: [HRP-17]
     rationale: "Dose accumulated in the last 24 hours is above the configured limit."
     action: "Keep time outside the shelter to a minimum; log the dose; recommend CMO review."
+    checklist:
+      - "Stay in the shielded area as much as possible"
+      - "Postpone EVAs and work in low-shielding modules"
+      - "Log personal dosimeter readings"
+      - "Contact the crew medical officer (CMO) with the dose log"
 
   - id: cog.performance_risk
     type: COMPOUND
@@ -157,6 +202,11 @@ rules:
     hrp_risks: [HRP-14, HRP-12]
     rationale: "Short sleep and elevated CO2 together raise the risk of reduced cognitive performance."
     action: "Postpone critical tasks and EVA for this crew member; fix CO2 first; protect sleep."
+    checklist:
+      - "Postpone EVA and critical tasks for this crew member"
+      - "Fix the CO2 problem first (see the CO2 checklist)"
+      - "Give this crew member a protected sleep period"
+      - "Have a second crew member double-check critical work"
 
   - id: cardio.orthostatic
     type: COMPOUND
@@ -169,6 +219,11 @@ rules:
     hrp_risks: [HRP-03, HRP-02]
     rationale: "Low blood pressure together with a raised heart rate after a gravity transition."
     action: "Sit or lie down; fluids; avoid standing tasks; recommend CMO review."
+    checklist:
+      - "Sit down or lie flat with feet raised now"
+      - "Drink fluids (water or electrolyte drink)"
+      - "Stand up slowly, with someone nearby, only when ready"
+      - "Avoid standing tasks until heart rate and blood pressure settle; contact the CMO"
 
   # Context-branching pair (ROADMAP section 5.1): the same symptoms point to different causes.
   # Both need a reported headache + raised resting heart rate; cabin CO2 decides the branch.
@@ -186,6 +241,11 @@ rules:
     hrp_risks: [HRP-12, HRP-14]
     rationale: "Headache and a raised heart rate while cabin CO2 is above its limit: indicators consistent with a CO2 effect."
     action: "Treat the environment first: check CDRA/scrubber, increase ventilation; recheck symptoms in 30 min; recommend CMO review."
+    checklist:
+      - "Treat the cabin first: check the CO2 scrubber and turn ventilation up"
+      - "Move to the best-ventilated module"
+      - "Rest and drink fluids"
+      - "Recheck headache and heart rate in 30 minutes; contact the CMO if not better"
 
   - id: ctx.headache_tachy.hydration
     type: COMPOUND
@@ -201,3 +261,8 @@ rules:
     hrp_risks: [HRP-03, HRP-07]
     rationale: "Headache and a raised heart rate with normal cabin CO2: indicators consistent with low fluid intake or another non-environmental cause."
     action: "Drink fluids and rest; log fluid intake; recheck in 30 min; recommend CMO review."
+    checklist:
+      - "Drink 500 mL of water or electrolyte drink"
+      - "Rest for 30 minutes"
+      - "Log how much you drank today"
+      - "Recheck headache and heart rate in 30 minutes; contact the CMO if not better"

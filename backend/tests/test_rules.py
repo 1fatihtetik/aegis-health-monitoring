@@ -241,3 +241,12 @@ def test_in_treatment_transition(cfg, store):
     manager.resolve(alert.id, now)
     manager.treat(alert.id, now)  # a resolved alert stays resolved
     assert alert.state == AlertState.RESOLVED
+
+
+def test_every_rule_has_a_plain_language_checklist(cfg):
+    """F-003: crew are not MDs; every alert carries 3-5 concrete steps without clinical jargon."""
+    jargon = ("cephalalgia", "trendelenburg", "presyncop", "baroreflex", "trabecular", "hypercapni")
+    for rule in cfg.rules:
+        assert 3 <= len(rule.checklist) <= 5, rule.id
+        text = " ".join([rule.action, rule.rationale, *rule.checklist]).lower()
+        assert not any(word in text for word in jargon), rule.id

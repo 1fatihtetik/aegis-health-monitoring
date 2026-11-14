@@ -320,7 +320,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <LimitBandChart
               title="Cabin Carbon Dioxide Partial Pressure (ppCO₂)"
-              subtitle="CDRA Scrubber Performance · Elevated ppCO₂ impairs executive cognition & causes cephalalgia"
+              subtitle="CO₂ scrubber (CDRA) performance · High CO₂ can cause headache and slow thinking"
               data={environment.history.ppco2}
               unit="mmHg"
               limit={limits['environment.ppco2_mmHg_1h_max']}

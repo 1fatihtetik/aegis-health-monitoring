@@ -108,6 +108,8 @@ interface AegisContextValue {
     checklist: string[];
   }) => void;
   acknowledgeRecommendationOnboard: (recId: string) => void;
+  /** Crew self-report, 0-3. Sent to POST /observations; resolves false when it was not accepted. */
+  reportHeadache: (crewId: CrewId, level: number) => Promise<boolean>;
 }
 
 const AegisContext = createContext<AegisContextValue | null>(null);
@@ -387,7 +389,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             window: '1h mean',
           },
           rationale:
-            'Indicators consistent with elevated cabin CO₂ partial pressure, linked to cephalalgia and reduced executive cognitive performance. Recommend CMO and ECLSS review.',
+            'Indicators consistent with high cabin CO₂, which can cause headache and make it harder to think clearly. Recommend CMO and life-support review.',
           action:
             'Switch CDRA desiccant/adsorbent bed to secondary channel; increase inter-module ventilation fan speed; monitor crew headache/fatigue symptoms.',
           checklist: [
@@ -443,7 +445,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             },
             {
               id: 'cardio',
-              label: 'Autonomic / HRV Recovery (RMSSD)',
+              label: 'Heart rate variability (recovery)',
               score: 61,
               weight: 0.25,
               rawValue: '34 ms (-3.6σ baseline)',
@@ -481,7 +483,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             value: 56,
             status: 'CAUTION',
             goForOp: false,
-            summary: 'Indicators consistent with circadian & hypercapnic cognitive fatigue.',
+            summary: 'Indicators consistent with tiredness from short sleep and high cabin CO₂.',
             components: evaComp,
           };
           cdr.readiness.OVERALL = {
@@ -537,7 +539,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ],
           },
           rationale:
-            'Indicators consistent with multi-hazard cognitive fatigue (circadian sleep restriction compounded by cabin CO₂ buildup). Context-branching analysis points to hypercapnic + circadian driver rather than dehydration. Recommend CMO review and EVA deferral.',
+            'Indicators consistent with reduced alertness from short sleep plus high cabin CO₂. The pattern points to the cabin air and sleep rather than low fluid intake. Recommend CMO review and EVA postponement.',
           action:
             'Reschedule C1 (CDR) EVA tasking; initiate 45-min blue-enriched circadian light therapy at wake; verify CDRA CO₂ scrubbing.',
           checklist: [
@@ -616,14 +618,14 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ],
           },
           rationale:
-            'Indicators consistent with hypovolemic baroreflex deconditioning upon entry into 0.38g Mars gravity field (presyncopal risk). Recommend immediate CMO assessment.',
+            'Indicators consistent with a blood-pressure drop after the change to Mars gravity (0.38 g): fainting risk when standing. Recommend immediate CMO review.',
           action:
-            'Place C3 in supine/Trendelenburg posture; activate lower-body compression garment; administer oral isotonic fluid-loading protocol.',
+            'Help C3 lie flat with feet raised; put on the lower-body compression garment; drink 500 mL of electrolyte fluid.',
           checklist: [
-            'Assist C3 to seated/supine position immediately',
+            'Help C3 sit or lie flat with feet raised now',
             'Engage lower-body gradient compression garment (40 mmHg)',
-            'Administer 500 mL isotonic electrolyte solution',
-            'Repeat blood pressure & ECG check at +5 min and +15 min',
+            'Give C3 500 mL of electrolyte drink',
+            'Re-measure blood pressure and heart rate after 5 and 15 minutes',
           ],
           notes: [],
           origin: 'ONBOARD',
@@ -1216,6 +1218,30 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }));
   }, []);
 
+  const reportHeadache = useCallback(async (crewId: CrewId, level: number): Promise<boolean> => {
+    const snap = linkRef.current.lastSnap.onboard;
+    if (!connectedRef.current || !snap) return false;
+    const id =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `obs-${crewId}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const res = await backendApi.postJson<{ accepted: number }>('/observations', [
+      {
+        id,
+        ts: snap.now,
+        crew_id: crewId,
+        location: null,
+        device_id: `tablet-${crewId}`,
+        signal: 'symptom_headache',
+        value: Math.max(0, Math.min(3, Math.round(level))),
+        unit: '0-3',
+        quality: 'GOOD',
+        phase: snap.phase?.name ?? null,
+      },
+    ]);
+    return (res?.accepted ?? 0) > 0;
+  }, []);
+
   return React.createElement(
     AegisContext.Provider,
     {
@@ -1236,6 +1262,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleLinkBlackout,
         sendGroundRecommendation,
         acknowledgeRecommendationOnboard,
+        reportHeadache,
       },
     },
     children
