@@ -2,102 +2,103 @@
 
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
-**Current state (2026-11-14):** the original 30-hour MVP is built. Gates 1–4, D-1 and D-2 are approved (see `implementationsandgoals.txt`).
-**Current priority: Block R, real NASA data (§0).** It comes before the freeze (D-3) and before every stretch item. A health monitor that only shows numbers it invented proves nothing. Block R replaces invented numbers with NASA-published measurements and NASA-published limits wherever a public source exists, and labels everything else honestly.
+**Current state (2026-11-14):** the 30-hour MVP and Block R (real NASA data) are built and approved, and the demo is frozen at tag `demo-ready` (D-3). See `implementationsandgoals.txt`.
+**Current priority: Block P, phases and gravity (§0).** Block R made Mars transit and Mars surface real. Block P does the same for the other mission phases (LEO, lunar surface, back on Earth), makes crew physiology respond to each phase's gravity, adds the Inspiration4 reference panel (formerly stretch item S-4), and then extends and re-freezes the demo.
 
 ---
 
-## 0. Block R: real NASA data (PRIORITY 1)
+## 0. Block P: phases and gravity (PRIORITY 1)
 
-### 0.1 What "real data" can and cannot mean
+### 0.1 Goals and sources
 
-There is **no public archive of continuous in-flight astronaut vitals** (heart rate, SpO₂, sleep and so on for named ISS crew). That data sits in NASA's LSDA/LSAH under controlled access. AEGIS will not pretend otherwise. Real NASA data enters in four places where it is public, and the crew physiology stays synthetic but is tuned to published NASA values:
+Order set by the user (2026-11-14): **radiation first, then gravity, then the Inspiration4 panel, then the extended demo.**
 
-| Tier | What | NASA source (public) | Replaces |
+| Goal | Phase / view | Source | Provenance |
 |---|---|---|---|
-| **D1 Limits** | Numeric limits with clause ids | NASA-STD-3001 Vol 1 / Vol 2 and OCHMO Technical Briefs (e.g. TB-004 Carbon Dioxide: 1-h mean ppCO₂ ≤ 3 mmHg, [V2 6004]; Radiation Protection brief: career effective dose 600 mSv, [V1 4030]) | `verified: false` placeholders in `config/limits.yaml` |
-| **D2 Radiation replay** | Measured deep-space and Mars-surface dose rates, including solar particle events seen in cruise | MSL Curiosity **RAD** (Radiation Assessment Detector): PDS PPI `MSL-M-RAD-3-RDR-V1.0`, and SPDF/CDAWeb `MSL_RAD_OBS-L2` | The constant 75 µSv/h (`MARS_TRANSIT`) and 28 µSv/h (`MARS_SURFACE`) backgrounds and the synthetic ×80 SPE curve |
-| **D3 Space weather context** | The real event behind the SPE: SEP, flare and CME records, plus the near-Earth >10 MeV proton flux | NASA CCMC **DONKI** (SEP/FLR/CME records), NASA SPDF **OMNIWeb** (OMNI2 hourly proton flux, GOES-sourced) | A made-up event with no history |
-| **D4 Comm delay** | Earth–Mars one-way light time for the simulated date | NASA JPL **Horizons** ephemeris (Earth→Mars range ÷ c) | The constant `comm_delay_s: 720` |
-| **D5 Calibration references** (no live stream) | Published NASA values used to set simulator parameters | HRP hazard pages (BMD −1 to −1.5 %/month, already used), OCHMO TB-004 (historical ISS CO₂ range and the CO₂–headache relationship), Inspiration4 clinical panels on NASA **OSDR** (OSD-569/570/571/575, aggregate only) | Unsourced simulator constants |
+| LEO radiation | `LEO` | NASA OSDR **RadLab**: ISS-RAD (or REM/TEPC) dose-rate time series, curated from SRAG data; web UI + API | `NASA_MEASURED` (area), `NASA_DERIVED` (personal, neutron split) |
+| Lunar-surface radiation | `LUNAR_SURFACE` | LRO **CRaTER** hourly dose rate, corrected to the lunar surface (PDS `LRO-L-CRAT-3-CDR-CALIBRATED-V1.0` / `LRO-L-CRAT-3-4-DDR`, ISWA hourly product). Reference check only: Chang'e-4 LND surface measurement, 1,369 µSv/day (Zhang et al. 2020, *Science Advances*) | `NASA_DERIVED` (surface correction is a transform) |
+| Earth radiation after landing | `POST_LANDING` | US EPA **RadNet**: one station's gamma exposure-rate CSV window (mR/h → µSv/h) | `MEASURED_OTHER` (new label, badge "Measured · EPA RadNet") |
+| Gravity-dependent physiology | all phases | To be decided after research (P-4). NASA has **no measured** bone or muscle loss rates for 0.16 g or 0.38 g. | `SYNTHETIC_CALIBRATED` where cited, else `SYNTHETIC` |
+| Inspiration4 reference panel (was S-4) | CrewDetail | NASA **OSDR** Inspiration4 blood studies (OSD-569/570/571/575): **aggregate** pre/post-flight CBC/CMP ranges only | `NASA_MEASURED` (aggregate reference) |
 
-Physiology (HR, HRV, SpO₂, BP, sleep, exercise) stays `SYNTHETIC_CALIBRATED`, which means simulated with each parameter cited. That is the honest limit of public data, and the UI says so.
+### 0.2 Rules for Block P
 
-### 0.2 Hard rules for Block R
+All Block R rules still apply (fetch once and replay offline, a manifest entry with sha256 for every file, provenance on every value, deterministic replay, labelled transforms, no identifiable person's data). In addition:
 
-1. **Fetch once, replay offline.** `scripts/fetch_nasa_data.py` downloads snapshots at build time into `data/nasa/`. The runtime never calls the internet. A test blocks sockets and runs `demo_5min`.
-2. **Provenance on every value.** Each observation carries `provenance`: `NASA_MEASURED` | `NASA_DERIVED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`. Charts, tiles and alert evidence show it.
-3. **Manifest for every file.** `data/nasa/MANIFEST.yaml` lists the dataset id, source URL, retrieval date, sha256, licence or terms note, and the transform applied. No file without a manifest entry.
-4. **Determinism stays.** Replay is a pure function of (dataset, time offset, seed). Noise added for per-crew variation is seeded and documented.
-5. **No identifiable person's health data.** OSDR Inspiration4 data is used only as aggregate reference ranges, never as a named crew member's record.
-6. **Transforms are labelled.** Anything that is not a straight replay (spreading one area dose rate across 4 crew, the shelter factor, the 30 % neutron split, time compression) is `NASA_DERIVED` or `SYNTHETIC_CALIBRATED` and names its formula in the manifest.
+1. **New provenance label `MEASURED_OTHER`.** It is for measured data from a non-NASA agency (EPA RadNet). The badge names the agency. Never show it as NASA data.
+2. **Non-NASA papers are reference checks, not replays.** The Chang'e-4 value goes into the manifest `reference` block of the CRaTER entry and into a fidelity test, never into the data stream.
+3. **Partial gravity stays honest.** No physiology formula for 0.16 g or 0.38 g is invented silently. P-4 collects the published evidence, the user picks the model, and every parameter cites its source or says `heuristic`.
+4. **Inspiration4 data is aggregate only.** Means, ranges or percentiles across the crew per time point. Never one person's values, never a name.
+5. **The frozen demo is the baseline.** `demo-ready` stays as it is. The extended demo gets a new tag after Gate P.
 
-### 0.3 Work items and timeline (≈ 12 h)
+### 0.3 Work items and timeline (≈ 14 h)
 
 | Hours | Item | Done when |
 |---|---|---|
-| R+0 to 2 | **R-0 Data layer.** `data/nasa/` + `MANIFEST.yaml`, `config/datasets.yaml`, `backend/app/datasets/` (loader interface, manifest check, sha256 check), `provenance` field on `Observation`, `GET /api/v1/datasets`, a `DataSourceBadge` component, and the footer text changed to "…Radiation and space-weather data: NASA archives. Crew physiology: synthetic." | Badge renders; missing or tampered file fails startup with a clear message; no-network test passes |
-| R+2 to 4 | **R-1 Verified limits (D1).** Pull NASA-STD-3001 Vol 1 Rev C/Vol 2 Rev D clauses and the OCHMO briefs; set `verified: true` with clause ids for every limit that has a NASA number (start: ppCO₂ 1 h, career dose, the other radiation limits in the brief, ppO₂, temperature, humidity, noise). Heuristic limits stay `verified: false` and say "Project heuristic" | At least 6 limits verified with clause ids; the demo shows both marker states; a test checks that `verified: true` implies a clause id in `source_ref` |
-| R+4 to 7 | **R-2 RAD replay (D2).** Fetch the RAD dose-rate product for one cruise window and one Gale-crater window; `RadReplayAdapter` feeds `dose_rate_absorbed`/`dose_rate_equivalent` as `NASA_MEASURED` (area dosimeter) for `MARS_TRANSIT`/`MARS_SURFACE`; per-crew personal dose stays `NASA_DERIVED` | Mean replayed cruise dose-equivalent matches the published ≈ 1.8 mSv/day within the noise stated in the manifest; the radiation view shows "MSL/RAD, cruise 2012" |
-| R+7 to 9 | **R-3 Real SPE (D2 + D3).** Pick an SEP that RAD measured in cruise (candidate: early March 2012; confirm in the data); `spe_event` and the SPE segment of `demo_5min` replay it, time-compressed and labelled. Retune `rad.spe.dose_rate` and `rad.dose.24h` only through `limits.yaml` | `spe_event` still raises EMERGENCY + WARNING in pytest, driven by replayed values; the evidence shows the real event date and DONKI id |
-| R+9 to 10 | **R-4 Light-time delay (D4).** Horizons table (daily Earth–Mars range for the mission window) → `comm_delay_s` by date in `link/`; demo keeps a fixed date so timing stays rehearsable | Ground console shows "One-way delay 12m 34s (JPL Horizons, <date>)" style text; link tests pass with the table |
-| R+10 to 11 | **R-5 Space-weather card (D3).** Bundled DONKI SEP/FLR/CME records + OMNI2 >10 MeV flux for the replayed event; the ground console shows the event card, and the ground can forward it to the crew as a recommendation through the delayed link | Card renders offline; forwarding goes through `link/` |
-| R+11 to 12 | **R-6 Calibrated simulator (D5) + re-rehearse.** Every simulator constant in `mission.yaml`/`crew.yaml` gets a `source_ref` or is marked heuristic; CO₂ nominal and degradation levels set from TB-004; rerun D-1/D-2 on the new data | `demo_5min` plays twice untouched; README scenario table updated |
+| P+0 to 1 | **P-0 `MEASURED_OTHER` label.** Add it to the `Provenance` enum, `weakest()` ordering, the `DataSourceBadge` ("Measured · <agency>"), the footer data line and AGENTS.md §2a | Enum, badge and footer tests pass; a `MEASURED_OTHER` observation needs a `dataset_id` like `NASA_*` |
+| P+1 to 3 | **P-1 LEO radiation (RadLab).** Confirm which ISS instrument and dates RadLab has; fetch one quiet window (build time, API); replay it into `LEO` like MSL/RAD (absorbed `NASA_MEASURED`; equivalent, neutron, personal `NASA_DERIVED`, with the published Q) | Replayed mean dose-equivalent rate is within the manifest tolerance of the published ISS value for that window; `LEO` radiation tile shows "NASA · ISS-RAD <year>" |
+| P+3 to 5 | **P-2 Lunar-surface radiation (CRaTER).** Fetch one quiet hourly window; apply the surface correction named in the manifest; replay into `LUNAR_SURFACE` (`NASA_DERIVED`). Decide whether `TRANSIT` (Earth–Moon) also uses CRaTER without the surface correction | Replayed mean is checked against Chang'e-4's 1,369 µSv/day with the tolerance and solar-cycle caveat stated in the manifest |
+| P+5 to 6 | **P-3 Earth radiation (RadNet).** Fetch one station's exposure-rate window; convert mR/h → µSv/h (×10, stated as the transform); replay into `POST_LANDING` as `MEASURED_OTHER` | Post-landing tile shows "Measured · EPA RadNet <station>"; tampered file falls back to `SYNTHETIC` |
+| P+6 to 7 | **P-4 Partial-gravity research (decision point).** Collect published evidence for bone, muscle/VO₂max, fluid shift and orthostatic tolerance at 0 / 0.16 / 0.38 / 1 g (ISS and Apollo data, bed-rest and partial-weight-bearing analogs, NASA HRP evidence reports, models). Write the options with sources into `implementationsandgoals.txt` | **The user picks the model.** No physiology code changes before that |
+| P+7 to 10 | **P-5 Gravity-dependent physiology.** Implement the chosen model: phase gravity drives BMD loss, fitness/VO₂max drift, fluid-shift effects on HR/BP, and orthostatic risk after a gravity increase (landing). Parameters live in `mission.yaml` with `sources`; the Gravity RIDGE tile explains the current effect | Tests show different drift rates per phase; `orthostatic_intolerance` and `demo_5min` landing still fire as expected; calibration test still passes |
+| P+10 to 12 | **P-6 Inspiration4 reference panel (was S-4).** Fetch aggregate CBC/CMP statistics per time point from OSDR; manifest entry; CrewDetail panel showing the pre/post-flight reference ranges (AEGIS has no lab signals yet, so the panel is reference only) | Panel renders offline with a NASA badge; a test checks that the bundled file has no per-person rows |
+| P+12 to 14 | **P-7 Extended demo + re-rehearsal.** Add segments to `demo_5min` that show the new phases (proposal: a short LEO opening before trans-Mars departure, with ISS-RAD radiation and 0 g drift; exact segments agreed with the user once P-1..P-6 land). Add `leo_baseline` and `lunar_surface` scenarios. Rehearse twice untouched; update the README walkthrough and PRD §14 | Extended demo plays twice untouched; every expected alert in its window; no-network test passes |
 
-**Gate R (supervisor):** radiation and SPE in `demo_5min` are replayed NASA measurements; ≥ 6 limits verified with clause ids; provenance visible on every chart and on alert evidence; the full demo runs with networking blocked; `make lint test` passes. Only after Gate R: D-3 freeze.
+**Gate P (supervisor):** LEO, lunar-surface and Earth radiation replay bundled measured data with correct provenance (`NASA_MEASURED` / `NASA_DERIVED` / `MEASURED_OTHER`); every gravity parameter cites a source or says heuristic; the Inspiration4 panel holds aggregate data only; the extended demo runs with networking blocked; all checks pass. Then **D-4: re-freeze**, tag `demo-ready-v2` (with the user's go-ahead).
 
-### 0.4 If Block R runs behind
+### 0.4 If Block P runs behind
 
-Cut in this order, top first: R-5 space-weather card → R-4 light-time (keep 720 s, note it as a Horizons-typical value) → R-6 calibration of physiology constants (keep CO₂). **Never cut:** R-0 provenance, R-1 verified limits, R-2/R-3 RAD replay. Those three are the whole point of the block.
+Cut in this order, top first: P-6 Inspiration4 panel → P-7 demo extension (keep `demo-ready` and add the new scenarios only) → P-3 Earth radiation → P-5 reduced to orthostatic risk on gravity increase only. **Never cut:** P-0 (needed by P-3), P-1 and P-2 (real radiation for the remaining space phases), and P-4 (no gravity model without the user's decision).
 
 ---
 
 ## 1. Decisions
 
 1. **AEGIS (`PRD.md` + `AGENTS.md`) is the spec.** The ASTRA-MED documents describe a different product. Keep them out of the build.
-2. **Real NASA data first (2026-11-14).** Block R outranks the freeze and every stretch item. Earlier decision 3 ("leave out live DONKI/OSDR APIs") still holds for *live runtime calls*: DONKI, OSDR, CDAWeb, PDS and Horizons are used only as **bundled snapshots**.
+2. **Real data first (2026-11-14).** NASA data wherever it is public. Live runtime calls stay forbidden: DONKI, OSDR, CDAWeb, PDS, Horizons, RadLab and RadNet are used only as **bundled snapshots**.
 3. **What to take from ASTRA-MED:** the one-click scenario dock, the "same symptom, different cause" compound rule, the reaction-time self-test as a stretch item.
 4. **Leave out:** local LLMs, River, NeuroKit2, Dexie, live network APIs, the body map, the gamified mode, signed packets.
 5. **Do not copy unverified threshold tables.** A number becomes `verified: true` only with a NASA document and clause id that someone actually read.
-6. **The demo is the product.** The story is now: *real deep-space radiation, measured by NASA's RAD on the way to Mars, replayed into a crew that handles a real solar particle event on its own, while the ground sees it one light-time later.*
+6. **The demo is the product.** The story: *real deep-space radiation, measured by NASA's RAD on the way to Mars, replayed into a crew that handles a real solar particle event on its own, while the ground sees it one light-time later.* Block P adds: *every phase uses measured radiation, and the body responds to the gravity of each place.*
+7. **Block P (2026-11-14, user):** order radiation → gravity → Inspiration4 panel → extended demo; non-NASA measured data gets its own `MEASURED_OTHER` label; the partial-gravity model is chosen by the user after research; `demo_5min` is extended (not kept frozen) and re-frozen as `demo-ready-v2`.
 
-## 2. Architecture (as built, plus Block R)
+## 2. Architecture
 
-| Topic | Built version | Block R addition |
+| Topic | As built (Gates 1–4 + Block R) | Block P change |
 |---|---|---|
 | Processes | One FastAPI process with `onboard` and `ground` stores; ground written only by `link/` | unchanged |
-| Data sources | Seeded simulator in-process | `datasets/` replay adapters feed the same tick path; simulator fills the signals no public dataset covers |
-| Storage | In-memory ring buffers (1-min) + ~140 d daily trends | Bundled files in `data/nasa/` (read-only, checked in, small: target < 20 MB) |
-| Rules | THRESHOLD, BASELINE, CUMULATIVE, COMPOUND | unchanged; limits now carry NASA clause ids where verified |
-| UI | 5 views, offline fallback | `DataSourceBadge` on charts/tiles/evidence; ground space-weather card |
+| Data sources | Seeded simulator in-process; `datasets/` replays (MSL/RAD, Horizons, DONKI/OMNI2) feed the same tick path | New replays: ISS-RAD (RadLab), CRaTER, RadNet; OSDR aggregate panel (read-only reference) |
+| Provenance | `NASA_MEASURED`, `NASA_DERIVED`, `SYNTHETIC_CALIBRATED`, `SYNTHETIC` | + `MEASURED_OTHER` |
+| Simulator | Phase sets gravity (display only), radiation fallback, comm delay | Phase gravity drives physiology drifts and orthostatic risk |
+| Storage | In-memory ring buffers (1-min) + ~140 d daily trends; `data/nasa/` bundled (~210 KB, target < 20 MB) | More bundled windows, same target |
+| Rules | THRESHOLD, BASELINE, CUMULATIVE, COMPOUND | unchanged |
+| UI | 5 views, offline fallback, `DataSourceBadge`, space-weather card | Inspiration4 panel in CrewDetail; Gravity tile explains the current effect |
 
-## 3. Original 30-hour timeline (complete)
+## 3. Done
 
-| Hours | Block | Status |
+| Block | Items | Status |
 |---|---|---|
-| T+0 to 1 | Setup | done |
-| T+1 to 5 | Simulator, **Gate 1** | approved |
-| T+5 to 9 | Rules and alerts, **Gate 2** | approved |
-| T+9 to 14 | Crew UI, **Gate 3** | approved |
-| T+19 to 22 | Radiation and SPE | done |
-| T+22 to 25 | Ground link, **Gate 4** | approved |
-| T+25 to 27 | Demo script (D-1, D-2) | approved |
-| T+27 to 30 | Freeze (D-3) | **moved after Gate R** |
+| 30-hour MVP | Setup, simulator (Gate 1), rules + alerts (Gate 2), crew UI (Gate 3), radiation + SPE, ground link (Gate 4), demo script (D-1, D-2) | approved |
+| Block R: real NASA data | R-0 data layer + provenance, R-1 nine verified NASA-STD-3001 limits, R-2 MSL/RAD cruise + Gale replay, R-3 real March 2012 SPE, R-4 Horizons light time, R-5 space-weather card, R-6 calibrated simulator; **Gate R** | approved |
+| Freeze | D-3, tag `demo-ready` | approved |
 
-## 4. If behind schedule (original MVP cut list)
+Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`.
 
-Already built, so this applies only to regressions: landing orthostatic scenario → BASELINE rule → recommendation round trip → CrewDetail charts → EVA readiness. Never cut: the SPE emergency flow, the delayed ground view, alert evidence, unverified-limit markers, provenance badges, the freeze block.
+## 4. Cut list for regressions
 
-## 5. If ahead of schedule (after Gate R)
+If something already built breaks late, drop in this order: landing orthostatic scenario → BASELINE rule → recommendation round trip → CrewDetail charts → EVA readiness. Never cut: the SPE emergency flow, the delayed ground view, alert evidence, unverified-limit markers, provenance badges, the freeze block.
 
-1. 30-second reaction-time test feeding COGNITIVE readiness (S-2)
-2. `arrhythmia` scenario (S-3)
-3. Inspiration4 reference panel: pre/post-flight CBC/CMP aggregate ranges from OSDR beside the crew's synthetic labs (D5 as a view)
-4. A second real SPE (a larger event) as an extra scenario
+## 5. Stretch (only if the user asks, after Gate P)
+
+1. S-2: 30-second reaction-time test feeding COGNITIVE readiness
+2. S-3: `arrhythmia` scenario
+3. A second real SPE (a larger event) as an extra scenario
 
 ## 6. Open items
 
-- Submission deadline and format: still to confirm; they set the length of the freeze block.
-- Confirm which NASA-STD-3001 revision is current for each clause (the briefs cite Vol 1 Rev B/C and Vol 2 Rev C/D).
-- Confirm the RAD product and time window (PDS RDR vs. CDAWeb L2) and that the chosen SEP is in the cruise data.
-- The real SPE dose rate will not match the synthetic ×80 curve. The SPE and 24-h limits are heuristics, so retune them in `limits.yaml` (still `verified: false`) and record why.
+- Submission deadline and format: still to confirm; they set the length of the D-4 freeze.
+- P-1: which ISS instrument and date ranges RadLab actually serves, and the published ISS dose value to test against.
+- P-2: the CRaTER surface correction (ISWA summary says dose in silicon ×1.333 → water, altitude-corrected; confirm against the UNH CRaTER algorithm page) and whether `TRANSIT` also uses CRaTER.
+- P-3: which RadNet station and window; RadNet measures terrestrial gamma, not space radiation, so the label must say so.
+- P-4: the partial-gravity model (user decision).
+- P-7: the exact demo segments (user decision once P-1..P-6 land).

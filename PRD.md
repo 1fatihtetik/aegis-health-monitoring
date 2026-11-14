@@ -1,8 +1,9 @@
 # PRD — AEGIS: Autonomous Exploration Guardian for Integrated crew health & Safety
 
 > Working title. Rename freely.
-> Status: Draft v1.1 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
+> Status: Draft v1.2 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
+> **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo.
 
 ---
 
@@ -71,7 +72,7 @@ The hazards "feed off one another". The system must model **compound risk**, not
 6. **Config-driven limits.** The overview pages give no numeric limits, so limits live in a versioned config tied to STD-3001 clause ids (§9).
 7. **Real data, honest provenance.** Use NASA-measured data wherever it is public (§1.8). Label every value as measured, derived or synthetic. A health monitor shown only on invented numbers proves nothing.
 
-### 1.8 Public NASA datasets used (v1.1)
+### 1.8 Public datasets used (v1.1, extended in v1.2)
 
 | Tier | Dataset | What it gives AEGIS | Access |
 |---|---|---|---|
@@ -79,7 +80,12 @@ The hazards "feed off one another". The system must model **compound risk**, not
 | D2 | **MSL Curiosity RAD** (Radiation Assessment Detector) | Measured dose rates inside a spacecraft in Mars cruise (Nov 2011–Aug 2012) and on the surface at Gale crater, including solar particle events seen in cruise. Published means: ≈ 0.48 mGy/day and ≈ 1.8 mSv/day in cruise; ≈ 0.21 mGy/day and ≈ 0.64 mSv/day on the surface (Zeitlin 2013, Hassler 2014) | PDS PPI `MSL-M-RAD-3-RDR-V1.0`; SPDF CDAWeb `MSL_RAD_OBS-L2` |
 | D3 | **DONKI** (CCMC Space Weather Database Of Notifications, Knowledge, Information); **OMNIWeb** OMNI2 hourly | SEP, flare and CME records linked to the replayed event; near-Earth >10 MeV proton flux (GOES-sourced) | api.nasa.gov DONKI; SPDF OMNI2 |
 | D4 | **JPL Horizons** | Earth–Mars range for the mission dates → one-way light time | ssd.jpl.nasa.gov |
-| D5 | HRP hazard and risk pages; OCHMO TB-004 (historical ISS CO₂ range, CO₂–headache relationship); **OSDR** Inspiration4 blood studies (OSD-569/570/571/575: CBC, metabolic panels) | Calibration of simulator parameters; aggregate reference ranges | nasa.gov; osdr.nasa.gov |
+| D5 | HRP hazard and risk pages; OCHMO TB-004 (historical ISS CO₂ range, CO₂–headache relationship); **OSDR** Inspiration4 blood studies (OSD-569/570/571/575: CBC, metabolic panels) | Calibration of simulator parameters; aggregate pre/post-flight reference ranges shown in a CrewDetail panel (v1.2, P-6) | nasa.gov; osdr.nasa.gov |
+| D6 *(v1.2)* | **NASA OSDR RadLab** (ISS-RAD, REM, TEPC dose rates curated from SRAG data) | Measured LEO dose rates inside the ISS for the `LEO` phase | visualization.osdr.nasa.gov/radlab (web + API) |
+| D6 *(v1.2)* | **LRO CRaTER** (Cosmic Ray Telescope for the Effects of Radiation) | Hourly dose rate in lunar orbit, corrected to the lunar surface, for `LUNAR_SURFACE`. Checked against the Chang'e-4 LND surface measurement (1,369 µSv/day, Zhang et al. 2020; non-NASA, reference only) | PDS `LRO-L-CRAT-3-CDR-CALIBRATED-V1.0`, `LRO-L-CRAT-3-4-DDR`; ISWA |
+| D7 *(v1.2, non-NASA)* | **US EPA RadNet** | Measured ground-level gamma exposure rate at one US station for `POST_LANDING`; labelled `MEASURED_OTHER` | epa.gov/radnet CSV downloads |
+
+**Not available as measurements:** bone, muscle and cardiovascular change rates at partial gravity (0.16 g, 0.38 g). No crew has lived long at either. P-4 collects the published evidence (analogs, models) before the simulator uses any partial-gravity rate.
 
 **Not available publicly:** continuous in-flight astronaut vitals (HR, HRV, SpO₂, BP, actigraphy and sleep for ISS crews). These sit in NASA LSDA/LSAH under controlled access. AEGIS therefore keeps crew physiology synthetic, cites each simulator parameter, and labels the values `SYNTHETIC_CALIBRATED`.
 
@@ -102,7 +108,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - G4: Delay-tolerant ground link with a realistic comm-delay simulation.
 - G5: Countermeasure tracking (exercise, sleep/light, nutrition, Thigh Cuff, supplements) and adherence.
 - G6: Research-grade export ("Standard Measures").
-- **G0 (priority 1): Real-data grounding.** Radiation, space weather, comm delay and limits come from NASA data (§1.8), with provenance shown on every value.
+- **G0 (priority 1): Real-data grounding.** Radiation (every mission phase, v1.2), space weather, comm delay and limits come from measured data (§1.8), NASA wherever it exists, with provenance shown on every value.
 
 ### Non-goals (MVP)
 - Not a certified medical device. Gives no diagnoses, only decision support.
@@ -141,10 +147,10 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - `scripts/fetch_nasa_data.py` (build time only) downloads the D1–D5 windows into `data/nasa/raw/`, writes normalized files to `data/nasa/derived/`, and records each in `data/nasa/MANIFEST.yaml` (dataset id, tier, source URL, retrieval date, sha256, terms, transform).
 - `config/datasets.yaml` maps datasets to signals, phases and scenarios, plus the time mapping (window start, compression, loop/hold, gap hold time).
 - Replay adapters (`backend/app/datasets/`) implement the same `DeviceAdapter → Observation` interface as M1, so the engine path does not change.
-- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`.
+- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency.
 - Startup verifies the manifest and sha256. A missing or bad file falls back to the synthetic generator for that signal, labelled `SYNTHETIC`, and never stops the crew app.
 - `GET /api/v1/datasets` lists the sources. The UI shows a `DataSourceBadge` on every chart, tile and alert evidence block.
-- Work items R-0…R-6 and Gate R: `ROADMAP.md` §0.3.
+- Work items R-0…R-6 and Gate R: done (`ROADMAP.md` §3). Block P (P-0…P-7, Gate P): `ROADMAP.md` §0.3.
 
 ### M1. Data ingestion & device adapters ★
 - Adapter interface: `DeviceAdapter → stream of Observation`.
@@ -152,7 +158,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
   - **Biomonitor wearable** (Bio-Monitor/Astroskin-like): HR, ECG-derived HRV, SpO₂, respiration rate, skin temperature, blood pressure (intermittent), 3-axis accelerometer.
   - **Actigraphy wristband** (Artemis II-like): activity counts, sleep/wake state, ambient light (lux).
   - **Personal dosimeter**: absorbed dose rate (µGy/h), dose-equivalent rate (µSv/h). *v1.1:* derived from the replayed RAD area rate (shelter factor, per-crew noise), `NASA_DERIVED`.
-  - **Area dosimeter** *(v1.1)*: **replayed MSL/RAD** dose rates for `MARS_TRANSIT` and `MARS_SURFACE`, `NASA_MEASURED`.
+  - **Area dosimeter** *(v1.1)*: **replayed MSL/RAD** dose rates for `MARS_TRANSIT` and `MARS_SURFACE`, `NASA_MEASURED`. *v1.2:* ISS dosimeter replay (RadLab) for `LEO` (`NASA_MEASURED`), CRaTER surface-corrected replay for `LUNAR_SURFACE` (`NASA_DERIVED`), RadNet ground replay for `POST_LANDING` (`MEASURED_OTHER`).
   - **Area neutron spectrometer** (CANS-like): neutron flux, neutron dose-equivalent, energy spectrum bins.
   - **Cabin environment**: ppCO₂ (mmHg), ppO₂, cabin pressure (kPa), temperature (°C), relative humidity, noise (dBA), VOC index, microbial sample results (periodic).
   - **Exercise device**: modality, duration, load, HR during the session.
@@ -165,12 +171,14 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - Produces realistic daily rhythms (circadian HR/temperature, sleep blocks, exercise sessions) for 4 crew members with individual baselines.
 - Mission-phase profiles: `LEO`, `TRANSIT`, `LUNAR_SURFACE`, `MARS_TRANSIT`, `MARS_SURFACE`, `RETURN`, `POST_LANDING`. Each phase sets the radiation background, gravity level (0, 0.16, 0.38, 1 g) and comm delay.
 - Slow drifts: bone mineral density −1 to −1.5% per month in 0 g (slower with good exercise adherence), muscle/fitness decline linked to exercise adherence, rising cumulative dose.
+- *v1.2 (P-4, P-5):* drifts and acute effects depend on the phase's gravity: bone and fitness loss rates, fluid shift (HR/BP), and orthostatic risk after a gravity increase (landing). As built in v1.1, gravity is displayed only and bone loss runs at the 0 g rate in every phase. The partial-gravity model is chosen by the user after the P-4 research; every parameter cites a source or says heuristic.
 - **Scenario injector** (US-11): scriptable events in YAML/JSON, e.g.
   - `spe_event`: *v1.1:* replays a real SEP measured by RAD in Mars cruise (candidate: early March 2012), time-compressed and labelled, with its DONKI record; neutron component derived.
   - `co2_scrubber_degradation`: ppCO₂ rises over hours.
   - `insomnia_streak`: sleep efficiency drops over N nights.
   - `arrhythmia`: irregular RR intervals.
   - `orthostatic_intolerance`: falling BP + rising HR after a gravity transition.
+  - *v1.2:* `leo_baseline` (LEO, ISS dosimeter replay, 0 g) and `lunar_surface` (0.16 g, CRaTER replay).
   - `eva`: suit-environment parameters, raised metabolic rate.
   - `infection`: temperature + HR + symptoms + viral shedding flag.
 - Controls: playback speed 1× to 10,000×, deterministic seeds, pause/jump.
@@ -259,7 +267,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 | HRP-17 | Radiation-induced cancers | Radiation | Radiation |
 
 ### 7.3 Signal → risk map (MVP)
-Provenance after Block R: `dose_rate_absorbed`/`dose_rate_equivalent` (area) = `NASA_MEASURED` (MSL/RAD); personal dose and neutron rate = `NASA_DERIVED`; all other signals = `SYNTHETIC_CALIBRATED` or `SYNTHETIC`.
+Provenance after Block R: `dose_rate_absorbed`/`dose_rate_equivalent` (area) = `NASA_MEASURED` (MSL/RAD); personal dose and neutron rate = `NASA_DERIVED`; all other signals = `SYNTHETIC_CALIBRATED` or `SYNTHETIC`. After Block P: area radiation is measured in every phase (`NASA_MEASURED` in LEO and the Mars phases, `NASA_DERIVED` on the lunar surface, `MEASURED_OTHER` after landing on Earth).
 
 | Signal | Unit | Source device | HRP risks |
 |---|---|---|---|
@@ -302,8 +310,8 @@ Provenance after Block R: `dose_rate_absorbed`/`dose_rate_equivalent` (area) = `
 CrewMember(id, callsign, role[CDR|CMO|MS|PS], baseline{hr_rest, hrv, body_mass, bmd, vo2max_proxy}, career_dose_prior_mSv)
 Device(id, type, crew_id?|location, adapter, status, last_seen)
 Observation(id, ts, crew_id?, location?, device_id, signal, value, unit, quality[GOOD|SUSPECT|BAD], phase,
-            provenance[NASA_MEASURED|NASA_DERIVED|SYNTHETIC_CALIBRATED|SYNTHETIC], dataset_id?)
-Dataset(id, tier[D1..D5], title, source_url, retrieved, sha256, terms, transform, signals[], window{start,end})
+            provenance[NASA_MEASURED|NASA_DERIVED|MEASURED_OTHER|SYNTHETIC_CALIBRATED|SYNTHETIC], dataset_id?)
+Dataset(id, tier[D1..D7], title, source_url, retrieved, sha256, terms, transform, signals[], window{start,end})
 MissionPhase(id, name, start_ts, end_ts, gravity_g, comm_delay_s, radiation_profile)
 Rule(id, type[THRESHOLD|BASELINE|TREND|CUMULATIVE|COMPOUND], expr, window, severity, hazards[], hrp_risks[], rationale, action, source_ref)
 Alert(id, rule_id, crew_id?, severity, state, raised_ts, ack_ts?, resolved_ts?, evidence{signal_refs, values}, notes[], origin[ONBOARD|GROUND])
@@ -455,7 +463,22 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 | R+10 to 11 | R-5 Space-weather card (D3) | Card works offline; forwarding goes through `link/` |
 | R+11 to 12 | R-6 Calibration (D5) + re-rehearsal | `demo_5min` plays twice untouched |
 
-**Gate R:** NASA-measured radiation and SPE in the demo, ≥ 6 verified limits, provenance everywhere, demo runs offline, checks pass. Then the D-3 freeze.
+**Gate R:** NASA-measured radiation and SPE in the demo, ≥ 6 verified limits, provenance everywhere, demo runs offline, checks pass. Then the D-3 freeze. *Done: Gate R and D-3 approved, tag `demo-ready`.*
+
+**Block P (v1.2, current priority).** Full table in `ROADMAP.md` §0.3.
+
+| Hours | Item | Done when |
+|---|---|---|
+| P+0 to 1 | P-0 `MEASURED_OTHER` provenance label | Enum, badge and footer tests pass |
+| P+1 to 3 | P-1 LEO radiation (RadLab ISS dosimeter) | Replayed mean within tolerance of the published ISS value |
+| P+3 to 5 | P-2 Lunar-surface radiation (CRaTER) | Checked against Chang'e-4's 1,369 µSv/day |
+| P+5 to 6 | P-3 Earth radiation (EPA RadNet) | Post-landing tile shows "Measured · EPA RadNet" |
+| P+6 to 7 | P-4 Partial-gravity research | User picks the model |
+| P+7 to 10 | P-5 Gravity-dependent physiology | Drift rates differ by phase; landing orthostatic alerts still fire |
+| P+10 to 12 | P-6 Inspiration4 reference panel (was S-4) | Aggregate-only panel renders offline |
+| P+12 to 14 | P-7 Extended demo + re-rehearsal | Plays twice untouched, offline |
+
+**Gate P:** measured radiation with correct provenance in every phase, cited gravity parameters, aggregate-only Inspiration4 data, extended demo offline, checks pass. Then the D-4 re-freeze (`demo-ready-v2`).
 
 Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infection` scenarios, Countermeasures and Wellbeing views (M5), research export (M9), admin/config (M10), a separate ground process and docker compose (§11).
 
@@ -482,6 +505,8 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 5. **Mars landing** (0 → 0.38 g) → orthostatic WARNING for one crew member (BP Reg-style prediction), sensorimotor caution.
 6. **Long-term trend view**: BMD and fitness slopes against exercise adherence. Close with the Earth-benefit angle (aging, osteoporosis, remote care).
 
+*v1.2 (P-7):* the demo is extended to show the new phases (proposal: a short LEO opening with ISS-dosimeter radiation before departure; gravity-dependent drifts visible in the trend view). The exact segments are agreed once P-1..P-6 land; `README.md` keeps the rehearsed timings.
+
 ## 15. Success metrics
 
 - Demo: every scenario fires the expected alert within its configured window, with **0 missed EMERGENCY** events and ≤ 1 false WARNING per simulated day.
@@ -498,6 +523,9 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 - **The real SPE will not match the synthetic ×80 curve.** The SPE alert and 24-h dose limits are heuristics; retune them in `limits.yaml` (still `verified: false`) and rehearse again.
 - **Data gaps and formats** in PDS/CDAWeb products: bundle small windows, hold the last value through short gaps, mark `SUSPECT`.
 - Mars gravity is given as both ⅓ g and ⅜ g on NASA pages. Use **0.38 g** (physical value) in the simulator.
+- **No measured partial-gravity physiology (v1.2).** Bone, muscle and cardiovascular rates at 0.16 g and 0.38 g come from analogs and models at best. P-4 lists the evidence; the UI labels the result.
+- **CRaTER is in lunar orbit, not on the surface (v1.2).** The surface value is a correction (planet shadowing, regolith albedo), so it is `NASA_DERIVED`. Chang'e-4 measured at solar minimum, so the comparison must state the solar-cycle phase of both windows.
+- **RadNet measures terrestrial gamma radiation (v1.2),** not space radiation, and it is EPA, not NASA. The badge must say both.
 - Should crew see each other's detailed vitals? Default: no, only a status summary (privacy and teamwork dynamics, HRP-13).
 - Alert fatigue vs. sensitivity tuning: needs scenario-based calibration.
 - Which device names to show in the UI: use generic names ("biomonitor", "neutron spectrometer") and avoid implying endorsement.
@@ -523,3 +551,11 @@ Data sources added in v1.1:
 - OMNIWeb / OMNI2: https://omniweb.gsfc.nasa.gov/html/overview.html
 - JPL Horizons: https://ssd.jpl.nasa.gov/horizons/
 - OSDR Inspiration4 datasets: https://www.nasa.gov/osdr-latest-news-i4-mission-datasets/
+
+Data sources added in v1.2 (Block P):
+- NASA OSDR RadLab (ISS radiation data, web + API): https://visualization.osdr.nasa.gov/radlab/gui/data-api
+- NASA OSDR environmental data: https://www.nasa.gov/reference/osdr-environmental-data
+- LRO CRaTER (ISWA hourly dose product): https://iswa.gsfc.nasa.gov/iswa_data_tree/information/CRaTER.html
+- LRO CRaTER calibrated data (PDS): https://catalog.data.gov/dataset/lro-moon-crater-3-calibrated-energy-data-v1-0-fe2bb
+- Zhang et al. 2020, first radiation dose measurements on the lunar surface (Chang'e-4 LND), Science Advances 6(39): eaaz1334
+- US EPA RadNet: https://www.epa.gov/radnet

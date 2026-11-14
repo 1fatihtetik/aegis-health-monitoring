@@ -5,13 +5,16 @@ alerts on its own, and syncs to a ground console over a delayed, lossy link (Ear
 Horizons, about 11 min one way on the demo date).
 
 > Decision support only, not a medical diagnosis.
-> **Real NASA data (Block R, R-0..R-6 built, Gate R review pending).** 9 limits verified against NASA-STD-3001
+> **Real NASA data (Block R, approved; demo frozen at tag `demo-ready`).** 9 limits verified against NASA-STD-3001
 > clauses (R-1); cabin radiation in Mars transit, on the Mars surface and during the March 2012 solar particle
 > event is replayed from MSL Curiosity RAD measurements (R-2, R-3); the comm delay is the JPL Horizons Earth–Mars
 > light time (R-4); the ground console shows the real DONKI/OMNI2 record of that event (R-5); every simulator
 > constant cites a source or says "heuristic" (R-6). Crew physiology is synthetic and labelled so.
 
-Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block R is §0), `AGENTS.md` (how to build).
+> **Next: Block P (phases and gravity), planned.** Measured radiation for LEO, the lunar surface and Earth,
+> physiology that responds to each phase's gravity, an Inspiration4 reference panel, and an extended demo.
+
+Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block P is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
 
 ## Data: what is real and what is not
@@ -24,6 +27,9 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 | Earth–Mars comm delay | JPL Horizons ephemeris (daily Earth–Mars one-way light time, 2026-08..2027-08) | Done: 657 s at the demo start (2026-11-14 20:00 UTC), changes with the date; 720 s fallback if the file is missing |
 | Cabin CO2 | **Synthetic, NASA-calibrated**: nominal 2.0 mmHg and degradation peaks 3.7-3.8 mmHg set from OCHMO-TB-004 Rev D | labelled "Synthetic · NASA-calibrated" |
 | Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, heuristic parameters (each listed under `sources` in `config/crew.yaml`). NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
+| LEO, lunar-surface and post-landing radiation | **Synthetic heuristics today.** Planned (Block P): ISS dosimeters via NASA OSDR RadLab (LEO), LRO CRaTER corrected to the surface and checked against Chang'e-4 (Moon), EPA RadNet ground station (Earth, labelled "Measured · EPA", not NASA) | planned |
+| Gravity effects on the body | **Display only today**: bone loss runs at the 0 g rate in every phase. Planned (Block P): drift rates and orthostatic risk depend on the phase's gravity, with a model chosen after research | planned |
+| Inspiration4 blood panels | Planned (Block P): aggregate pre/post-flight CBC/CMP ranges from NASA OSDR (OSD-569/570/571/575), never one person's values | planned |
 
 NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py rad-cruise` / `rad-surface` / `rad-spe` /
 `horizons` / `space-weather`, build time only; `verify` re-checks the hashes) into `data/nasa/` (~210 KB),
