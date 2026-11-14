@@ -1,19 +1,23 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-14 (D-1/D-2 approved; Dark/Light theme toggle added; handoff compacted)
+Last updated: 2026-11-14 (PRIORITY CHANGE: Block R "real NASA data" added ahead of the freeze; docs restructured)
 State: Gates 1–4 APPROVED. D-1 & D-2 APPROVED. 50 backend tests pass, ruff clean; tsc clean, 17 vitest tests pass.
-Next: D-3 (freeze & tag `demo-ready` / `submission`) or stretch items (S-1..S-3) with the user's go-ahead.
+Next: R-0 (data layer + provenance), then R-1..R-6 in order (ROADMAP.md §0). D-3 freeze waits for Gate R.
 
-Read order: this file -> AGENTS.md -> ROADMAP.md -> PRD.md (only needed sections).
-User directive: AEGIS is used by non-medical-expert astronauts in extreme environments with delayed/blacked-out Earth comms. Always prioritize plain operational language, step-by-step checklists, >=44px touch targets, and 100% offline/blackout onboard autonomy.
+Read order: this file -> ROADMAP.md §0 -> AGENTS.md -> PRD.md (§1.8, §6 M0, §9, then only needed sections).
+User directives:
+- 2026-11-14 FIRST PRIORITY: real NASA data. "Without real data this MVP would mean nothing." Replace invented numbers with NASA-published measurements and NASA-published limits wherever a public source exists; label the rest honestly.
+- AEGIS is used by non-medical-expert astronauts in extreme environments with delayed/blacked-out Earth comms. Always prioritize plain operational language, step-by-step checklists, >=44px touch targets, and 100% offline/blackout onboard autonomy.
 
 1. ROLES & PROTOCOL
-- Claude (implementer): owns all code (`backend/`, `config/`, `frontend/`), tests, docs, and sections 2, 3, 5, 6, 7.
-- Antigravity (supervisor): does not write product code. Reviews against PRD/ROADMAP/AGENTS, approves gates/items, owns section 4, and may add items to section 7.
-- Per item: Claude implements -> runs checks (`cd backend && python -m ruff check . && python -m pytest -q`; `cd frontend && npx tsc --noEmit && npx vitest run`) -> commits (if user allows) -> logs in section 5 -> sets READY FOR REVIEW in section 7 -> Antigravity marks APPROVED or opens a finding in section 4.
+- Claude (implementer): owns all code (`backend/`, `config/`, `frontend/`, `data/`, `scripts/`), tests, docs, and sections 2, 3, 5, 6, 7.
+- Antigravity (supervisor): does not write product code. Reviews against PRD/ROADMAP/AGENTS, approves gates/items, owns section 4, and may add items to section 6.
+- Per item: Claude implements -> runs checks (`cd backend && python -m ruff check . && python -m pytest -q`; `cd frontend && npx tsc --noEmit && npx vitest run`) -> commits (if user allows) -> logs in section 5 -> sets READY FOR REVIEW in section 6 -> Antigravity marks APPROVED or opens a finding in section 4.
+- Block R review checklist (Antigravity): every new data file has a MANIFEST.yaml entry with source URL + retrieval date + sha256; no runtime network call; provenance shown in the UI; every `verified: true` limit names a document + clause id; no identifiable person's health data.
 
 2. WHAT IS DONE (SUMMARY)
 - Backend (`backend/app/`): FastAPI + `/ws/live`, single process holding `onboard` + `ground` stores (`world.py`, `runtime.py`); `SimClock`; `Config.limit(ref)` from `config/*.yaml`; 1-min ring buffers + ~140d daily trends (`sleep_night_h`, `exercise_adherence_pct`, `bmd_estimate`, `body_mass`, `vo2max_proxy`, `dose_mission`); seeded simulator with 7 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`); rule engine (`THRESHOLD`, `BASELINE`, `CUMULATIVE`, `COMPOUND` with `all`/`any`/`none`, hysteresis, context-branching); alert lifecycle (`RAISED` -> `ACKNOWLEDGED` -> `IN_TREATMENT` -> `RESOLVED`); readiness (`OVERALL`, `EVA`, `COGNITIVE`, `PHYSICAL`); radiation + CANS 5-bin neutron spectrum + SPE shelter headcount + `event_dose_saved_mSv`; store-and-forward `link/` with priority queue, delay, and blackout.
-- Frontend (`frontend/src/`): Live WebSocket + REST adapter (`api/backend.ts`, `api/useLiveSocket.ts`) with offline fallback; `api/limits.ts` (zero hardcoded thresholds, `LimitBadge` for `verified: false`); 5 views (`CrewOverview` with RIDGE tiles + Hostile-Env drill-down + EVA inspector, `CrewDetail` with 48h z-score baselines + `HeadacheReport` 0–3, `Radiation` with CANS spectrum + per-crew dose, `AlertCenter` with `EvidenceDetails` + `ContextBadge` + tickable `AlertChecklist`, `GroundConsole` with `Data as of T-Xm Ys` + uplink recommendations); full-screen `EmergencyTakeover` for SPE; `ScenarioDock`; top-bar Dark/Light theme toggle (`App.tsx`, `index.css`, persisted in `localStorage`, dark default). All buttons >=44px; plain-language checklists on all 14 rules (enforced by test).
+- Frontend (`frontend/src/`): Live WebSocket + REST adapter (`api/backend.ts`, `api/useLiveSocket.ts`) with offline fallback; `api/limits.ts` (zero hardcoded thresholds, `LimitBadge` for `verified: false`); 5 views (`CrewOverview` with RIDGE tiles + Hostile-Env drill-down + EVA inspector, `CrewDetail` with 48h z-score baselines + `HeadacheReport` 0–3, `Radiation` with CANS spectrum + per-crew dose, `AlertCenter` with `EvidenceDetails` + `ContextBadge` + tickable `AlertChecklist`, `GroundConsole` with `Data as of T-Xm Ys` + uplink recommendations); full-screen `EmergencyTakeover` for SPE; `ScenarioDock`; top-bar Dark/Light theme toggle. All buttons >=44px; plain-language checklists on all 14 rules (enforced by test).
+- Real-data status today: NONE replayed. All signals are synthetic. Only `bone.bmd_loss_pct_per_month_expected_0g` is `verified: true`. `mission.yaml` radiation backgrounds (75 µSv/h transit, 28 µSv/h Mars surface) happen to match published MSL/RAD values (~1.8 and ~0.64 mSv/day) but carry no source_ref yet.
 
 3. KEY DECISIONS (DO NOT REOPEN WITHOUT USER)
 - One FastAPI process, two stores (`onboard`, `ground`). Ground is written only by delivered `link/` messages.
@@ -21,33 +25,49 @@ User directive: AEGIS is used by non-medical-expert astronauts in extreme enviro
 - Rules: `THRESHOLD`, `BASELINE` (48h window), `CUMULATIVE`, `COMPOUND` (`all`/`any`/`none`). No `TREND` rule.
 - Readiness: 100 at `good`, 50 at `limit`, linear clamped, minus open-alert penalty (`config/readiness.yaml`).
 - SPE rule uses area dosimeter: sheltering lowers personal dose (`event_dose_saved_mSv`) without clearing the cabin alert.
-- Only `bone.bmd_loss_pct_per_month_expected_0g` is `verified: true`; all other limits are `verified: false` and must show the unverified marker.
+- NEW 2026-11-14 Real NASA data (Block R):
+  - Fetch once at build time (`scripts/fetch_nasa_data.py`) into `data/nasa/` (checked in); replay offline. Never call DONKI/OSDR/CDAWeb/PDS/Horizons at runtime.
+  - Every observation has `provenance`: NASA_MEASURED | NASA_DERIVED | SYNTHETIC_CALIBRATED | SYNTHETIC.
+  - Public in-flight astronaut vitals do not exist; crew physiology stays synthetic and is labelled so. Do not claim otherwise in UI, README or pitch.
+  - Inspiration4 / OSDR data: aggregate reference ranges only, never a named person's record.
+  - A limit becomes `verified: true` only with a document + clause id actually read (e.g. "NASA-STD-3001 Vol 2 Rev D [V2 6004] via OCHMO TB-004").
 
 4. SUPERVISOR FINDINGS (Antigravity)
-- F-001..F-005: CLOSED (fixed in Gate 3: per-crew mission dose, `lag_s ??`, crew names, plain-language checklists on all 14 rules, >=44px touch targets, `headache_branching` in ScenarioDock + `HeadacheReport` in CrewDetail). No open findings.
+- F-001..F-005: CLOSED (fixed in Gate 3). No open findings.
 
 5. RECENT LOG (Claude)
-- 2026-11-14 Rename done: handoff file is now `implementationsandgoals.txt`; references updated in AGENTS.md, README.md, PRD.md and two frontend comments.
-- 2026-11-14 UI Feedback: Added Dark/Light theme toggle button (`>=44px` touch target, `data-testid="theme-toggle-btn"`, persisted to `localStorage` under `aegis-theme`, defaults to `dark`) in `frontend/src/App.tsx` and scoped `html.light` surface/text/border/badge rules in `frontend/src/index.css`.
-- 2026-11-14 D-1 + D-2: `demo_5min` rehearsed & retuned (`sbp_drop: 40` to stop orthostatic flapping, C2 headache CO2 branch at 19h05m, scripted blackout 20h45m–21h10m). Played twice untouched (~4m each, 10 alerts, 0 errors). Checks: pytest 50 pass, ruff ok, tsc ok, vitest 17 pass. Note: if an old backend holds `:8000`, stop it or use `AEGIS_BACKEND_PORT=8010`.
+- 2026-11-14 Priority change (user): real NASA data first. Researched public sources: MSL/RAD dose rates (PDS PPI MSL-M-RAD-3-RDR-V1.0; CDAWeb MSL_RAD_OBS-L2), DONKI SEP/FLR/CME, OMNIWeb OMNI2 >10 MeV proton flux, JPL Horizons, NASA-STD-3001 + OCHMO briefs (TB-004 CO2: 1-h ppCO2 <= 3 mmHg [V2 6004]; radiation brief: career 600 mSv [V1 4030]), OSDR Inspiration4 blood studies (OSD-569/570/571/575). Rewrote ROADMAP.md (Block R = §0), updated PRD.md, AGENTS.md, README.md and this file. No code changed yet.
+- 2026-11-14 Rename done: handoff file is now `implementationsandgoals.txt`.
+- 2026-11-14 UI: Dark/Light theme toggle (`App.tsx`, `index.css`, `localStorage` key `aegis-theme`).
+- 2026-11-14 D-1 + D-2: `demo_5min` rehearsed & retuned; played twice untouched (`3469673`).
 - 2026-11-14 Gate 3 (G3-1..G3-9): Live WS/REST integration, `limits.ts`, F-001..F-005 fixes, async REST handlers (`94e8a81`).
 
 6. WORK QUEUE
-Gates 1, 2, 3, 4: APPROVED (2026-11-14, tag `gate3-approved`)
-Demo & Freeze:
-- D-1 APPROVED: Rehearse & retune `demo_5min.yaml` (includes C2 headache CO2 branch + scripted comm blackout).
-- D-2 APPROVED: End-to-end untouched rehearsal x2 (`3469673`).
+Gates 1, 2, 3, 4: APPROVED (2026-11-14, tag `gate3-approved`). D-1, D-2: APPROVED.
+Block R: real NASA data (PRIORITY 1, ROADMAP.md §0.3; PRD §6 M0):
+- R-0 TODO: Data layer. `data/nasa/MANIFEST.yaml`, `config/datasets.yaml`, `backend/app/datasets/` (loader + manifest/sha256 check), `provenance` on Observation/snapshot/evidence, `GET /api/v1/datasets`, `DataSourceBadge`, footer text, no-network test.
+- R-1 TODO: Verified limits (D1). NASA-STD-3001 Vol 1/Vol 2 + OCHMO briefs; >= 6 limits `verified: true` with clause ids; test: verified implies clause id.
+- R-2 TODO: MSL/RAD replay (D2) for MARS_TRANSIT + MARS_SURFACE area dose rate; personal dose NASA_DERIVED; check mean vs published ~1.8 / ~0.64 mSv/day.
+- R-3 TODO: Real SPE (D2+D3). An SEP RAD measured in cruise (candidate early March 2012, confirm); `spe_event` + demo SPE segment replay it; retune heuristic SPE/24h limits via limits.yaml only.
+- R-4 TODO: Earth–Mars light time from JPL Horizons table -> `comm_delay_s` by date; demo date fixed.
+- R-5 TODO: Space-weather card (DONKI + OMNI2) on GroundConsole; forward to crew via `link/`.
+- R-6 TODO: Source every simulator constant (mission.yaml, crew.yaml) or mark heuristic; CO2 levels from TB-004; re-run D-1/D-2.
+- GATE R TODO: Antigravity review per section 1 checklist + ROADMAP §0.3 gate text.
+Demo & Freeze (after Gate R):
 - D-3 TODO: Freeze — re-check README run steps, final commit + tag `demo-ready` (with user's go-ahead).
 Stretch (only if user requests, ROADMAP §5):
-- S-1 TODO: Verify 3–4 limits against NASA-STD-3001 PDFs and set `verified: true`.
+- S-1 MERGED INTO R-1.
 - S-2 TODO: 30s reaction-time self-test widget feeding `COGNITIVE` readiness.
 - S-3 TODO: `arrhythmia` scenario.
+- S-4 TODO: Inspiration4 aggregate CBC/CMP reference panel (OSDR).
 
 7. API & WS QUICK REFERENCE (`/api/v1`, `?node=onboard|ground`)
 - GETs return `{ node, now, as_of, age_s, ...data }`.
 - Endpoints: `GET /health`, `GET /crew`, `GET /crew/{id}/summary`, `GET /crew/{id}/timeseries?signal=&from=&to=&max_points=`, `GET /crew/{id}/baselines?window=48h`, `GET /environment/current`, `GET /environment/timeseries?signal=`, `GET /radiation/summary`, `POST /radiation/shelter {crew_id, sheltered}`, `GET /readiness?kind=`, `GET /alerts?state=&severity=`, `POST /alerts/{id}/ack|/treat|/resolve|/note {text}`, `GET /rules`, `GET /limits`, `GET /sim/status`, `POST /sim/scenario {name, seed?, speed?}`, `POST /sim/control {action: pause|resume|speed, speed?}`, `GET /link/status`, `POST /link/blackout {on}`, `POST /link/delay {delay_s|null}`, `POST /link/recommendation {text, checklist?, crew_id?}`, `GET /link/recommendations`, `POST /observations [Observation]`.
+- PLANNED (R-0/R-5): `GET /datasets` -> `[{id, tier, title, source_url, retrieved, sha256_ok, provenance, signals[], transform}]`; `GET /spaceweather/event` -> bundled DONKI/OMNI2 record for the active replay. Observation, timeseries points and alert `evidence` gain `provenance` and `dataset_id`.
 - WS `/ws/live?node=onboard|ground`: `{type: "snapshot", ...}` (~5/s), `{type: "alert", node, alert}`, `{type: "recommendation", node: "onboard", recommendation}`.
 
 8. GIT & ENVIRONMENT NOTES
 - Remote: `https://github.com/1fatihtetik/aegis-health-monitoring` (`main`). Tags: `g3-1`, `gate3-ready`, `gate3-approved`. Never force-push `main`; use `git revert` for rollbacks.
 - Windows environment has no `make`; run commands from `README.md` directly. Python 3.14 global install.
+- Downloaded NASA files are untrusted input: parse them with `python -I`, never execute anything from `data/nasa/raw/`.

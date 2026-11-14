@@ -3,11 +3,28 @@
 Hackathon MVP. A crew-side system that watches 4 synthetic astronauts and the cabin, raises explainable
 alerts on its own, and syncs to a ground console over a delayed, lossy link (12 min one way in Mars transit).
 
-> Decision support only, not a medical diagnosis. All data is synthetic. Most limits are placeholders
-> (`verified: false` in `config/limits.yaml`); the UI marks them as unverified.
+> Decision support only, not a medical diagnosis.
+> **Current priority: real NASA data (Block R, in progress).** Today every signal is still synthetic and most
+> limits are placeholders (`verified: false` in `config/limits.yaml`, marked in the UI). Block R replaces them
+> with NASA sources, as described below.
 
-Specs: `PRD.md` (product), `ROADMAP.md` (30-hour scope), `AGENTS.md` (how to build).
+Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block R is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
+
+## Data: what is real and what is not
+
+| Data | Source | Status |
+|---|---|---|
+| Limits (CO2, radiation career dose, cabin atmosphere, noise…) | NASA-STD-3001 Vol 1/Vol 2 and OCHMO Technical Briefs, with clause ids (e.g. 1-h ppCO2 <= 3 mmHg, [V2 6004]) | R-1, planned |
+| Deep-space and Mars-surface radiation, including a real solar particle event | MSL Curiosity RAD measurements (PDS PPI `MSL-M-RAD-3-RDR-V1.0`, SPDF CDAWeb `MSL_RAD_OBS-L2`) | R-2/R-3, planned |
+| Space-weather context for that event | NASA CCMC DONKI, SPDF OMNIWeb (OMNI2 >10 MeV proton flux) | R-5, planned |
+| Earth–Mars comm delay | JPL Horizons ephemeris (range / speed of light) | R-4, planned |
+| Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, with parameters taken from published NASA values. NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
+
+NASA files are downloaded once (`python scripts/fetch_nasa_data.py`, build time only) into `data/nasa/`,
+listed with source URL, date and sha256 in `data/nasa/MANIFEST.yaml`, and replayed offline. The running
+system never calls the internet. Every chart and alert shows a badge saying whether a value is NASA-measured,
+NASA-derived or synthetic.
 
 ## Run it
 
@@ -90,6 +107,8 @@ simulated offsets from the start. The story: the crew handles everything onboard
 ```text
 backend/app/   FastAPI app, simulator, rules engine, alerts, scores, link, in-memory stores
 backend/tests/ pytest: rule types, scenarios, link delay/blackout, API
-config/        limits, rules, mission, crew, readiness (every limit has source_ref + verified)
+config/        limits, rules, mission, crew, readiness, datasets (every limit has source_ref + verified)
 frontend/      React + TS + Vite + Tailwind UI
+data/nasa/     (Block R) bundled NASA snapshots + MANIFEST.yaml
+scripts/       (Block R) fetch_nasa_data.py, build time only
 ```
