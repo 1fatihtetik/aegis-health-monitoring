@@ -28,6 +28,17 @@ Usage (from the repo root):
         R-5: DONKI FLR + CME records (2012-03-06..10) and OMNI2 hourly >10/30/60 MeV proton flux.
     rad-spe fetches DONKI SEP via api.nasa.gov: set NASA_API_KEY (defaults to DEMO_KEY); the key is never written
     to disk. space-weather uses the CCMC DONKI web service, which needs no key.
+
+    python -P scripts/fetch_nasa_data.py iss-radlab
+        P-1: ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate from NASA OSDR RadLab, 2019-01-03..10, with the
+        station position of each record (bundled raw TSV + derived CSV with an SAA flag).
+    python -P scripts/fetch_nasa_data.py crater
+        P-2: LRO CRaTER D1+D2 hourly dose rate from NASA CCMC ISWA (already converted to water and altitude-corrected
+        to the lunar surface by the CRaTER team), 2019-01-03..10. The 22 MB all-mission file is not bundled; its
+        URL + sha256 are recorded.
+    python -P scripts/fetch_nasa_data.py radnet
+        P-3: US EPA RadNet fixed monitor, Houston TX, hourly gamma dose equivalent rate, 2024-06-03..12 (bundled raw
+        CSV for 2024 + derived window). Non-NASA: manifest `agency: EPA`, label MEASURED_OTHER.
 """
 
 import argparse
@@ -48,7 +59,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "nasa"
 MANIFEST = DATA / "MANIFEST.yaml"
-TIERS = ("D1", "D2", "D3", "D4", "D5")
+TIERS = ("D1", "D2", "D3", "D4", "D5", "D6", "D7")  # D6/D7: Block P (AGENTS.md section 2a)
 USER_AGENT = "aegis-data-fetch/0.1 (build-time snapshot)"
 MAX_BYTES = 50 * 1024 * 1024
 
@@ -546,6 +557,223 @@ def cmd_space_weather(_: argparse.Namespace) -> int:
     return 0
 
 
+# ---- Block P (P-1..P-3) --------------------------------------------------------------------------------------
+RADLAB_API = "https://visualization.osdr.nasa.gov/radlab/api/"
+ISS_WINDOW = ("2019-01-03", "2019-01-11")  # Chang'E 4 first lunar day (Zhang et al. 2020), half-open
+SAA_BOX = {"lon": (-80.0, -10.0), "lat": (-45.0, -5.0)}  # Berger et al. (2017) JSWSC 7:A8, "roughly"
+ISS_Q = 2.26  # 647 uSv/day / 286 uGy/day, DOSTEL-1 end of May 2016 (Berger et al. 2017)
+ISWA_CRATER = "https://iswa.gsfc.nasa.gov/iswa_data_tree/observation/planetary/LRO/CRaTER/dose-rate/all/"
+CRATER_DOY = (2019, 3, 10)  # year, first DOY, last DOY (inclusive) = 2019-01-03..10
+CRATER_Q = 3.82  # free-space GCR <Q>, MSL/RAD cruise (Zeitlin et al. 2013)
+RADNET_URL = "https://radnet.epa.gov/cdx-radnet-rest/api/rest/csv/2024/fixed/TX/HOUSTON"
+RADNET_WINDOW = ("2024-06-03", "2024-06-13")  # half-open
+
+
+def _write_rows(path: Path, header: list[str], rows: list[dict[str, Any]], comment: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        fh.write(f"# {comment}\n")
+        writer = csv.DictWriter(fh, fieldnames=header, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _time_weighted_mean(rows: list[dict[str, Any]], key: str, cap_s: float) -> float:
+    """Mean of GOOD rows, each held until the next row (at most cap_s), like the replay does."""
+    times = [datetime.fromisoformat(r["utc"]) for r in rows]
+    total = weight = 0.0
+    for i, r in enumerate(rows):
+        if r["quality"] != "GOOD":
+            continue
+        step = (times[i + 1] - times[i]).total_seconds() if i + 1 < len(rows) else cap_s
+        w = min(step, cap_s)
+        total += float(r[key]) * w
+        weight += w
+    return total / weight
+
+
+def in_saa(lat: float, lon: float) -> bool:
+    return SAA_BOX["lat"][0] <= lat <= SAA_BOX["lat"][1] and SAA_BOX["lon"][0] <= lon <= SAA_BOX["lon"][1]
+
+
+def parse_radlab_tsv(text: str) -> list[dict[str, Any]]:
+    """RadLab API TSV (quoted strings, bare numbers). Parsed as data; nothing is evaluated."""
+    lines = text.splitlines()
+    header = [h.strip() for h in lines[0].split("\t")]
+    rows = []
+    for line in lines[1:]:
+        cells = dict(zip(header, (c.strip().strip('"') for c in line.split("\t")), strict=False))
+        if not cells.get("timestamp"):
+            continue
+        value = cells.get("absorbed_dose_rate", "")
+        lat, lon, alt = cells.get("latitude", ""), cells.get("longitude", ""), cells.get("altitude", "")
+        ok = bool(NUMBER.fullmatch(value)) and float(value) > 0 and all(NUMBER.fullmatch(x) for x in (lat, lon))
+        rows.append({
+            "utc": datetime.fromisoformat(cells["timestamp"]).replace(tzinfo=UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "dose_si_uGy_h": float(value) if NUMBER.fullmatch(value) else "",
+            "saa": int(in_saa(float(lat), float(lon))) if ok else "",
+            "lat": lat, "lon": lon, "alt_km": alt,
+            "quality": "GOOD" if ok else "SUSPECT",
+        })
+    rows.sort(key=lambda r: r["utc"])
+    return rows
+
+
+def cmd_iss_radlab(_: argparse.Namespace) -> int:
+    query = (f"{RADLAB_API}?instrument=DosTel1&timestamp>={ISS_WINDOW[0]}&timestamp<{ISS_WINDOW[1]}"
+             "&absorbed_dose_rate&latitude&longitude&altitude&format=tsv")
+    blob = _get(query)
+    raw_rel = "raw/radlab_dostel1_20190103_20190110.tsv"
+    (DATA / raw_rel).write_bytes(blob)
+    rows = parse_radlab_tsv(blob.decode("utf-8", "replace"))
+    rel = "derived/iss_dostel1_2019_01.csv"
+    _write_rows(DATA / rel, ["utc", "dose_si_uGy_h", "saa", "lat", "lon", "alt_km", "quality"], rows,
+                "ISS Columbus DOSTEL-1 (DLR, DOSIS 3D) absorbed dose rate in silicon from NASA OSDR RadLab; one row "
+                "per record (100 s cadence, 20 s inside the SAA); saa = 1 if lat/lon inside 10-80 W, 5-45 S "
+                "(Berger et al. 2017); microGray/hour")
+    mean_day = 24 * _time_weighted_mean(rows, "dose_si_uGy_h", 600)
+    saa_share = sum(1 for r in rows if r["saa"] == 1) / len(rows)
+    _upsert({
+        "id": "iss_dostel1_2019_01", "tier": "D6", "label": "ISS DOSTEL-1 2019",
+        "title": "ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate, 2019-01-03 to 2019-01-10, via NASA OSDR RadLab",
+        "source_url": query, "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": ("NASA Open Science Data Repository (OSDR) RadLab, public. Instrument: DOSTEL-1 of the DOSIS 3D "
+                  "experiment (DLR / ESA, PI T. Berger), archived and served by NASA OSDR. Cite: Berger et al. (2017) "
+                  "J. Space Weather Space Clim. 7:A8."),
+        "transform": ("RadLab API TSV (raw/, as downloaded) -> one row per record: UTC, absorbed dose rate in silicon "
+                      "(uGy/h, unchanged), ISS lat/lon/alt; saa = 1 inside the SAA box 10-80 deg W, 5-45 deg S (Berger "
+                      "et al. 2017). Rows without a value or position -> SUSPECT. Replay holds each record until the "
+                      f"next one. Dose equivalent = DOSTEL dose x <Q> {ISS_Q} = 647 uSv/day / 286 uGy/day, the "
+                      "DOSTEL-1 total published for end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Not ISS-RAD: "
+                      "RadLab served no ISS-RAD, REM or TEPC series for this window (checked 2026-11-14)."),
+        "reference": {
+            "citation": ("Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (non-NASA paper; reference check only): DOSIS 3D "
+                         "DOSTEL on ISS, same period as Chang'E 4 first lunar day, 731 uSv/day (GCR 523, SAA ~208). "
+                         "Q from Berger et al. (2017) JSWSC 7:A8."),
+            "dose_equivalent_uSv_day": 731, "tolerance_uSv_day": 150,
+            "tolerance_note": ("~20%: <Q> 2.26 comes from May 2016 (higher solar activity, more SAA weight); "
+                               "Jan 2019 is near solar minimum with a larger GCR share and so a higher true <Q>. "
+                               "The published value may also average DOSTEL-1 and -2."),
+            "quality_factor": ISS_Q, "window_mean_dose_si_uGy_day": round(mean_day, 1),
+            "window_mean_dose_equivalent_uSv_day": round(mean_day * ISS_Q, 1),
+            "window_saa_row_share": round(saa_share, 3),
+        },
+        "files": [{"path": raw_rel, "sha256": sha256(DATA / raw_rel)}, {"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(rows)} rows, mean {mean_day:.1f} uGy/day (Si) -> {mean_day * ISS_Q:.0f} uSv/day; "
+          f"SAA rows {saa_share:.1%} -> {rel}")
+    return 0
+
+
+def _jd_to_utc(jd: float) -> datetime:
+    return datetime(2000, 1, 1, 12, tzinfo=UTC) + timedelta(days=jd - 2451545.0)
+
+
+def _latest_crater_file() -> str:
+    years = sorted(set(re.findall(r'href="(\d{4})/"', _get(ISWA_CRATER).decode("utf-8", "replace"))))
+    for year in reversed(years):
+        months = sorted(set(re.findall(r'href="(\d\d)/"', _get(f"{ISWA_CRATER}{year}/").decode("utf-8", "replace"))))
+        for month in reversed(months):
+            base = f"{ISWA_CRATER}{year}/{month}/"
+            names = sorted(set(re.findall(r'href="(doserates_standard_\d+_alldays_allevents\.txt)"',
+                                          _get(base).decode("utf-8", "replace"))))
+            if names:
+                return base + names[-1]
+    sys.exit("no ISWA CRaTER all-days file found")
+
+
+def cmd_crater(_: argparse.Namespace) -> int:
+    url = _latest_crater_file()
+    blob = _get(url)
+    year, first, last = CRATER_DOY
+    rows = []
+    for line in blob.decode("ascii", "replace").splitlines():
+        if line.startswith("#") or not line.strip():
+            continue
+        cells = [c.strip() for c in line.split("\t")]
+        if len(cells) < 8 or not all(NUMBER.fullmatch(c) for c in cells[:8]):
+            continue
+        if int(cells[1]) != year or not first <= int(cells[2]) <= last:
+            continue
+        dose = float(cells[7]) * 10000 / 24  # cGy/day -> uGy/h
+        rows.append({
+            "utc": _jd_to_utc(float(cells[0])).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "dose_h2o_uGy_h": round(dose, 4), "h2o_factor": cells[4], "alt_factor": cells[5],
+            "quality": "GOOD" if dose > 0 and float(cells[6]) == 1.0 else "SUSPECT",
+        })
+    rows.sort(key=lambda r: r["utc"])
+    rel = "derived/lro_crater_surface_2019_01.csv"
+    _write_rows(DATA / rel, ["utc", "dose_h2o_uGy_h", "h2o_factor", "alt_factor", "quality"], rows,
+                "LRO CRaTER D1+D2 hourly dose rate from NASA CCMC ISWA, as published: silicon->water (x1.333) and "
+                "altitude-corrected to the lunar surface by the CRaTER team; cGy/day x 10000 / 24 = microGray/hour")
+    mean_h = _time_weighted_mean(rows, "dose_h2o_uGy_h", 7200)
+    _upsert({
+        "id": "lro_crater_surface_2019_01", "tier": "D6", "label": "LRO CRaTER 2019 (surface-corrected)",
+        "title": "LRO CRaTER D1+D2 dose rate corrected to the lunar surface, hourly, 2019-01-03 to 2019-01-10",
+        "source_url": url, "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": ("NASA CCMC ISWA, public. Instrument: LRO CRaTER (PI N. Schwadron, UNH). Cite: Spence et al. (2010) "
+                  "Space Sci Rev 150:243; dose method Schwadron et al. (2012) JGR 117:E00H13."),
+        "transform": ("ISWA all-mission text file (not bundled, URL + sha256 below) -> rows for 2019 DOY 3-10: Julian "
+                      "date -> UTC; D1&2 dose rate (cGy/day, already x1.333 silicon->water and x altitude factor to the "
+                      "lunar surface, both factors kept as columns) x 10000 / 24 -> uGy/h. Good-event factor != 1 -> "
+                      "SUSPECT. The surface correction is the CRaTER team's transform, so the absorbed value is "
+                      f"NASA_DERIVED. Dose equivalent = surface dose x free-space GCR <Q> {CRATER_Q} from MSL/RAD cruise "
+                      "(Zeitlin et al. 2013) -> NASA_DERIVED; lunar albedo neutrons are not in this <Q>."),
+        "reference": {
+            "citation": ("Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (Chang'E 4 LND, non-NASA; reference check only): "
+                         "1369 uSv/day on the lunar surface, Jan-Feb 2019; charged dose 13.2 +/- 1.4 uGy/h in water, "
+                         "<Q> 4.3 +/- 0.7; the paper quotes CRaTER (water, surface) 13.29 uGy/h for the same period."),
+            "dose_equivalent_uSv_day": 1369, "tolerance_uSv_day": 267,
+            "tolerance_note": ("19.5% = LND dose (10.6%) and <Q> (16.3%) uncertainties in quadrature. Same weeks as "
+                               "LND, near solar minimum (GCR high); a solar-maximum window would read ~30-40% lower."),
+            "crater_water_surface_uGy_h": 13.29, "quality_factor": CRATER_Q,
+            "window_mean_dose_h2o_uGy_h": round(mean_h, 3),
+            "window_mean_dose_equivalent_uSv_day": round(mean_h * CRATER_Q * 24, 1),
+        },
+        "raw_sources": [{"url": url, "bytes": len(blob), "sha256": hashlib.sha256(blob).hexdigest()}],
+        "files": [{"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(rows)} rows from {url}; mean {mean_h:.2f} uGy/h -> {mean_h * CRATER_Q * 24:.0f} uSv/day -> {rel}")
+    return 0
+
+
+def cmd_radnet(_: argparse.Namespace) -> int:
+    blob = _get(RADNET_URL)
+    raw_rel = "raw/radnet_houston_tx_2024.csv"
+    (DATA / raw_rel).write_bytes(blob)
+    rows = []
+    for r in csv.DictReader(blob.decode("utf-8", "replace").splitlines()):
+        stamp = datetime.strptime(r["SAMPLE COLLECTION TIME"].strip(), "%m/%d/%Y %H:%M:%S").replace(tzinfo=UTC)
+        if not RADNET_WINDOW[0] <= stamp.date().isoformat() < RADNET_WINDOW[1]:
+            continue
+        value = r["DOSE EQUIVALENT RATE (nSv/h)"].strip()
+        ok = bool(NUMBER.fullmatch(value)) and float(value) > 0 and r["STATUS"].strip() == "APPROVED"
+        rows.append({"utc": stamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                     "h_uSv_h": round(float(value) / 1000, 4) if NUMBER.fullmatch(value) else "",
+                     "status": r["STATUS"].strip(), "quality": "GOOD" if ok else "SUSPECT"})
+    rows.sort(key=lambda r: r["utc"])
+    rel = "derived/radnet_houston_2024_06.csv"
+    _write_rows(DATA / rel, ["utc", "h_uSv_h", "status", "quality"], rows,
+                "US EPA RadNet fixed monitor TX: HOUSTON, gamma dose equivalent rate; nSv/h / 1000 = microSievert/hour; "
+                "timestamps as published (the CSV does not state a time zone; read as UTC)")
+    mean_h = _time_weighted_mean(rows, "h_uSv_h", 7200)
+    _upsert({
+        "id": "radnet_houston_2024_06", "tier": "D7", "agency": "EPA", "label": "EPA RadNet Houston 2024",
+        "title": "US EPA RadNet fixed monitor, Houston TX: hourly gamma dose equivalent rate, 2024-06-03 to 2024-06-12",
+        "source_url": RADNET_URL, "retrieved": datetime.now(UTC).date().isoformat(),
+        "terms": "US EPA RadNet, public data (radnet.epa.gov). Not NASA data.",
+        "transform": ("RadNet CSV for 2024 (raw/, as downloaded) -> rows 2024-06-03..12: DOSE EQUIVALENT RATE (nSv/h) "
+                      "/ 1000 -> uSv/h; STATUS != APPROVED or no value -> SUSPECT. RadNet's NaI detectors measure "
+                      "terrestrial gamma radiation at ground level, not space radiation and not neutrons. Absorbed = "
+                      "dose equivalent / Q 1 (photons, ICRP 60). Label MEASURED_OTHER (agency EPA)."),
+        "reference": {"station": "TX: HOUSTON", "window_mean_uSv_h": round(mean_h, 4),
+                      "window_mean_uSv_day": round(mean_h * 24, 3)},
+        "files": [{"path": raw_rel, "sha256": sha256(DATA / raw_rel)}, {"path": rel, "sha256": sha256(DATA / rel)}],
+    })
+    print(f"{len(rows)} rows, mean {mean_h:.4f} uSv/h -> {rel}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -570,6 +798,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("rad-spe").set_defaults(fn=cmd_rad_spe)
     sub.add_parser("horizons").set_defaults(fn=cmd_horizons)
     sub.add_parser("space-weather").set_defaults(fn=cmd_space_weather)
+    sub.add_parser("iss-radlab").set_defaults(fn=cmd_iss_radlab)
+    sub.add_parser("crater").set_defaults(fn=cmd_crater)
+    sub.add_parser("radnet").set_defaults(fn=cmd_radnet)
     args = parser.parse_args(argv)
     return int(args.fn(args))
 

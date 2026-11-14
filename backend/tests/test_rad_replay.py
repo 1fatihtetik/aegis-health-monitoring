@@ -93,7 +93,7 @@ def test_load_rows_skips_comments(tmp_path):
     p = tmp_path / "x.csv"
     p.write_text("# c\nutc,dose_e_uGy_h,dose_b_uGy_h,duration_s,quality\n2012-01-01T00:00:00Z,1.5,1,900,GOOD\n",
                  encoding="utf-8")
-    assert load_rows(p) == [(datetime(2012, 1, 1, tzinfo=UTC), 1.5, Quality.GOOD)]
+    assert load_rows(p) == [(datetime(2012, 1, 1, tzinfo=UTC), 1.5, Quality.GOOD, None)]
 
 
 # ---- the world: replayed values flow through the normal store/rules path ---------------------------
@@ -139,10 +139,10 @@ def test_mars_surface_switches_to_gale_replay(cfg):
     assert prov["provenance"] == "NASA_MEASURED" and prov["dataset_id"] == "msl_rad_gale_2013"
     assert w.snapshot["radiation"]["replay"]["label"] == "MSL/RAD Gale crater 2013"
     assert 5 < w.store.latest(None, "area_dose_rate_absorbed")[1] < 11  # ~0.21 mGy/day
-    w.sim.set_phase("POST_LANDING")  # no replay for this phase -> synthetic
+    w.sim.set_phase("POST_LANDING")  # P-3: EPA RadNet replay, never labelled NASA
     w.tick()
-    assert w.snapshot["provenance"]["area_dose_rate_absorbed"]["provenance"] == "SYNTHETIC"
-    assert w.snapshot["radiation"]["replay"] is None
+    assert w.snapshot["provenance"]["area_dose_rate_equivalent"]["provenance"] == "MEASURED_OTHER"
+    assert w.snapshot["radiation"]["replay"]["dataset_id"] == "radnet_houston_2024_06"
 
 
 def test_spe_event_replays_real_rad_spe_with_donki_evidence(cfg):

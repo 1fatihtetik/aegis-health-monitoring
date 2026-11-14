@@ -2,7 +2,7 @@
 # The runtime never downloads anything. Files come from scripts/fetch_nasa_data.py and are
 # listed with sha256 in data/nasa/MANIFEST.yaml.
 #
-# Provenance: NASA_MEASURED | NASA_DERIVED | SYNTHETIC_CALIBRATED | SYNTHETIC
+# Provenance: NASA_MEASURED | NASA_DERIVED | MEASURED_OTHER | SYNTHETIC_CALIBRATED | SYNTHETIC
 # NASA_MEASURED and NASA_DERIVED come only from an active replay (below), never from a default.
 # SYNTHETIC_CALIBRATED needs a `basis` that cites the NASA source of its parameters.
 default_provenance: SYNTHETIC
@@ -74,6 +74,69 @@ replays:
     max_hold: 4h
     quality_factor: 3.05
     quality_factor_ref: "Hassler et al. (2014) Science 343:1244797, Gale crater mean <Q>"
+  # ---- Block P: the other mission phases (P-1..P-3). Same adapter; extra keys:
+  #   value_column:        CSV column holding the value (default dose_e_uGy_h)
+  #   measures:            absorbed (default; equivalent = value x <Q>) | equivalent (absorbed = value / <Q>)
+  #   instrument:          what the value is, for basis texts and the radiation view
+  #   measured_provenance / derived_provenance: labels for the measured signal and everything computed from it
+  #   saa_column:          P-1 only: 0/1 column -> saa_transit signal (the SPE rule stands down inside the SAA)
+  #   neutron_fraction / neutron_note: override the phase's heuristic neutron share
+  # Q choices and reference checks are in data/nasa/MANIFEST.yaml (`transform`, `reference`).
+  - id: iss_leo
+    adapter: rad
+    dataset_id: iss_dostel1_2019_01
+    file: derived/iss_dostel1_2019_01.csv
+    value_column: dose_si_uGy_h
+    saa_column: saa
+    instrument: "ISS Columbus DOSTEL-1 absorbed dose rate in silicon (DLR DOSIS 3D, via NASA OSDR RadLab)"
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission, saa_transit]
+    phases: [LEO]
+    start: "2019-01-03T00:00:00Z"
+    compression: 1
+    mode: loop
+    max_step: 10m         # 100 s cadence outside the SAA, 20 s inside
+    max_hold: 1h
+    quality_factor: 2.26
+    quality_factor_ref: "Berger et al. (2017) J. Space Weather Space Clim. 7:A8, DOSTEL-1 end of May 2016: 647 uSv/day / 286 uGy/day"
+  - id: crater_lunar
+    adapter: rad
+    dataset_id: lro_crater_surface_2019_01
+    file: derived/lro_crater_surface_2019_01.csv
+    value_column: dose_h2o_uGy_h
+    instrument: "LRO CRaTER D1+D2 dose rate in water, corrected from lunar orbit to the surface by the CRaTER team (NASA ISWA)"
+    measured_provenance: NASA_DERIVED   # the surface correction is a transform (AGENTS.md section 2a)
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission]
+    phases: [LUNAR_SURFACE]   # TRANSIT (Earth-Moon) keeps the MSL/RAD cruise replay: free space, no surface correction
+    start: "2019-01-03T00:00:00Z"
+    compression: 1
+    mode: loop
+    max_step: 2h
+    max_hold: 6h
+    quality_factor: 3.82
+    quality_factor_ref: "Zeitlin et al. (2013) Science 340:1080, MSL/RAD cruise (free-space GCR) mean <Q>; lunar albedo neutrons not included"
+  - id: radnet_earth
+    adapter: rad
+    dataset_id: radnet_houston_2024_06
+    file: derived/radnet_houston_2024_06.csv
+    value_column: h_uSv_h
+    measures: equivalent
+    instrument: "EPA RadNet Houston TX gamma dose equivalent rate at ground level (terrestrial gamma, not space radiation)"
+    measured_provenance: MEASURED_OTHER
+    derived_provenance: MEASURED_OTHER   # computed from EPA data: never labelled NASA
+    neutron_fraction: 0.0
+    neutron_note: "Not measured: RadNet gamma detectors do not see neutrons, so no neutron share is shown (set to 0)."
+    signals: [area_dose_rate_absorbed, area_dose_rate_equivalent, neutron_dose_equivalent_rate,
+              dose_rate_equivalent, dose_rate_absorbed, dose_mission]
+    phases: [POST_LANDING]
+    start: "2024-06-03T00:00:00Z"
+    compression: 1
+    mode: loop
+    max_step: 2h
+    max_hold: 6h
+    quality_factor: 1.0
+    quality_factor_ref: "ICRP 60 radiation weighting factor 1 for photons"
   # R-4: comm delay. adapter horizons -> backend/app/datasets/horizons.py. The link's one-way delay in these
   # phases is the Earth-Mars light time for the simulated date (NASA_DERIVED). The scenario start date is fixed
   # (mission.yaml start_ts), so demo timing stays rehearsable. Outside the window: mission.yaml comm_delay_s.

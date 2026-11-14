@@ -21,7 +21,7 @@ log = logging.getLogger("aegis.datasets")
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA_DIR = ROOT / "data" / "nasa"
-TIERS = {"D1", "D2", "D3", "D4", "D5"}
+TIERS = {"D1", "D2", "D3", "D4", "D5", "D6", "D7"}  # D6/D7: Block P (AGENTS.md section 2a)
 MANIFEST_KEYS = {"id", "tier", "title", "source_url", "retrieved", "terms", "transform", "files"}
 
 

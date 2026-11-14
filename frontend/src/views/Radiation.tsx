@@ -144,9 +144,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <div className="mt-1 text-[11px] font-mono text-slate-400">
             {radiation.replay ? (
               <>
-                Mean quality factor Q = {radiation.replay.quality_factor} (published RAD value)
+                Mean quality factor Q = {radiation.replay.quality_factor} (published value, see source)
                 {radiation.area_dose_rate_absorbed_uGy_h !== undefined && (
-                  <> · cabin RAD {radiation.area_dose_rate_absorbed_uGy_h} µGy/h</>
+                  <> · cabin area {radiation.area_dose_rate_absorbed_uGy_h} µGy/h</>
                 )}
               </>
             ) : (

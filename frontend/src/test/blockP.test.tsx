@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { DatasetMeta, SignalSource } from '../api/types';
+import { DatasetMeta, RadReplayInfo, SignalSource } from '../api/types';
 import { DataSourceBadge, dataSourcesLine } from '../components/DataSourceBadge';
+import { ReplayLine } from '../components/ReplayLine';
 
 // Block P, P-0: MEASURED_OTHER = measured by another agency (e.g. EPA RadNet). Never shown as NASA.
 const RADNET: DatasetMeta = {
@@ -68,5 +69,58 @@ describe('P-0 MEASURED_OTHER provenance', () => {
     expect(onlyOther).toContain('Non-NASA measurements: EPA RadNet test station.');
     expect(onlyOther).not.toContain('Radiation: NASA data');
     expect(onlyOther).toContain('Crew physiology and cabin air: synthetic');
+  });
+});
+
+// Block P, P-1..P-3: the replay line names the real instrument, never assumes MSL/RAD.
+const base: RadReplayInfo = {
+  replay_id: 'iss_leo',
+  dataset_id: 'iss_dostel1_2019_01',
+  label: 'ISS DOSTEL-1 2019',
+  dataset_ts: '2019-01-03T00:30:00Z',
+  observation_ts: '2019-01-03T00:29:40Z',
+  compression: 1,
+  quality: 'GOOD',
+  quality_factor: 2.26,
+  quality_factor_ref: 'Berger et al. (2017)',
+  absorbed_uGy_h: 5.4,
+  synthetic_spe_overlay: false,
+  instrument: 'ISS Columbus DOSTEL-1 absorbed dose rate in silicon',
+  measures: 'absorbed',
+  measured_provenance: 'NASA_MEASURED',
+  agency: 'NASA',
+  saa: false,
+};
+
+describe('P-1..P-3 replay line', () => {
+  it('names the ISS instrument and explains an SAA crossing', () => {
+    const { rerender } = render(<ReplayLine replay={base} />);
+    const line = screen.getByTestId('rad-replay-line');
+    expect(line).toHaveTextContent('ISS Columbus DOSTEL-1');
+    expect(line).toHaveTextContent('Dose equivalent = measured dose × Q 2.26');
+    expect(line).not.toHaveTextContent('Curiosity');
+    expect(screen.queryByTestId('rad-replay-saa')).toBeNull();
+    rerender(<ReplayLine replay={{ ...base, saa: true }} />);
+    expect(screen.getByTestId('rad-replay-saa')).toHaveTextContent('not a solar event');
+  });
+
+  it('marks the EPA RadNet replay as non-NASA and shows the reverse formula', () => {
+    render(
+      <ReplayLine
+        replay={{
+          ...base,
+          replay_id: 'radnet_earth',
+          label: 'EPA RadNet Houston 2024',
+          instrument: 'EPA RadNet Houston TX gamma dose equivalent rate at ground level',
+          measures: 'equivalent',
+          measured_provenance: 'MEASURED_OTHER',
+          agency: 'EPA',
+          quality_factor: 1,
+          saa: null,
+        }}
+      />,
+    );
+    expect(screen.getByTestId('rad-replay-agency')).toHaveTextContent('Measured by EPA, not NASA');
+    expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('Absorbed dose = dose equivalent ÷ Q 1');
   });
 });

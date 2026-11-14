@@ -37,6 +37,7 @@ class Rule(BaseModel):
     all: list[str | Predicate] = Field(default_factory=list)
     any: list[str | Predicate] = Field(default_factory=list)
     none: list[str | Predicate] = Field(default_factory=list)  # COMPOUND: members that must NOT fire
+    unless: list[Predicate] = Field(default_factory=list)  # simple rules: stand down while any of these holds
     context: str | None = None  # COMPOUND: groups rules that branch on context (same symptom, different cause)
     branch: str | None = None  # COMPOUND: this rule's branch within `context`
     severity: Severity
@@ -53,6 +54,8 @@ class Rule(BaseModel):
         if self.type == RuleType.COMPOUND:
             if not (self.all or self.any):  # `none` alone would fire on silence
                 raise ValueError(f"{self.id}: COMPOUND rule needs 'all' or 'any'")
+            if self.unless:
+                raise ValueError(f"{self.id}: COMPOUND rules use 'none', not 'unless'")
         elif self.signal is None or self.limit_ref is None:
             raise ValueError(f"{self.id}: {self.type} rule needs 'signal' and 'limit_ref'")
         return self
@@ -64,5 +67,5 @@ class Rule(BaseModel):
     @property
     def limit_refs(self) -> list[str]:
         refs = [self.limit_ref] if self.limit_ref else []
-        refs += [m.limit_ref for m in self.members if isinstance(m, Predicate)]
+        refs += [m.limit_ref for m in [*self.members, *self.unless] if isinstance(m, Predicate)]
         return refs

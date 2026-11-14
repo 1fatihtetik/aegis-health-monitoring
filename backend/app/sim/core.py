@@ -1,7 +1,8 @@
 """Data simulator (PRD M2). Deterministic for a given scenario + seed.
 
-One step = one tick of simulated time (mission.yaml tick_s). Radiation comes from the MSL/RAD replay
-(app.datasets.rad) when one is active for the phase; everything else is synthetic.
+One step = one tick of simulated time (mission.yaml tick_s). Radiation comes from a dose-rate replay
+(app.datasets.rad: MSL/RAD, ISS DOSTEL, LRO CRaTER, EPA RadNet) when one is active for the phase; everything
+else is synthetic.
 """
 
 import math
@@ -70,6 +71,16 @@ class Simulator:
         ]
 
     # ---- control -------------------------------------------------------------------------
+    def neutron_fraction(self, spe_replay: bool = False) -> float:
+        """Neutron share of the area dose equivalent: the phase heuristic unless the active replay overrides it
+        (P-3: RadNet gamma detectors do not see neutrons, so that replay sets 0 rather than invent a share)."""
+        replay = None
+        if self.radiation is not None and self.rad_sample is not None:
+            replay = self.radiation.for_event("spe") if spe_replay else self.radiation.for_phase(self.phase)
+        if replay is not None and replay.neutron_fraction is not None:
+            return replay.neutron_fraction
+        return float(self.phase_cfg["neutron_fraction"])
+
     def set_phase(self, name: str) -> None:
         self.phase = name
         self.phase_cfg = self.cfg.mission["phases"][name]
@@ -210,8 +221,10 @@ class Simulator:
             # Neutron share: fixed fraction of the area dose equivalent (CSA LEO ~30%, heuristic). Its noise is drawn
             # either way (RNG stream unchanged) but only applied to the synthetic background.
             (None, "neutron_dose_equivalent_rate",
-             area * self.phase_cfg["neutron_fraction"] * (1 + (0.0 if rad else 1.0) * g(0, 0.03))),
+             area * self.neutron_fraction(spe_rad is not None) * (1 + (0.0 if rad else 1.0) * g(0, 0.03))),
         ]
+        if rad is not None and rad.saa is not None:
+            out.append((None, "saa_transit", 1.0 if rad.saa else 0.0))
 
         # ---- crew
         midnight = t.hour == 0 and t.minute == 0 and t.second == 0

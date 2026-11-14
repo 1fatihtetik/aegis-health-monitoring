@@ -97,8 +97,8 @@ If something already built breaks late, drop in this order: landing orthostatic 
 ## 6. Open items
 
 - Submission deadline and format: still to confirm; they set the length of the D-4 freeze.
-- P-1: which ISS instrument and date ranges RadLab actually serves, and the published ISS dose value to test against.
-- P-2: the CRaTER surface correction (ISWA summary says dose in silicon ×1.333 → water, altitude-corrected; confirm against the UNH CRaTER algorithm page) and whether `TRANSIT` also uses CRaTER.
-- P-3: which RadNet station and window; RadNet measures terrestrial gamma, not space radiation, so the label must say so.
+- ~~P-1~~ answered: RadLab serves DOSIS 3D DOSTEL (Columbus), Liulin, Lidal and Timepix for the ISS, not ISS-RAD/REM/TEPC. Bundled DOSTEL-1, 2019-01-03..10; reference 731 µSv/day (Zhang et al. 2020, same weeks); <Q> 2.26 from Berger et al. 2017. Replay gives 617 µSv/day (−16 %, inside the stated 150 µSv/day).
+- ~~P-2~~ answered: NASA ISWA publishes CRaTER D1+D2 already ×1.333 (Si → water) and altitude-corrected to the surface, so no project-made correction. `TRANSIT` keeps the MSL/RAD cruise replay (free space). Replay gives 1,169 µSv/day vs Chang'e-4 1,369 (−15 %, inside 267).
+- ~~P-3~~ answered: Houston TX (where crews return), 2024-06-03..12; RadNet now reports dose equivalent in nSv/h directly. Label says terrestrial gamma, EPA, not NASA.
 - P-4: the partial-gravity model (user decision).
 - P-7: the exact demo segments (user decision once P-1..P-6 land).

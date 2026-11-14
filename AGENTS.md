@@ -81,8 +81,8 @@ Keep this layout unless there is a strong reason to change it. If you change it,
 | D3 | DONKI SEP/FLR/CME records; OMNIWeb OMNI2 hourly >10 MeV proton flux | event metadata in SPE alert evidence; ground space-weather card | `NASA_MEASURED` |
 | D4 | JPL Horizons Earth→Mars range | `link/` one-way delay by date | `NASA_DERIVED` (range ÷ c) |
 | D5 | HRP pages, OCHMO TB-004, OSDR Inspiration4 (OSD-569/570/571/575, aggregate only) | simulator constants in `mission.yaml`/`crew.yaml`; (P-6) aggregate CBC/CMP reference panel in CrewDetail | `SYNTHETIC_CALIBRATED` (constants); `NASA_MEASURED` (aggregate panel) |
-| D6 (Block P) | NASA OSDR RadLab ISS dosimeters (ISS-RAD/REM/TEPC); LRO CRaTER hourly dose (PDS / ISWA) | area dose rates in `LEO` (P-1) and `LUNAR_SURFACE` (P-2, surface-corrected); Chang'e-4 LND 1,369 µSv/day as a reference check only | `NASA_MEASURED` (ISS); `NASA_DERIVED` (CRaTER surface correction, personal dose) |
-| D7 (Block P, non-NASA) | US EPA RadNet gamma exposure rate (one station window) | area dose rate in `POST_LANDING` (P-3), mR/h × 10 → µSv/h | `MEASURED_OTHER` |
+| D6 (Block P) | NASA OSDR RadLab ISS dosimeter (DOSIS 3D DOSTEL-1, Columbus: the only ISS series RadLab serves for the window; no ISS-RAD/REM/TEPC there); LRO CRaTER hourly dose from NASA ISWA (already water- and surface-corrected by the CRaTER team) | area dose rates in `LEO` (P-1) and `LUNAR_SURFACE` (P-2, surface-corrected); Chang'e-4 LND 1,369 µSv/day as a reference check only | `NASA_MEASURED` (ISS); `NASA_DERIVED` (CRaTER surface correction, personal dose) |
+| D7 (Block P, non-NASA) | US EPA RadNet gamma dose equivalent rate (Houston TX, one window) | area dose rate in `POST_LANDING` (P-3); RadNet now publishes nSv/h, so nSv/h ÷ 1000 → µSv/h | `MEASURED_OTHER` |
 
 Rules:
 - **Provenance enum:** `NASA_MEASURED` (a replayed value from a NASA archive), `NASA_DERIVED` (computed from NASA data by a formula named in the manifest), `MEASURED_OTHER` (Block P: a replayed measurement from a non-NASA agency such as EPA; needs a `dataset_id` whose manifest entry has `agency`; the badge names the agency and never says NASA; ranks below `NASA_DERIVED`, so a compound with a non-NASA member is never labelled NASA; the tracker and `POST /observations` reject a label that does not match the dataset's agency), `SYNTHETIC_CALIBRATED` (simulated; parameters cite a NASA source), `SYNTHETIC` (simulated; heuristic parameters).
@@ -94,6 +94,7 @@ Rules:
 - **Limits.** `verified: true` requires a `source_ref` that names a document, revision and clause id (e.g. `"NASA-STD-3001 Vol 2 Rev D [V2 6004], via OCHMO TB-004"`). A brief that restates the standard is fine as the pointer, but name the clause.
 - **Never** fetch at runtime, commit an API key (DONKI via api.nasa.gov needs one; use `DEMO_KEY` or an env var in the fetch script only), or bundle per-person OSDR records.
 - **Reference values from non-NASA papers** (e.g. Chang'e-4) go into the manifest `reference` block and a fidelity test, never into the data stream.
+- **LEO SAA (P-1):** the ISS crosses the South Atlantic Anomaly several times a day and the measured dose rate spikes past the SPE alarm level. The replay emits `saa_transit` (position inside the SAA box of Berger et al. 2017) and `rad.spe.dose_rate` stands down through its `unless:` predicate. Never "fix" this by editing or capping the data.
 - **Partial gravity:** no physiology rate for 0.16 g or 0.38 g goes into the simulator until the user has picked the model after the P-4 research. Each such parameter cites its source or says `heuristic`.
 
 ## 3. Commands

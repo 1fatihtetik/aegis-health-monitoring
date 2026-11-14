@@ -211,3 +211,99 @@ datasets:
     sha256: 3738fcf44a80f4fd36df17d904547e20776f6f187105687e9be6639a4a573b6d
   - path: derived/omni2_proton_flux_2012_03.csv
     sha256: 7303f40a3eb573493f371345da1a00886862b3347a6c777797912b37f910e065
+- id: iss_dostel1_2019_01
+  tier: D6
+  label: ISS DOSTEL-1 2019
+  title: ISS Columbus DOSTEL-1 (DOSIS 3D) absorbed dose rate, 2019-01-03 to 2019-01-10,
+    via NASA OSDR RadLab
+  source_url: https://visualization.osdr.nasa.gov/radlab/api/?instrument=DosTel1&timestamp>=2019-01-03&timestamp<2019-01-11&absorbed_dose_rate&latitude&longitude&altitude&format=tsv
+  retrieved: '2026-11-14'
+  terms: 'NASA Open Science Data Repository (OSDR) RadLab, public. Instrument: DOSTEL-1
+    of the DOSIS 3D experiment (DLR / ESA, PI T. Berger), archived and served by NASA
+    OSDR. Cite: Berger et al. (2017) J. Space Weather Space Clim. 7:A8.'
+  transform: 'RadLab API TSV (raw/, as downloaded) -> one row per record: UTC, absorbed
+    dose rate in silicon (uGy/h, unchanged), ISS lat/lon/alt; saa = 1 inside the SAA
+    box 10-80 deg W, 5-45 deg S (Berger et al. 2017). Rows without a value or position
+    -> SUSPECT. Replay holds each record until the next one. Dose equivalent = DOSTEL
+    dose x <Q> 2.26 = 647 uSv/day / 286 uGy/day, the DOSTEL-1 total published for
+    end of May 2016 (Berger et al. 2017) -> NASA_DERIVED. Not ISS-RAD: RadLab served
+    no ISS-RAD, REM or TEPC series for this window (checked 2026-11-14).'
+  reference:
+    citation: 'Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (non-NASA paper; reference
+      check only): DOSIS 3D DOSTEL on ISS, same period as Chang''E 4 first lunar day,
+      731 uSv/day (GCR 523, SAA ~208). Q from Berger et al. (2017) JSWSC 7:A8.'
+    dose_equivalent_uSv_day: 731
+    tolerance_uSv_day: 150
+    tolerance_note: '~20%: <Q> 2.26 comes from May 2016 (higher solar activity, more
+      SAA weight); Jan 2019 is near solar minimum with a larger GCR share and so a
+      higher true <Q>. The published value may also average DOSTEL-1 and -2.'
+    quality_factor: 2.26
+    window_mean_dose_si_uGy_day: 272.9
+    window_mean_dose_equivalent_uSv_day: 616.7
+    window_saa_row_share: 0.168
+  files:
+  - path: raw/radlab_dostel1_20190103_20190110.tsv
+    sha256: f34811a680b598a228253019ba6eefbc1144c4e56984f1b7ddc805f6f474edc4
+  - path: derived/iss_dostel1_2019_01.csv
+    sha256: fc67e02d5db87562111d18f4b1c3e95096b27ae4daeae740a7137bfa8baca5bf
+- id: radnet_houston_2024_06
+  tier: D7
+  agency: EPA
+  label: EPA RadNet Houston 2024
+  title: 'US EPA RadNet fixed monitor, Houston TX: hourly gamma dose equivalent rate,
+    2024-06-03 to 2024-06-12'
+  source_url: https://radnet.epa.gov/cdx-radnet-rest/api/rest/csv/2024/fixed/TX/HOUSTON
+  retrieved: '2026-11-14'
+  terms: US EPA RadNet, public data (radnet.epa.gov). Not NASA data.
+  transform: 'RadNet CSV for 2024 (raw/, as downloaded) -> rows 2024-06-03..12: DOSE
+    EQUIVALENT RATE (nSv/h) / 1000 -> uSv/h; STATUS != APPROVED or no value -> SUSPECT.
+    RadNet''s NaI detectors measure terrestrial gamma radiation at ground level, not
+    space radiation and not neutrons. Absorbed = dose equivalent / Q 1 (photons, ICRP
+    60). Label MEASURED_OTHER (agency EPA).'
+  reference:
+    station: 'TX: HOUSTON'
+    window_mean_uSv_h: 0.0377
+    window_mean_uSv_day: 0.906
+  files:
+  - path: raw/radnet_houston_tx_2024.csv
+    sha256: f369c19c4363f29572d5315051fc05781d48503e5352df5ba1cf1c21afed8cc5
+  - path: derived/radnet_houston_2024_06.csv
+    sha256: 28410407b69f24c9c74b369cac110292ed031bcd8fa872eba8a11fdfe2862de0
+- id: lro_crater_surface_2019_01
+  tier: D6
+  label: LRO CRaTER 2019 (surface-corrected)
+  title: LRO CRaTER D1+D2 dose rate corrected to the lunar surface, hourly, 2019-01-03
+    to 2019-01-10
+  source_url: https://iswa.gsfc.nasa.gov/iswa_data_tree/observation/planetary/LRO/CRaTER/dose-rate/all/2026/06/doserates_standard_2026159_alldays_allevents.txt
+  retrieved: '2026-11-14'
+  terms: 'NASA CCMC ISWA, public. Instrument: LRO CRaTER (PI N. Schwadron, UNH). Cite:
+    Spence et al. (2010) Space Sci Rev 150:243; dose method Schwadron et al. (2012)
+    JGR 117:E00H13.'
+  transform: 'ISWA all-mission text file (not bundled, URL + sha256 below) -> rows
+    for 2019 DOY 3-10: Julian date -> UTC; D1&2 dose rate (cGy/day, already x1.333
+    silicon->water and x altitude factor to the lunar surface, both factors kept as
+    columns) x 10000 / 24 -> uGy/h. Good-event factor != 1 -> SUSPECT. The surface
+    correction is the CRaTER team''s transform, so the absorbed value is NASA_DERIVED.
+    Dose equivalent = surface dose x free-space GCR <Q> 3.82 from MSL/RAD cruise (Zeitlin
+    et al. 2013) -> NASA_DERIVED; lunar albedo neutrons are not in this <Q>.'
+  reference:
+    citation: 'Zhang et al. (2020) Sci. Adv. 6:eaaz1334 (Chang''E 4 LND, non-NASA;
+      reference check only): 1369 uSv/day on the lunar surface, Jan-Feb 2019; charged
+      dose 13.2 +/- 1.4 uGy/h in water, <Q> 4.3 +/- 0.7; the paper quotes CRaTER (water,
+      surface) 13.29 uGy/h for the same period.'
+    dose_equivalent_uSv_day: 1369
+    tolerance_uSv_day: 267
+    tolerance_note: 19.5% = LND dose (10.6%) and <Q> (16.3%) uncertainties in quadrature.
+      Same weeks as LND, near solar minimum (GCR high); a solar-maximum window would
+      read ~30-40% lower.
+    crater_water_surface_uGy_h: 13.29
+    quality_factor: 3.82
+    window_mean_dose_h2o_uGy_h: 12.753
+    window_mean_dose_equivalent_uSv_day: 1169.2
+  raw_sources:
+  - url: https://iswa.gsfc.nasa.gov/iswa_data_tree/observation/planetary/LRO/CRaTER/dose-rate/all/2026/06/doserates_standard_2026159_alldays_allevents.txt
+    bytes: 22557638
+    sha256: 82b945cba0a49be64bf647dac554b9f117269e73a1185388b5caea327d65c7f9
+  files:
+  - path: derived/lro_crater_surface_2019_01.csv
+    sha256: cad9f5ba559ee61aae45523cd3f310195201c13b8a79818befd02a937d982924

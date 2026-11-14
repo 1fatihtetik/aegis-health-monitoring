@@ -194,6 +194,27 @@ class RuleEngine:
             evidence["context"] = {"group": rule.context, "branch": rule.branch}
         return firing, evidence
 
+    def _apply_unless(self, key: tuple[str, Subject], rule: Rule, subject: Subject, now: datetime,
+                      result: Result) -> Result:
+        """P-1: a simple rule stands down while any `unless` predicate holds (e.g. the SPE dose-rate rule while the
+        ISS crosses the South Atlantic Anomaly). The evidence says why, so a stood-down rule is never silent."""
+        firing, evidence = result
+        held: list[dict[str, Any]] = []
+        for i, pred in enumerate(rule.unless):
+            values = self._values(pred, subject, pred.window, now)
+            if not values:
+                continue
+            value = AGGS[pred.agg](values)
+            limit = self.cfg.limit(str(pred.limit_ref)).value
+            if OPS[pred.op](value, limit):
+                held.append(self._evidence(pred, value, pred.agg) | {"unless_index": i})
+        if not held:
+            return result
+        self._active[key] = False  # a stood-down rule restarts from the plain limit, not the hysteresis band
+        evidence = dict(evidence or {})
+        evidence["stood_down"] = {"reason": "unless", "firing_without": firing, "by": held}
+        return False, evidence
+
     def evaluate(self, now: datetime) -> list[Finding]:
         self._ticks += 1
         results: dict[tuple[str, Subject], Result] = {}
@@ -208,6 +229,8 @@ class RuleEngine:
                     results[key] = self._baseline_rule(key, rule, subject, now)
                 else:
                     results[key] = self._cumulative(key, rule, subject, now)
+                if rule.unless:
+                    results[key] = self._apply_unless(key, rule, subject, now, results[key])
         for rule in compound:  # compound rules may reference simple rules, not other compound rules
             for subject in self._subjects(rule):
                 results[(rule.id, subject)] = self._compound(rule, subject, now, results)

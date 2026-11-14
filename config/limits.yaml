@@ -12,6 +12,7 @@ radiation:
   gcr_rate_surface_mSv_day:   { value: 0.9, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (planetary-surface design rate), via OCHMO-TB-020 Rev G", verified: true }
   spe_alert_dose_rate_uSv_h:  { value: 250, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false }
   dose_24h_mSv_max:           { value: 2.0, source_ref: "Project heuristic", verified: false }
+  saa_transit_flag:           { value: 0.5, source_ref: "Flag cut for saa_transit (0 or 1), not a dose limit; SAA box per Berger et al. (2017) J. Space Weather Space Clim. 7:A8", verified: false }
 environment:
   ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
   ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic (OCHMO-TB-004 lists worsening symptoms above 4.5 mmHg; not a limit)", verified: false }

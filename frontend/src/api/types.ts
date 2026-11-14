@@ -322,7 +322,7 @@ export interface DatasetMeta {
   agency?: string;
 }
 
-/** The MSL/RAD replay feeding the radiation signals right now (R-2). */
+/** The dose-rate replay feeding the radiation signals right now (R-2 MSL/RAD; P-1..P-3 ISS, CRaTER, RadNet). */
 export interface RadReplayInfo {
   replay_id: string;
   dataset_id: string;
@@ -341,6 +341,15 @@ export interface RadReplayInfo {
   synthetic_spe_overlay: boolean;
   event_date?: string | null;
   donki_id?: string | null;
+  /** P-1..P-3: what the replayed value is (older payloads omit it; they were MSL/RAD). */
+  instrument?: string;
+  /** absorbed: equivalent = value × Q; equivalent: the dataset already reports a dose equivalent rate. */
+  measures?: 'absorbed' | 'equivalent';
+  measured_provenance?: Provenance;
+  /** Who measured the data: "NASA", or e.g. "EPA". */
+  agency?: string;
+  /** LEO only: the station is inside the South Atlantic Anomaly box (null elsewhere). */
+  saa?: boolean | null;
 }
 
 /** R-5: bundled DONKI + OMNI2 record for the replayed SPE (GET /api/v1/spaceweather/event). */

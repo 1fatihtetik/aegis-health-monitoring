@@ -90,7 +90,7 @@ describe('R-2 MSL/RAD replay in the UI', () => {
     expect(screen.queryByTestId('rad-replay-held')).toBeNull();
     rerender(<ReplayLine replay={{ ...replay, quality: 'SUSPECT', compression: 60 }} />);
     expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('replayed ×60');
-    expect(screen.getByTestId('rad-replay-held')).toHaveTextContent('holding last good RAD value');
+    expect(screen.getByTestId('rad-replay-held')).toHaveTextContent('holding last good value');
     rerender(<ReplayLine replay={null} />);
     expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('synthetic background');
   });

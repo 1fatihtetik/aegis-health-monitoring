@@ -161,6 +161,11 @@ rules:
     limit_ref: radiation.spe_alert_dose_rate_uSv_h
     window: 5m
     agg: mean
+    # P-1: in LEO the ISS crosses the South Atlantic Anomaly every few orbits; the measured DOSTEL dose rate then
+    # spikes to 500+ uGy/h for minutes. That is trapped protons, not a solar particle event, so the rule stands
+    # down while the station is in (or just left) the SAA box. Outside LEO there is no saa_transit signal.
+    unless:
+      - { signal: saa_transit, op: ">", limit_ref: radiation.saa_transit_flag, window: 15m, agg: max }
     severity: EMERGENCY
     hazards: [RADIATION]
     hrp_risks: [HRP-17]

@@ -106,6 +106,9 @@ SIGNALS: dict[str, SignalMeta] = {
     "area_dose_rate_absorbed": SignalMeta("µGy/h", "cabin", "area_dosimeter"),
     "area_dose_rate_equivalent": SignalMeta("µSv/h", "cabin", "area_dosimeter"),
     "neutron_dose_equivalent_rate": SignalMeta("µSv/h", "cabin", "neutron_spectrometer"),
+    # P-1: 1 while the spacecraft is inside the South Atlantic Anomaly box, else 0. Emitted only while a LEO
+    # replay with position data is active. Lets the SPE rule stand down for trapped-proton spikes.
+    "saa_transit": SignalMeta("0=out,1=in", "cabin", "navigation"),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]
