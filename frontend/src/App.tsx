@@ -11,8 +11,9 @@ import { CrewDetail } from './views/CrewDetail';
 import { CrewOverview } from './views/CrewOverview';
 import { GroundConsole } from './views/GroundConsole';
 import { Radiation } from './views/Radiation';
+import { SelfTests } from './views/SelfTests';
 
-type ActiveTab = 'overview' | 'detail' | 'radiation' | 'alerts' | 'ground';
+type ActiveTab = 'overview' | 'detail' | 'selftests' | 'radiation' | 'alerts' | 'ground';
 
 const AegisShell: React.FC = () => {
   const {
@@ -155,7 +156,7 @@ const AegisShell: React.FC = () => {
             </div>
           </div>
 
-          {/* 5 Primary View Tabs (Large ≥44px Touch Targets for Tablet) */}
+          {/* Primary View Tabs (Large ≥44px Touch Targets for Tablet) */}
           <nav aria-label="Main Views" className="flex flex-wrap items-center gap-1.5">
             <button
               type="button"
@@ -179,6 +180,19 @@ const AegisShell: React.FC = () => {
               }`}
             >
               Crew Detail ({selectedCrewId})
+            </button>
+
+            <button
+              type="button"
+              data-testid="tab-selftests"
+              onClick={() => setActiveTab('selftests')}
+              className={`min-h-[44px] rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                activeTab === 'selftests'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'bg-space-900 text-slate-300 hover:bg-space-800 border border-slate-800'
+              }`}
+            >
+              Self-Tests
             </button>
 
             <button
@@ -252,6 +266,8 @@ const AegisShell: React.FC = () => {
             onBackOverview={() => setActiveTab('overview')}
           />
         )}
+
+        {activeTab === 'selftests' && <SelfTests initialCrewId={selectedCrewId} />}
 
         {activeTab === 'radiation' && (
           <Radiation onOpenEmergencyModal={() => setEmergencyModalDismissed(false)} />

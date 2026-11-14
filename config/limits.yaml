@@ -30,6 +30,14 @@ physiology:
   baseline_z_alert:    { value: 3.0, source_ref: "Project heuristic", verified: false }
   hr_tachycardia_bpm:  { value: 100, source_ref: "Clinical heuristic", verified: false }
   hrv_rmssd_ms_min:    { value: 20, source_ref: "Project heuristic", verified: false }
+  bp_diastolic_mmHg:   { min: 50, max: 100, source_ref: "Clinical heuristic (no NASA-STD-3001 clause read)", verified: false }
+  body_temp_C:         { min: 35.0, max: 38.0, source_ref: "Clinical heuristic (fever commonly taken as 38.0 C or more, hypothermia below 35.0 C); no NASA-STD-3001 clause read", verified: false }
+# Block T, T-3: hand measurements. No NASA-STD-3001 clause has been read for these, so all are unverified.
+metabolic:
+  glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }
+nutrition:
+  fluid_intake_mL_day_min:   { value: 2000, source_ref: "Project heuristic (daily drinking target; no NASA-STD-3001 clause read)", verified: false }
+  sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic (lower sodium intake is a spaceflight nutrition goal; no NASA-STD-3001 clause read)", verified: false }
 symptoms:
   headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
 sleep:

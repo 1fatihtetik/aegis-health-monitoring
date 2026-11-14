@@ -35,6 +35,8 @@ import {
   RadReplayInfo,
   ReadinessScore,
   RecommendationMessage,
+  SelfTestDef,
+  SelfTestResult,
   Severity,
   SignalSource,
   SleepNightRecord,
@@ -269,9 +271,40 @@ async function postJson<T>(path: string, body?: unknown): Promise<T | null> {
   }
 }
 
+/** POST that keeps the server's refusal reason (FastAPI `detail`), for forms that must explain a 422 in plain words. */
+async function postJsonDetailed<T>(path: string, body: unknown): Promise<{ data: T | null; detail: string | null }> {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return { data: (await res.json()) as T, detail: null };
+    let detail = `Refused by the onboard server (${res.status}).`;
+    try {
+      const err = (await res.json()) as { detail?: unknown };
+      if (typeof err.detail === 'string') detail = err.detail;
+    } catch {
+      // keep the generic message
+    }
+    return { data: null, detail };
+  } catch {
+    return { data: null, detail: 'Onboard server not reachable.' };
+  }
+}
+
 export const backendApi = {
   getJson,
   postJson,
+  postJsonDetailed,
+  async selftests(): Promise<SelfTestDef[] | null> {
+    const res = await getJson<{ tests: SelfTestDef[] }>('/selftests?node=onboard');
+    return res?.tests ?? null;
+  },
+  async selftestResults(crewId: CrewId): Promise<SelfTestResult[]> {
+    const res = await getJson<{ results: SelfTestResult[] }>(`/selftests/results?crew_id=${crewId}`);
+    return res?.results ?? [];
+  },
   async alerts(node: 'onboard' | 'ground'): Promise<BackendAlert[]> {
     const res = await getJson<{ alerts: BackendAlert[] }>(`/alerts?node=${node}`);
     return res?.alerts ?? [];
@@ -533,6 +566,11 @@ function mapReadiness(
 /** Plain names for evidence signals (UI copy only). */
 const SIGNAL_LABEL: Record<string, string> = {
   ppco2: 'Cabin CO₂',
+  body_temp: 'Body temperature',
+  glucose: 'Blood sugar (glucose)',
+  fluid_intake: 'Fluid drunk today',
+  sodium_intake: 'Sodium eaten today',
+  body_mass: 'Body mass',
   ppo2: 'Cabin O₂',
   heart_rate: 'Heart rate',
   hrv_rmssd: 'Heart rate variability',

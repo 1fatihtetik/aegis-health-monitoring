@@ -291,3 +291,134 @@ rules:
       - "Rest for 30 minutes"
       - "Log how much you drank today"
       - "Recheck headache and heart rate in 30 minutes; contact the CMO if not better"
+
+  # ---- Block T, T-3: guided hand measurements (config/selftests.yaml). Entered values are judged by the same
+  # THRESHOLD rules as any other signal; entry-only signals use the newest value of the last 12 h / 36 h.
+  - id: physio.bp.high
+    type: THRESHOLD
+    title: "Blood pressure high"
+    signal: bp_systolic
+    op: ">"
+    limit_ref: physiology.bp_systolic_mmHg.max
+    window: 15m
+    agg: mean
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-03]
+    rationale: "Systolic blood pressure above the configured band."
+    action: "Sit quietly for 5 minutes and re-measure; recommend CMO review if it stays high."
+    checklist:
+      - "Sit quietly for 5 minutes, feet flat, arm at heart level"
+      - "Measure again with the same cuff"
+      - "If it is still high, tell the crew medical officer (CMO)"
+
+  - id: physio.temp.fever
+    type: THRESHOLD
+    title: "Body temperature high"
+    signal: body_temp
+    op: ">"
+    limit_ref: physiology.body_temp_C.max
+    window: 12h
+    agg: last
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV, ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-01, HRP-05]
+    rationale: "Measured body temperature above the configured band: indicators consistent with an infection or overheating."
+    action: "Rest, drink fluids, re-measure in 1 hour; recommend CMO review; limit close contact with other crew."
+    checklist:
+      - "Rest and drink fluids"
+      - "Check the cabin temperature is in its band"
+      - "Re-measure your temperature in 1 hour"
+      - "Tell the CMO; keep some distance from the other crew until reviewed"
+
+  - id: physio.temp.low
+    type: THRESHOLD
+    title: "Body temperature low"
+    signal: body_temp
+    op: "<"
+    limit_ref: physiology.body_temp_C.min
+    window: 12h
+    agg: last
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-06]
+    rationale: "Measured body temperature below the configured band."
+    action: "Check the thermometer is used correctly and re-measure; warm up; recommend CMO review."
+    checklist:
+      - "Re-measure (thermometer under the tongue, mouth closed, 1 minute)"
+      - "Put on warm clothing; check the cabin temperature"
+      - "If it is still low, tell the CMO"
+
+  - id: metab.glucose.low
+    type: THRESHOLD
+    title: "Blood sugar low"
+    signal: glucose
+    op: "<"
+    limit_ref: metabolic.glucose_mg_dL.min
+    window: 12h
+    agg: last
+    severity: WARNING
+    hazards: [DISTANCE_FROM_EARTH, ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-07]
+    rationale: "Measured blood glucose below the configured band: indicators consistent with low blood sugar."
+    action: "Take fast sugar now (juice, glucose tablets), re-measure in 15 minutes; recommend CMO review."
+    checklist:
+      - "Eat or drink fast sugar now (juice or glucose tablets)"
+      - "Sit down; do not do EVA or critical work"
+      - "Re-measure in 15 minutes"
+      - "Tell the CMO"
+
+  - id: metab.glucose.high
+    type: THRESHOLD
+    title: "Blood sugar high"
+    signal: glucose
+    op: ">"
+    limit_ref: metabolic.glucose_mg_dL.max
+    window: 12h
+    agg: last
+    severity: CAUTION
+    hazards: [DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07]
+    rationale: "Measured blood glucose above the configured band."
+    action: "Note when you last ate, re-measure in 2 hours, drink water; recommend CMO review."
+    checklist:
+      - "Write down when and what you last ate"
+      - "Drink water"
+      - "Re-measure in 2 hours"
+      - "If it is still high, tell the CMO"
+
+  - id: intake.fluid.low
+    type: THRESHOLD
+    title: "Fluid intake low"
+    signal: fluid_intake
+    op: "<"
+    limit_ref: nutrition.fluid_intake_mL_day_min
+    window: 36h
+    agg: last
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07, HRP-03]
+    rationale: "Logged daily fluid intake below the configured target. Low fluid intake makes fainting on standing (after a gravity increase) and kidney stones more likely."
+    action: "Drink more through the day; carry a drink bag; log tomorrow's intake."
+    checklist:
+      - "Drink a 500 mL bag now"
+      - "Keep a drink bag at your workstation"
+      - "Log tomorrow's intake"
+
+  - id: intake.sodium.high
+    type: THRESHOLD
+    title: "Sodium intake high"
+    signal: sodium_intake
+    op: ">"
+    limit_ref: nutrition.sodium_intake_mg_day_max
+    window: 36h
+    agg: last
+    severity: INFO
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-07, HRP-10]
+    rationale: "Logged daily sodium intake above the configured target. A high-sodium diet is one of several suspected contributors to eye changes in space (SANS); the evidence is limited."
+    action: "Choose lower-salt menu items tomorrow; keep logging."
+    checklist:
+      - "Pick lower-salt menu items tomorrow"
+      - "Drink enough fluid through the day"
+      - "Keep logging your daily intake"

@@ -115,6 +115,11 @@ SIGNALS: dict[str, SignalMeta] = {
     # P-1: 1 while the spacecraft is inside the South Atlantic Anomaly box, else 0. Emitted only while a LEO
     # replay with position data is active. Lets the SPE rule stand down for trapped-proton spikes.
     "saa_transit": SignalMeta("0=out,1=in", "cabin", "navigation"),
+    # Block T, T-3: guided measurements the crew takes by hand (entry_only: the simulator never produces them).
+    "body_temp": SignalMeta("°C", "crew", "self_test", entry_only=True),
+    "glucose": SignalMeta("mg/dL", "crew", "self_test", entry_only=True),
+    "fluid_intake": SignalMeta("mL", "crew", "self_test", daily=True, entry_only=True),
+    "sodium_intake": SignalMeta("mg", "crew", "self_test", daily=True, entry_only=True),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]

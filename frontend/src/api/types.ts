@@ -801,3 +801,81 @@ export interface Inspiration4Panel {
   analytes: ReferenceAnalyte[];
   problem: string;
 }
+
+// ---- Block T: crew self-tests (GET /api/v1/selftests, config/selftests.yaml) ----------------------------------------
+/** A rule limit the entered value is judged against (from the rules that use the signal). */
+export interface SelfTestRuleLimit {
+  rule_id: string;
+  rule_type: string;
+  severity: Severity;
+  op: string;
+  window: string;
+  ref: string;
+  value: number;
+  source_ref: string;
+  verified: boolean;
+}
+
+export interface SelfTestField {
+  signal: string;
+  label: string;
+  /** Typing plausibility range (rejects typos), not a medical limit. */
+  input_min: number;
+  input_max: number;
+  step: number;
+  hint: string;
+  unit: string;
+  rule_limits: SelfTestRuleLimit[];
+}
+
+export interface SelfTestLimit {
+  ref: string;
+  value: number;
+  source_ref: string;
+  verified: boolean;
+}
+
+export interface SelfTestSchedule {
+  every: string;
+  at: string;
+  due_window: string;
+}
+
+export type SelfTestKind = 'measurement' | 'report' | 'pvt' | 'questionnaire' | 'stand_test' | 'amsler';
+export type EntryMethod = 'form' | 'tap' | 'pvt' | 'questionnaire' | 'stand_test' | 'amsler';
+
+/** One catalog entry: why / steps / normal band / escalation all come from config, never from a component. */
+export interface SelfTestDef {
+  id: string;
+  title: string;
+  kind: SelfTestKind;
+  entry_method: EntryMethod;
+  fields: SelfTestField[];
+  why: string;
+  hazards: Hazard[];
+  hrp_risks: HrpRiskId[];
+  steps: string[];
+  limit_refs: string[];
+  limits: SelfTestLimit[];
+  escalation: string;
+  protocol: string;
+  schedule: SelfTestSchedule | null;
+  after_gravity_increase: boolean;
+  onboard_only: boolean;
+}
+
+export interface SelfTestResult {
+  test_id: string;
+  crew_id: CrewId;
+  ts: string;
+  values: Record<string, number>;
+  provenance: Provenance;
+  entry_method: EntryMethod | null;
+  basis: string;
+}
+
+export interface SubmitOutcome {
+  ok: boolean;
+  /** Plain message for the crew (the server's reason when refused). */
+  message: string;
+}

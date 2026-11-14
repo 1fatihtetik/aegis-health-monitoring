@@ -28,3 +28,94 @@ tests:
       - "Tap the rating"
     limit_refs: [symptoms.headache_report_min]
     escalation: "Severe headache, or headache with vision changes, confusion or vomiting: stop work, tell the crew medical officer (CMO) now. The CMO informs the ground when the link allows."
+
+  # ---- T-3: guided measurements ------------------------------------------------------------------------------------
+  - id: bp_spo2
+    title: "Blood pressure and oxygen check"
+    kind: measurement
+    entry_method: form
+    fields:
+      - { signal: bp_systolic, label: "Blood pressure, top number (systolic)", input_min: 60, input_max: 260, hint: "From the cuff display" }
+      - { signal: bp_diastolic, label: "Blood pressure, bottom number (diastolic)", input_min: 30, input_max: 160 }
+      - { signal: spo2, label: "Blood oxygen (SpO2)", input_min: 50, input_max: 100, hint: "From the finger clip" }
+    why: "In low gravity body fluids shift toward the head and the heart adapts; blood pressure and oxygen show how the heart and lungs cope with that and with the cabin air. A morning check gives a steady reference."
+    hazards: [GRAVITY_FIELDS, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-03, HRP-06]
+    steps:
+      - "Sit or rest quietly for 5 minutes before measuring"
+      - "Put the cuff on your bare upper arm, at heart level; keep the arm relaxed"
+      - "Start the cuff and do not talk or move until it finishes"
+      - "Put the finger clip on and wait until the SpO2 number stays steady for 10 seconds"
+      - "Type the three numbers and tap Done"
+    limit_refs: [physiology.bp_systolic_mmHg.min, physiology.bp_systolic_mmHg.max, physiology.bp_diastolic_mmHg.min, physiology.bp_diastolic_mmHg.max, physiology.spo2_pct_min]
+    escalation: "SpO2 below the band twice in a row, or chest pain, shortness of breath or fainting: stop, sit down, tell the crew medical officer (CMO) now and check the cabin O2. The CMO informs the ground when the link allows."
+    schedule: { every: 1d, at: "07:00", due_window: 3h }
+
+  - id: temperature
+    title: "Body temperature"
+    kind: measurement
+    entry_method: form
+    fields:
+      - { signal: body_temp, label: "Body temperature (oral)", input_min: 30, input_max: 43, step: 0.1 }
+    why: "The immune system changes in space and germs spread easily in a closed cabin. A raised temperature is an early sign of infection or overheating."
+    hazards: [HOSTILE_CLOSED_ENV, ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-01, HRP-05]
+    steps:
+      - "Do not eat or drink for 15 minutes before measuring"
+      - "Put the thermometer under your tongue and close your mouth"
+      - "Wait for the beep (about 1 minute)"
+      - "Type the number and tap Done"
+    limit_refs: [physiology.body_temp_C.min, physiology.body_temp_C.max]
+    escalation: "Temperature above the band, or feeling unwell: rest, drink fluids, tell the CMO and keep some distance from the other crew until reviewed. The CMO informs the ground when the link allows."
+
+  - id: body_mass
+    title: "Body mass"
+    kind: measurement
+    entry_method: form
+    fields:
+      - { signal: body_mass, label: "Body mass", input_min: 30, input_max: 200, step: 0.1 }
+    why: "Crews often lose weight in space, and the loss adds to muscle and bone loss. A weekly number shows whether food intake keeps up with exercise."
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07, HRP-09]
+    steps:
+      - "Measure before breakfast, after using the toilet"
+      - "In weightlessness use the body mass device (it measures how you move on a spring, since a scale cannot weigh you); on a planet surface use the scale"
+      - "Wear the same light clothing each week"
+      - "Type the number and tap Done"
+    escalation: "A loss of more than about 1 kg in a week, two weeks in a row: tell the CMO so food and exercise can be adjusted. There is no fixed band; the CMO reviews your own trend."
+    schedule: { every: 7d, at: "08:00", due_window: 4h }
+
+  - id: glucose
+    title: "Blood sugar (finger prick)"
+    kind: measurement
+    entry_method: form
+    fields:
+      - { signal: glucose, label: "Blood glucose", input_min: 20, input_max: 600 }
+    why: "Food supplies are fixed on a long mission and the body handles sugar differently in space. A finger-prick test checks for low or high blood sugar when you feel shaky, weak or unusually tired."
+    hazards: [DISTANCE_FROM_EARTH, ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-07]
+    steps:
+      - "Wash and dry your hands"
+      - "Put a test strip into the meter"
+      - "Prick the side of a fingertip with the lancet and touch the drop to the strip"
+      - "Type the number (mg/dL) and tap Done; put the lancet in the sharps container"
+    limit_refs: [metabolic.glucose_mg_dL.min, metabolic.glucose_mg_dL.max]
+    escalation: "Below the band: take fast sugar now, no EVA or critical work, re-measure in 15 minutes and tell the CMO. Confusion or fainting: crewmates give sugar and call the CMO at once."
+
+  - id: intake
+    title: "Daily fluid and salt log"
+    kind: measurement
+    entry_method: form
+    fields:
+      - { signal: fluid_intake, label: "Fluid drunk today", input_min: 0, input_max: 8000, step: 50, hint: "Count every drink bag; 1 bag is usually 500 mL" }
+      - { signal: sodium_intake, label: "Sodium eaten today", input_min: 0, input_max: 10000, step: 50, hint: "Add up the sodium on the food labels" }
+    why: "Too little fluid makes fainting on standing (after landing) and kidney stones more likely. Salt is one of several suspected contributors to eye changes in space (SANS)."
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07, HRP-03, HRP-10]
+    steps:
+      - "Count the drink bags you finished today and add any other drinks (mL)"
+      - "Add up the sodium (mg) printed on today's food packages"
+      - "Type both numbers and tap Done"
+    limit_refs: [nutrition.fluid_intake_mL_day_min, nutrition.sodium_intake_mg_day_max]
+    escalation: "Little fluid for two days, dark urine or flank pain: drink more and tell the CMO."
+    schedule: { every: 1d, at: "21:00", due_window: 3h }

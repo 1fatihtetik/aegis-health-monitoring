@@ -130,3 +130,72 @@ def _catalog_with(tmp_path: Path, mutate) -> Path:
 def test_catalog_loader_refuses_incomplete_entries(tmp_path, mutate):
     with pytest.raises((ValueError, ValidationError)):
         Config(config_dir=_catalog_with(tmp_path, mutate))
+
+
+# ---- T-3: guided measurements ----------------------------------------------------------------------------------------
+def submit(client, crew_id, test_id, values):
+    """One form submission: all values share one timestamp, like the tablet sends them."""
+    w = client.rt.world
+    ts = iso(w.clock.now())
+    units = {f["signal"]: f["unit"] for t in client.get("/api/v1/selftests").json()["tests"] for f in t["fields"]}
+    obs = [{"id": f"f-{crew_id}-{test_id}-{signal}-{ts}", "ts": ts, "crew_id": crew_id, "device_id": f"tablet-{crew_id}",
+            "signal": signal, "value": value, "unit": units[signal], "provenance": "CREW_ENTERED",
+            "entry_method": "form", "test_id": test_id} for signal, value in values.items()]
+    return client.post("/api/v1/observations", json=obs)
+
+
+def open_alert(world, rule_id, crew_id):
+    return next((a for a in world.alerts.open_alerts() if a.rule_id == rule_id and a.crew_id == crew_id), None)
+
+
+def test_low_spo2_entry_raises_the_existing_alert_with_crew_entered_evidence(client):
+    w = client.rt.world
+    w.link.blackout = True  # onboard feature: works with the Earth link down
+    assert submit(client, "C1", "bp_spo2", {"bp_systolic": 118, "bp_diastolic": 76, "spo2": 88}).json()["accepted"] == 3
+    w.tick()
+    alert = open_alert(w, "physio.spo2.low", "C1")
+    assert alert is not None and alert.severity.value == "WARNING"
+    assert alert.evidence["value"] == 88 and alert.evidence["provenance"] == "CREW_ENTERED"
+    assert open_alert(w, "physio.spo2.low", "C2") is None
+    [result] = w.entries.results_for("C1")
+    assert result["values"] == {"bp_systolic": 118, "bp_diastolic": 76, "spo2": 88}
+
+
+@pytest.mark.parametrize(("test_id", "values", "rule_id", "severity"), [
+    ("glucose", {"glucose": 55}, "metab.glucose.low", "WARNING"),
+    ("glucose", {"glucose": 240}, "metab.glucose.high", "CAUTION"),
+    ("temperature", {"body_temp": 38.6}, "physio.temp.fever", "CAUTION"),
+    ("temperature", {"body_temp": 34.2}, "physio.temp.low", "CAUTION"),
+    ("intake", {"fluid_intake": 1200, "sodium_intake": 2000}, "intake.fluid.low", "CAUTION"),
+    ("intake", {"fluid_intake": 2500, "sodium_intake": 4500}, "intake.sodium.high", "INFO"),
+    ("bp_spo2", {"bp_systolic": 172, "bp_diastolic": 96, "spo2": 97}, "physio.bp.high", "CAUTION"),
+])
+def test_measurement_rules_fire_on_entries(client, test_id, values, rule_id, severity):
+    w = client.rt.world
+    assert submit(client, "C3", test_id, values).status_code == 200
+    w.tick()
+    alert = open_alert(w, rule_id, "C3")
+    assert alert is not None and alert.severity.value == severity
+    assert alert.evidence["provenance"] == "CREW_ENTERED" and alert.evidence["limit_verified"] is False
+
+
+def test_normal_entries_raise_nothing(client):
+    w = client.rt.world
+    submit(client, "C4", "bp_spo2", {"bp_systolic": 120, "bp_diastolic": 78, "spo2": 98})
+    submit(client, "C4", "glucose", {"glucose": 95})
+    submit(client, "C4", "temperature", {"body_temp": 36.8})
+    submit(client, "C4", "intake", {"fluid_intake": 2500, "sodium_intake": 2200})
+    w.tick()
+    assert [a.rule_id for a in w.alerts.open_alerts() if a.crew_id == "C4"] == []
+
+
+def test_out_of_range_typing_is_refused(client):
+    r = submit(client, "C1", "bp_spo2", {"bp_systolic": 1180, "bp_diastolic": 76, "spo2": 98})
+    assert r.status_code == 422 and "outside" in r.json()["detail"]
+    assert client.rt.world.entries.results_for("C1") == []  # nothing from the refused batch was stored
+
+
+def test_new_measurement_limits_are_honestly_unverified(cfg):
+    for ref in ("physiology.body_temp_C.max", "metabolic.glucose_mg_dL.min", "nutrition.fluid_intake_mL_day_min",
+                "nutrition.sodium_intake_mg_day_max", "physiology.bp_diastolic_mmHg.min"):
+        assert cfg.limit(ref).verified is False

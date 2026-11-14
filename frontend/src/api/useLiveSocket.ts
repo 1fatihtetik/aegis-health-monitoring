@@ -14,6 +14,8 @@ import {
   RecommendationMessage,
   ScenarioName,
   Severity,
+  SelfTestDef,
+  SubmitOutcome,
 } from './types';
 import {
   BackendAlert,
@@ -31,6 +33,7 @@ import {
   pendingUplinks,
 } from './backend';
 import { BUNDLED_LIMITS, formatLimit } from './limits';
+import { buildObservations } from './selftests';
 
 /** Offline fallback only: evidence limit fields read from config/limits.yaml (never hardcoded). */
 function lim(key: string, pick: 'value' | 'min' | 'max' = 'value', sign = 1) {
@@ -112,6 +115,11 @@ interface AegisContextValue {
   forwardSpaceWeather: () => Promise<boolean>;
   /** Crew self-report, 0-3. Sent to POST /observations; resolves false when it was not accepted. */
   reportHeadache: (crewId: CrewId, level: number) => Promise<boolean>;
+  /**
+   * Block T: sends one self-test submission (all values, one timestamp, CREW_ENTERED) to POST /observations.
+   * Needs the onboard server only, never the Earth link.
+   */
+  submitSelfTest: (crewId: CrewId, test: SelfTestDef, values: Record<string, number>) => Promise<SubmitOutcome>;
 }
 
 const AegisContext = createContext<AegisContextValue | null>(null);
@@ -1265,6 +1273,30 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (res?.accepted ?? 0) > 0;
   }, []);
 
+  const submitSelfTest = useCallback(
+    async (crewId: CrewId, test: SelfTestDef, values: Record<string, number>): Promise<SubmitOutcome> => {
+      const snap = linkRef.current.lastSnap.onboard;
+      if (!connectedRef.current || !snap) {
+        return { ok: false, message: 'Not stored: the onboard server is not reachable. Write the values down and enter them later.' };
+      }
+      const units = Object.fromEntries(test.fields.map((f) => [f.signal, f.unit]));
+      const obs = buildObservations({
+        crewId,
+        testId: test.id,
+        method: test.entry_method,
+        values,
+        units,
+        ts: snap.now,
+        phase: snap.phase?.name ?? null,
+      });
+      const res = await backendApi.postJsonDetailed<{ accepted: number }>('/observations', obs);
+      if (res.data && res.data.accepted > 0) return { ok: true, message: 'Stored on board.' };
+      if (res.data) return { ok: false, message: 'Already stored (duplicate entry).' };
+      return { ok: false, message: `Not stored: ${res.detail ?? 'refused by the onboard server.'}` };
+    },
+    []
+  );
+
   return React.createElement(
     AegisContext.Provider,
     {
@@ -1287,6 +1319,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         forwardSpaceWeather,
         acknowledgeRecommendationOnboard,
         reportHeadache,
+        submitSelfTest,
       },
     },
     children
