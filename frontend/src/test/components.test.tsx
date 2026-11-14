@@ -135,8 +135,10 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
 
     // Persistent disclaimer footer
     expect(screen.getByTestId('persistent-disclaimer-footer')).toHaveTextContent(
-      'Decision support only, not a medical diagnosis. Synthetic data.'
+      'Decision support only, not a medical diagnosis.'
     );
+    // Browser-only fallback (no backend): the data line says everything is synthetic.
+    expect(screen.getByTestId('data-sources-line')).toHaveTextContent('all synthetic');
 
     // Trigger CO2 scrubber fault from ScenarioDock
     fireEvent.click(screen.getByRole('button', { name: /CO₂ Scrubber Fault/i }));

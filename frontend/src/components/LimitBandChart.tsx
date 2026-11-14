@@ -10,7 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ConfigLimit, HrpRiskId, TimeSeriesPoint } from '../api/types';
+import { ConfigLimit, HrpRiskId, SignalSource, TimeSeriesPoint } from '../api/types';
+import { DataSourceBadge } from './DataSourceBadge';
 
 export interface LimitBandChartProps {
   title: string;
@@ -23,6 +24,8 @@ export interface LimitBandChartProps {
   secondaryColor?: string;
   hrpRisks?: HrpRiskId[];
   height?: number;
+  /** Where the plotted values come from (snapshot provenance). Always shown. */
+  source?: SignalSource;
 }
 
 /** Header value: 1 decimal under 100, whole numbers above (raw backend values carry 3+ decimals). */
@@ -42,6 +45,7 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
   secondaryColor = '#a855f7',
   hrpRisks = [],
   height = 210,
+  source,
 }) => {
   const latest = data[data.length - 1];
   const values = data.flatMap((d) =>
@@ -82,6 +86,7 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
                 {riskId}
               </span>
             ))}
+            <DataSourceBadge source={source} compact />
           </div>
           {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
         </div>

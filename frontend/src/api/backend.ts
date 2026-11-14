@@ -24,12 +24,14 @@ import {
   LongTermTrendPoint,
   MissionPhaseName,
   OperationalStatus,
+  Provenance,
   RadiationSummary,
   ReadinessComponent,
   ReadinessKind,
   ReadinessScore,
   RecommendationMessage,
   Severity,
+  SignalSource,
   SleepNightRecord,
   TimeSeriesPoint,
 } from './types';
@@ -57,6 +59,8 @@ export interface BackendEvidence {
   logic?: { all?: unknown[]; any?: unknown[]; none?: unknown[] };
   members?: BackendEvidence[];
   context?: { group: string; branch: string };
+  provenance?: Provenance;
+  dataset_id?: string | null;
 }
 
 export interface BackendAlert {
@@ -196,6 +200,7 @@ export interface BackendSnapshot {
   hazards?: Record<string, { status: BackendStatus; alert_ids: string[] }>;
   readiness?: Record<string, Record<string, BackendReadiness>>;
   radiation?: BackendRadiation;
+  provenance?: Record<string, SignalSource>;
 }
 
 export interface BackendRecommendation {
@@ -542,6 +547,8 @@ function mapClause(m: BackendEvidence): AlertEvidenceClause {
     limit: m.limit,
     limit_verified: m.limit_verified ?? false,
     source_ref: m.limit_source_ref ?? '',
+    provenance: m.provenance,
+    dataset_id: m.dataset_id,
   };
 }
 
@@ -559,6 +566,8 @@ export function mapAlert(a: BackendAlert): AlertItem {
     clauses: e.members?.map(mapClause),
     context: e.context,
     hysteresis_hold: e.hysteresis_hold,
+    provenance: e.provenance,
+    dataset_id: e.dataset_id,
   };
   if (e.signal === 'compound') {
     evidence.unit = 'conditions';
@@ -846,6 +855,7 @@ export function applyOnboardSnapshot(input: MapInput): AegisSystemState {
     environment: mapEnvironment(snap, input.history),
     radiation: mapRadiation(snap, input.history),
     link: mapLink(snap, prev.link.pending_packets, prev.link),
+    provenance: snap.provenance ?? prev.provenance,
   };
 }
 
@@ -862,6 +872,7 @@ export function applyGroundSnapshot(input: MapInput): AegisSystemState {
       alerts: input.alerts,
       radiation: mapRadiation(snap, input.history),
       environment: mapEnvironment(snap, input.history),
+      provenance: snap.provenance ?? prev.groundSnapshot.provenance,
     },
   };
 }

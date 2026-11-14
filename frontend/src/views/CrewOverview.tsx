@@ -326,6 +326,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
               limit={limits['environment.ppco2_mmHg_1h_max']}
               hrpRisks={['HRP-12', 'HRP-14', 'HRP-08']}
               color="#f59e0b"
+              source={state.provenance.ppco2}
             />
             <LimitBandChart
               title="Cabin Acoustic Noise Level (dBA)"
@@ -335,6 +336,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
               limit={limits['environment.noise_dBA_sleep_max']}
               hrpRisks={['HRP-14']}
               color="#38bdf8"
+              source={state.provenance.noise_level}
             />
           </div>
         </section>

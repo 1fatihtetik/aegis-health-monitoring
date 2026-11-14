@@ -1,0 +1,14 @@
+# Bundled NASA snapshots (AGENTS.md section 2a). One entry per dataset; no file without an entry.
+# Written by scripts/fetch_nasa_data.py. Paths are relative to data/nasa/.
+#
+# - id: msl_rad_cruise_2012
+#   tier: D2                         # D1 limits | D2 radiation | D3 space weather | D4 ephemeris | D5 calibration
+#   title: "MSL/RAD dose rate, Mars cruise"
+#   source_url: "https://..."
+#   retrieved: 2026-11-14
+#   terms: "NASA data, public; cite the instrument team"
+#   transform: "raw RDR -> 1-min mean, µSv/h"
+#   files:
+#     - { path: raw/....,      sha256: "..." }
+#     - { path: derived/....,  sha256: "..." }
+datasets: []

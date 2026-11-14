@@ -880,6 +880,7 @@ export const AegisProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               alerts: latestDelivered.alerts,
               radiation: latestDelivered.radiation,
               environment: latestDelivered.environment,
+              provenance: {},
             };
             next.link.ground_as_of_ts = latestDelivered.sentSimTs;
           } else {

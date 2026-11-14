@@ -318,6 +318,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           limit={limits['physiology.hr_bpm']}
           hrpRisks={['HRP-03', 'HRP-09', 'HRP-12']}
           color="#38bdf8"
+          source={state.provenance.heart_rate}
         />
 
         <LimitBandChart
@@ -328,6 +329,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           limit={limits['physiology.bp_systolic_mmHg']}
           secondaryLabel="Diastolic (mmHg)"
           hrpRisks={['HRP-03', 'HRP-02', 'HRP-10']}
+          source={state.provenance.bp_systolic}
           color="#f97316"
           secondaryColor="#38bdf8"
         />
@@ -339,6 +341,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           unit="ms"
           hrpRisks={['HRP-03', 'HRP-12', 'HRP-14']}
           color="#a855f7"
+          source={state.provenance.hrv_rmssd}
         />
 
         <LimitBandChart
@@ -349,6 +352,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           limit={limits['physiology.spo2_pct_min']}
           hrpRisks={['HRP-06', 'HRP-08']}
           color="#10b981"
+          source={state.provenance.spo2}
         />
       </div>
 

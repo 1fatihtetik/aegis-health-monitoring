@@ -299,7 +299,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
               </button>
             </div>
             <p className="text-[11px] text-center text-slate-400">
-              Decision support only, not a medical diagnosis. Synthetic data.
+              Decision support only, not a medical diagnosis. Each value shows its data source.
             </p>
           </div>
         </div>

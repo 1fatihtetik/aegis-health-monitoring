@@ -6,11 +6,13 @@ Hysteresis: once a condition is active, the value must recover past the limit by
 
 import operator
 import statistics
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from app.config import Config
+from app.datasets.provenance import weakest
 from app.db.store import SeriesStore
 from app.domain.enums import SIGNALS, RuleType
 from app.rules.models import Predicate, Rule
@@ -23,6 +25,11 @@ BASELINE_REFRESH_TICKS = 60
 
 Subject = str | None
 Result = tuple[bool, dict[str, Any] | None]
+ProvenanceLookup = Callable[[str], dict[str, Any]]
+
+
+def _no_provenance(_: str) -> dict[str, Any]:
+    return {"provenance": "SYNTHETIC", "dataset_id": None}
 
 
 @dataclass
@@ -46,6 +53,7 @@ class RuleEngine:
         self._active: dict[tuple[str, Subject], bool] = {}
         self._baseline: dict[tuple[str, Subject], tuple[int, float, float]] = {}
         self._ticks = 0
+        self.provenance: ProvenanceLookup = _no_provenance  # World sets the live lookup
 
     def scope(self, rule: Rule) -> str:
         if rule.type != RuleType.COMPOUND:
@@ -87,7 +95,12 @@ class RuleEngine:
             "limit_source_ref": limit.source_ref,
             "window": spec.window,
             "agg": agg,
+            **self._source(str(spec.signal)),
         }
+
+    def _source(self, signal: str) -> dict[str, Any]:
+        src = self.provenance(signal)
+        return {"provenance": src["provenance"], "dataset_id": src["dataset_id"]}
 
     def _values(self, spec: Rule | Predicate, subject: Subject, window: str, now: datetime) -> list[float]:
         subj = subject if SIGNALS[str(spec.signal)].scope == "crew" else None
@@ -173,6 +186,8 @@ class RuleEngine:
             "limit_verified": all(m.get("limit_verified", False) for m in members),
             "window": "see members",
             "members": members,
+            "provenance": weakest([m.get("provenance", "SYNTHETIC") for m in members]),
+            "dataset_id": None,
         }
         if rule.context:
             evidence["context"] = {"group": rule.context, "branch": rule.branch}

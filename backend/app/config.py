@@ -6,6 +6,7 @@ from typing import Any
 
 import yaml
 
+from app.datasets.registry import DATA_DIR, DatasetRegistry
 from app.rules.models import Rule
 
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
@@ -28,12 +29,13 @@ def _load(path: Path) -> Any:
 
 
 class Config:
-    def __init__(self, config_dir: Path = CONFIG_DIR) -> None:
+    def __init__(self, config_dir: Path = CONFIG_DIR, data_dir: Path = DATA_DIR) -> None:
         self.limits: dict[str, dict[str, dict[str, Any]]] = _load(config_dir / "limits.yaml")
         self.mission: dict[str, Any] = _load(config_dir / "mission.yaml")
         self.crew: list[dict[str, Any]] = _load(config_dir / "crew.yaml")["crew"]
         self.readiness: dict[str, Any] = _load(config_dir / "readiness.yaml")
         self.rules: list[Rule] = [Rule(**r) for r in _load(config_dir / "rules.yaml")["rules"]]
+        self.datasets = DatasetRegistry(config_dir / "datasets.yaml", data_dir)
         self._validate()
 
     def limit(self, ref: str) -> Limit:

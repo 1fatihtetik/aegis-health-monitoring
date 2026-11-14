@@ -404,7 +404,9 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
       alerts: [],
       radiation: structuredClone(radiation),
       environment: structuredClone(environment),
+      provenance: {},
     },
+    provenance: {},
   };
 }
 

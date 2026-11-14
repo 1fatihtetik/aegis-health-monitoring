@@ -11,6 +11,7 @@ from typing import Any
 from app.alerts.manager import AlertManager
 from app.clock import SimClock
 from app.config import Config
+from app.datasets.provenance import ProvenanceTracker
 from app.db.store import SeriesStore
 from app.domain.enums import SIGNALS, Hazard, Severity
 from app.domain.models import Alert, Observation
@@ -52,6 +53,7 @@ class World:
         self.crew_ids = [c["id"] for c in cfg.crew]
         self.clock = SimClock(self.start_ts - timedelta(hours=mission["prewarm_h"]))
         self.store = SeriesStore()
+        self.provenance = ProvenanceTracker(cfg.datasets)
         self.sim = Simulator(cfg, self.clock, seed, self.scenario.get("phase", mission["default_phase"]), self.start_ts)
         self._events = sorted(
             ((self.start_ts + parse_duration(e["at"]), i, e) for i, e in enumerate(self.scenario["events"])),
@@ -67,6 +69,7 @@ class World:
             self._ingest(self.sim.step())
 
         self.engine = RuleEngine(cfg.rules, cfg, self.store, self.crew_ids, mission["tick_s"])
+        self.engine.provenance = lambda signal: self.provenance.current(signal).as_dict()
         self.alerts = AlertManager()
         self.link = Link(mission["link"]["max_msgs_per_tick"])
         self.delay_override: float | None = None
@@ -163,6 +166,7 @@ class World:
                 continue
             self._seen_ids.add(obs.id)
             self.store.add(obs.crew_id, obs.signal.value, obs.ts, obs.value)
+            self.provenance.set(obs.signal.value, obs.provenance, obs.dataset_id, obs.ts)
             accepted += 1
         return accepted, len(observations) - accepted
 
@@ -238,4 +242,5 @@ class World:
             "hazards": hazards,
             "readiness": readiness,
             "radiation": radiation_summary(self.cfg, self.store, all_alerts, sheltered, now),
+            "provenance": self.provenance.snapshot(),
         }

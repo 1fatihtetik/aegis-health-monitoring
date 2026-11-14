@@ -3,6 +3,7 @@ import { formatDurationSeconds } from './api/client';
 import { CrewId, STATUS_DISPLAY } from './api/types';
 import { AegisProvider, useAegis } from './api/useLiveSocket';
 import { AlertBanner } from './components/AlertBanner';
+import { dataSourcesLine } from './components/DataSourceBadge';
 import { EmergencyTakeover } from './components/EmergencyTakeover';
 import { ScenarioDock } from './components/ScenarioDock';
 import { AlertCenter } from './views/AlertCenter';
@@ -266,7 +267,8 @@ const AegisShell: React.FC = () => {
       >
         <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="font-semibold text-slate-300">
-            Decision support only, not a medical diagnosis. Synthetic data.
+            Decision support only, not a medical diagnosis.{' '}
+            <span data-testid="data-sources-line">{dataSourcesLine(state.provenance)}</span>
           </span>
           <span className="font-mono text-[11px] text-slate-400">
             AEGIS Onboard-First Architecture · NASA-STD-3001 &amp; HRP-01..17 Traceable · Unverified limits marked (⚠)

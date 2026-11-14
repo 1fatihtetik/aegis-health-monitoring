@@ -42,7 +42,7 @@ backend/            Python 3.11+, FastAPI, Pydantic v2, in-memory store
   tests/
 data/nasa/          (Block R) bundled NASA snapshots, read-only, checked in
   MANIFEST.yaml     one entry per file: id, tier, source_url, retrieved, sha256, terms, transform
-  raw/              files exactly as downloaded (untrusted input; parse with python -I, never execute)
+  raw/              files exactly as downloaded (untrusted input; parse with python -P (keeps the script dir off sys.path), never execute)
   derived/          small normalized CSV/JSON produced by the fetch script from raw/
 scripts/
   fetch_nasa_data.py  build-time only: downloads, normalizes, writes MANIFEST.yaml
@@ -136,7 +136,7 @@ Compound rules reference other rule ids or signal predicates using `all:` / `any
   "state": "RAISED", "raised_ts": "...", "hazards": ["HOSTILE_CLOSED_ENV"],
   "hrp_risks": ["HRP-12","HRP-14"],
   "evidence": { "signal": "ppco2", "value": 3.6, "limit": 3.0, "limit_verified": true,
-                "limit_source": "NASA-STD-3001 Vol 2 Rev D [V2 6004]", "window": "1h",
+                "limit_source_ref": "NASA-STD-3001 Vol 2 Rev D [V2 6004]", "window": "1h",
                 "provenance": "SYNTHETIC_CALIBRATED", "dataset_id": null },
   "action": "...", "origin": "ONBOARD" }
 ```

@@ -286,6 +286,16 @@ export function severityToStatus(severity: Severity): OperationalStatus {
   return severity;
 }
 
+/** Where a value comes from (PRD §6 M0). Ordered from least to most real. */
+export type Provenance = 'SYNTHETIC' | 'SYNTHETIC_CALIBRATED' | 'NASA_DERIVED' | 'NASA_MEASURED';
+
+/** Current source of one signal, from snapshot.provenance (GET /api/v1/datasets has the full list). */
+export interface SignalSource {
+  provenance: Provenance;
+  dataset_id: string | null;
+  basis: string;
+}
+
 export interface AlertEvidenceClause {
   signal: string;
   label: string;
@@ -301,6 +311,8 @@ export interface AlertEvidenceClause {
   negated?: boolean;
   /** Still counted as met only because of hysteresis (value already back inside the limit). */
   hysteresis_hold?: boolean;
+  provenance?: Provenance;
+  dataset_id?: string | null;
 }
 
 /** Context-branching rules: same symptoms, different likely cause (e.g. CO2 vs hydration). */
@@ -322,6 +334,8 @@ export interface AlertEvidence {
   clauses?: AlertEvidenceClause[];
   context?: AlertContext;
   hysteresis_hold?: boolean;
+  provenance?: Provenance;
+  dataset_id?: string | null;
 }
 
 export interface AlertNote {
@@ -567,6 +581,8 @@ export interface AegisSystemState {
   radiation: RadiationSummary;
   link: LinkStatus;
   recommendations: RecommendationMessage[];
+  /** Source of every signal. Empty while the browser-only fallback runs (all synthetic). */
+  provenance: Record<string, SignalSource>;
   groundSnapshot: {
     as_of_ts: string;
     lag_s: number;
@@ -574,5 +590,6 @@ export interface AegisSystemState {
     alerts: AlertItem[];
     radiation: RadiationSummary;
     environment: EnvironmentState;
+    provenance: Record<string, SignalSource>;
   };
 }

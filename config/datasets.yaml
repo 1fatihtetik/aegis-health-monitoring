@@ -1,0 +1,22 @@
+# Which source feeds each signal (PRD section 6 M0, AGENTS.md section 2a).
+# The runtime never downloads anything. Files come from scripts/fetch_nasa_data.py and are
+# listed with sha256 in data/nasa/MANIFEST.yaml.
+#
+# Provenance: NASA_MEASURED | NASA_DERIVED | SYNTHETIC_CALIBRATED | SYNTHETIC
+# NASA_MEASURED and NASA_DERIVED come only from an active replay (below), never from a default.
+# SYNTHETIC_CALIBRATED needs a `basis` that cites the NASA source of its parameters.
+default_provenance: SYNTHETIC
+
+signals:
+  bmd_estimate:
+    provenance: SYNTHETIC_CALIBRATED
+    basis: "Loss rate 1-1.5 %/month in 0 g, NASA HRP Gravity Fields hazard page (limits.yaml bone.bmd_loss_pct_per_month_expected_0g, verified)"
+
+# Replays of bundled NASA data (R-2 onwards). Each entry:
+#   - id: msl_rad_cruise              # replay id
+#     dataset_id: msl_rad_cruise_2012 # must exist in data/nasa/MANIFEST.yaml
+#     file: derived/msl_rad_cruise_2012.csv  # must be listed under that dataset, sha256 must match
+#     signals: [area_dose_rate_equivalent]
+#     phases: [MARS_TRANSIT]
+# An inactive replay (missing/unlisted/tampered file) falls back to the synthetic generator.
+replays: []

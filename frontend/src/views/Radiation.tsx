@@ -142,7 +142,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
         <div className="lg:col-span-7">
           <LimitBandChart
             title="Total Equivalent Dose Rate vs. CANS Neutron Component (µSv/h)"
-            subtitle="Primary GCR/SPE vs secondary neutron cascade measured by CANS spectrometer"
+            subtitle="Area dose rate (GCR/SPE) vs neutron component (CANS-style spectrometer channel)"
             data={radiation.history}
             unit="µSv/h"
             limit={speLimit}
@@ -151,6 +151,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             color="#ef4444"
             secondaryColor="#a855f7"
             height={250}
+            source={state.provenance.area_dose_rate_equivalent}
           />
         </div>
 

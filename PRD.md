@@ -424,7 +424,7 @@ Planned in Block R (v1.1):
 ```text
 GET    /api/v1/datasets                # [{id, tier, title, source_url, retrieved, sha256_ok, provenance, signals[], transform}]
 GET    /api/v1/spaceweather/event      # bundled DONKI SEP/FLR/CME + OMNI2 flux for the active replay
-Observation, timeseries points and alert evidence gain: provenance, dataset_id (evidence also gains limit_source)
+Observation and alert evidence gain: provenance, dataset_id (evidence already has limit_source_ref). Timeseries responses gain provenance {provenance, dataset_id, basis, segments[]}
 ```
 
 ## 13. Milestones (hackathon plan)

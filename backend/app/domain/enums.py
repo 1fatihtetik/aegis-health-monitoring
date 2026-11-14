@@ -41,6 +41,19 @@ class RuleType(StrEnum):
     COMPOUND = "COMPOUND"
 
 
+class Provenance(StrEnum):
+    """Where a value comes from (PRD section 6 M0). Ordered from least to most real."""
+
+    SYNTHETIC = "SYNTHETIC"  # simulated, heuristic parameters
+    SYNTHETIC_CALIBRATED = "SYNTHETIC_CALIBRATED"  # simulated, parameters cite a NASA source
+    NASA_DERIVED = "NASA_DERIVED"  # computed from NASA data by a formula named in the manifest
+    NASA_MEASURED = "NASA_MEASURED"  # replayed value from a NASA archive
+
+    @property
+    def rank(self) -> int:
+        return list(Provenance).index(self)
+
+
 class Quality(StrEnum):
     GOOD = "GOOD"
     SUSPECT = "SUSPECT"

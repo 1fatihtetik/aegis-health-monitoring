@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertEvidence } from '../api/types';
 import { signalLabel } from '../api/backend';
+import { DataSourceBadge } from './DataSourceBadge';
 
 /** Plain-language name for a context branch (rules.yaml `branch:`). */
 const BRANCH_LABEL: Record<string, string> = {
@@ -63,6 +64,12 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
             ↺ hysteresis hold
           </span>
         )}
+        <span className="ml-2 align-middle">
+          <DataSourceBadge
+            source={{ provenance: evidence.provenance, dataset_id: evidence.dataset_id ?? null }}
+            compact
+          />
+        </span>
       </div>
 
       {evidence.clauses && evidence.clauses.length > 0 && (
@@ -96,6 +103,9 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
                 <div className="mt-0.5 text-[10px] text-slate-400">
                   {cl.limit_verified ? '✓ verified' : '⚠ unverified'} · {cl.source_ref}
                   {cl.hysteresis_hold ? ' · ↺ hysteresis hold' : ''}
+                </div>
+                <div className="mt-1">
+                  <DataSourceBadge source={{ provenance: cl.provenance, dataset_id: cl.dataset_id ?? null }} compact />
                 </div>
               </div>
             );

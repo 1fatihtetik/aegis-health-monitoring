@@ -137,7 +137,17 @@ def _timeseries(rt: Runtime, node: str, crew_id: str | None, signal: Signal, sta
         rt, node, crew_id=crew_id, signal=signal.value, unit=SIGNALS[signal.value].unit,
         points=[[iso(ts), round(v, 3)] for ts, v in points[::stride]],
         limits=_limits_by_signal(rt).get(signal.value, []),
+        provenance=_provenance(rt, node, signal.value, start, end),
     )
+
+
+def _provenance(rt: Runtime, node: str, signal: str, start: datetime | None, end: datetime | None) -> dict[str, Any]:
+    """Current source of a signal plus the segments covering the window (ground: what the link delivered)."""
+    if node == "ground":
+        current = _snap(rt, node).get("provenance", {}).get(signal) or rt.cfg.datasets.source(signal).as_dict()
+        return {**current, "segments": [{"since": None, **current}]}
+    tracker = rt.world.provenance
+    return {**tracker.current(signal).as_dict(), "segments": tracker.segments(signal, start, end)}
 
 
 @router.get("/crew/{crew_id}/timeseries")
@@ -269,6 +279,15 @@ async def limits(request: Request) -> dict[str, Any]:
     return {"limits": rt.cfg.limits, "by_signal": _limits_by_signal(rt),
             "signals": {name: {"unit": m.unit, "scope": m.scope, "device": m.device, "daily": m.daily}
                         for name, m in SIGNALS.items()}}
+
+
+# ---- NASA datasets (PRD section 6 M0) ----------------------------------------------------------
+@router.get("/datasets")
+async def datasets(request: Request, node: Node = "onboard") -> dict[str, Any]:
+    """Bundled NASA sources, replay status and the current provenance of every signal."""
+    rt = _rt(request)
+    snap = _snap(rt, node)
+    return _envelope(rt, node, **rt.cfg.datasets.status(), signals=snap.get("provenance", {}))
 
 
 # ---- simulator -------------------------------------------------------------------------------

@@ -10,7 +10,7 @@ from app.api.routes import router
 from app.config import Config
 from app.runtime import Runtime
 
-DISCLAIMER = "Decision support only, not a medical diagnosis. Synthetic data."
+DISCLAIMER = "Decision support only, not a medical diagnosis. The source of each value is shown with it."
 
 
 def create_app(run_loop: bool = True) -> FastAPI:

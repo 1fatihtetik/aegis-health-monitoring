@@ -21,7 +21,7 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 | Earth–Mars comm delay | JPL Horizons ephemeris (range / speed of light) | R-4, planned |
 | Crew physiology (HR, HRV, SpO2, BP, sleep, exercise) | **Synthetic**, with parameters taken from published NASA values. NASA does not publish continuous in-flight astronaut vitals | stays synthetic, labelled |
 
-NASA files are downloaded once (`python scripts/fetch_nasa_data.py`, build time only) into `data/nasa/`,
+NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py`, build time only) into `data/nasa/`,
 listed with source URL, date and sha256 in `data/nasa/MANIFEST.yaml`, and replayed offline. The running
 system never calls the internet. Every chart and alert shows a badge saying whether a value is NASA-measured,
 NASA-derived or synthetic.
