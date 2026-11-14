@@ -61,15 +61,17 @@ def _limits_by_signal(rt: Runtime) -> dict[str, list[dict[str, Any]]]:
     return out
 
 
+# Handlers are async on purpose: they then run on the event-loop thread, the same thread as the
+# simulation tick (runtime.py), so a request never sees a store or alert map mid-update.
 @router.get("/health")
-def health() -> dict[str, str]:
+async def health() -> dict[str, str]:
     """Same as /health; the frontend probes this path."""
     return {"status": "ok"}
 
 
 # ---- crew ------------------------------------------------------------------------------------
 @router.get("/crew")
-def crew(request: Request, node: Node = "onboard") -> dict[str, Any]:
+async def crew(request: Request, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     snap = _snap(rt, node)
     return _envelope(rt, node, crew=snap["crew"], hazards=snap["hazards"], phase=snap["phase"],
@@ -77,7 +79,7 @@ def crew(request: Request, node: Node = "onboard") -> dict[str, Any]:
 
 
 @router.get("/crew/{crew_id}/summary")
-def crew_summary(crew_id: str, request: Request, node: Node = "onboard") -> dict[str, Any]:
+async def crew_summary(crew_id: str, request: Request, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     snap = _snap(rt, node)
     member = next((c for c in snap["crew"] if c["id"] == crew_id), None)
@@ -93,7 +95,7 @@ BASELINE_SIGNALS = ["heart_rate", "hrv_rmssd", "spo2", "resp_rate", "skin_temp",
 
 
 @router.get("/crew/{crew_id}/baselines")
-def crew_baselines(crew_id: str, request: Request, node: Node = "onboard", window: str | None = None) -> dict[str, Any]:
+async def crew_baselines(crew_id: str, request: Request, node: Node = "onboard", window: str | None = None) -> dict[str, Any]:
     """Personal rolling baseline per vital: mean, sd, current (10 min mean) and z-score."""
     rt = _rt(request)
     if crew_id not in rt.world.crew_ids:
@@ -139,7 +141,7 @@ def _timeseries(rt: Runtime, node: str, crew_id: str | None, signal: Signal, sta
 
 
 @router.get("/crew/{crew_id}/timeseries")
-def crew_timeseries(
+async def crew_timeseries(
     crew_id: str, request: Request, signal: Signal, node: Node = "onboard",
     start: datetime | None = Query(None, alias="from"), end: datetime | None = Query(None, alias="to"),
     max_points: int = Query(600, ge=10, le=5000),
@@ -149,7 +151,7 @@ def crew_timeseries(
 
 # ---- environment / radiation / readiness -----------------------------------------------------
 @router.get("/environment/current")
-def environment(request: Request, node: Node = "onboard") -> dict[str, Any]:
+async def environment(request: Request, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     snap = _snap(rt, node)
     limits = _limits_by_signal(rt)
@@ -161,7 +163,7 @@ def environment(request: Request, node: Node = "onboard") -> dict[str, Any]:
 
 
 @router.get("/environment/timeseries")
-def environment_timeseries(
+async def environment_timeseries(
     request: Request, signal: Signal, node: Node = "onboard",
     start: datetime | None = Query(None, alias="from"), end: datetime | None = Query(None, alias="to"),
     max_points: int = Query(600, ge=10, le=5000),
@@ -170,7 +172,7 @@ def environment_timeseries(
 
 
 @router.get("/radiation/summary")
-def radiation(request: Request, node: Node = "onboard") -> dict[str, Any]:
+async def radiation(request: Request, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     return _envelope(rt, node, **_snap(rt, node)["radiation"])
 
@@ -181,7 +183,7 @@ class ShelterBody(BaseModel):
 
 
 @router.post("/radiation/shelter")
-def shelter(body: ShelterBody, request: Request) -> dict[str, Any]:
+async def shelter(body: ShelterBody, request: Request) -> dict[str, Any]:
     """Headcount: log a crew member as in (or out of) the storm shelter. Onboard action."""
     rt = _rt(request)
     try:
@@ -192,7 +194,7 @@ def shelter(body: ShelterBody, request: Request) -> dict[str, Any]:
 
 
 @router.get("/readiness")
-def readiness(request: Request, kind: str | None = None, node: Node = "onboard") -> dict[str, Any]:
+async def readiness(request: Request, kind: str | None = None, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     data = _snap(rt, node)["readiness"]
     if kind:
@@ -202,7 +204,7 @@ def readiness(request: Request, kind: str | None = None, node: Node = "onboard")
 
 # ---- alerts ----------------------------------------------------------------------------------
 @router.get("/alerts")
-def alerts(request: Request, state: str | None = None, severity: str | None = None, node: Node = "onboard") -> dict[str, Any]:
+async def alerts(request: Request, state: str | None = None, severity: str | None = None, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     items = _alerts(rt, node)
     if state == "OPEN":
@@ -235,34 +237,34 @@ def _alert_action(request: Request, alert_id: str, action: str, text: str | None
 
 
 @router.post("/alerts/{alert_id}/ack")
-def alert_ack(alert_id: str, request: Request) -> dict[str, Any]:
+async def alert_ack(alert_id: str, request: Request) -> dict[str, Any]:
     return _alert_action(request, alert_id, "ack")
 
 
 @router.post("/alerts/{alert_id}/treat")
-def alert_treat(alert_id: str, request: Request) -> dict[str, Any]:
+async def alert_treat(alert_id: str, request: Request) -> dict[str, Any]:
     """RAISED or ACKNOWLEDGED -> IN_TREATMENT."""
     return _alert_action(request, alert_id, "treat")
 
 
 @router.post("/alerts/{alert_id}/resolve")
-def alert_resolve(alert_id: str, request: Request) -> dict[str, Any]:
+async def alert_resolve(alert_id: str, request: Request) -> dict[str, Any]:
     return _alert_action(request, alert_id, "resolve")
 
 
 @router.post("/alerts/{alert_id}/note")
-def alert_note(alert_id: str, body: NoteBody, request: Request) -> dict[str, Any]:
+async def alert_note(alert_id: str, body: NoteBody, request: Request) -> dict[str, Any]:
     return _alert_action(request, alert_id, "note", body.text)
 
 
 # ---- rules / limits --------------------------------------------------------------------------
 @router.get("/rules")
-def rules(request: Request) -> dict[str, Any]:
+async def rules(request: Request) -> dict[str, Any]:
     return {"rules": [r.model_dump(mode="json") for r in _rt(request).cfg.rules]}
 
 
 @router.get("/limits")
-def limits(request: Request) -> dict[str, Any]:
+async def limits(request: Request) -> dict[str, Any]:
     rt = _rt(request)
     return {"limits": rt.cfg.limits, "by_signal": _limits_by_signal(rt),
             "signals": {name: {"unit": m.unit, "scope": m.scope, "device": m.device, "daily": m.daily}
@@ -271,7 +273,7 @@ def limits(request: Request) -> dict[str, Any]:
 
 # ---- simulator -------------------------------------------------------------------------------
 @router.get("/sim/status")
-def sim_status(request: Request) -> dict[str, Any]:
+async def sim_status(request: Request) -> dict[str, Any]:
     rt = _rt(request)
     return {**rt.sim_status(), "now": iso(rt.world.clock.now()), "scenarios": list_scenarios()}
 
@@ -283,13 +285,13 @@ class ScenarioBody(BaseModel):
 
 
 @router.post("/sim/scenario")
-def sim_scenario(body: ScenarioBody, request: Request) -> dict[str, Any]:
+async def sim_scenario(body: ScenarioBody, request: Request) -> dict[str, Any]:
     rt = _rt(request)
     try:
         rt.start_scenario(body.name, body.seed, body.speed)
     except KeyError as exc:
         raise HTTPException(404, str(exc)) from exc
-    return sim_status(request)
+    return await sim_status(request)
 
 
 class ControlBody(BaseModel):
@@ -298,7 +300,7 @@ class ControlBody(BaseModel):
 
 
 @router.post("/sim/control")
-def sim_control(body: ControlBody, request: Request) -> dict[str, Any]:
+async def sim_control(body: ControlBody, request: Request) -> dict[str, Any]:
     rt = _rt(request)
     if body.action == "pause":
         rt.paused = True
@@ -308,12 +310,12 @@ def sim_control(body: ControlBody, request: Request) -> dict[str, Any]:
         raise HTTPException(422, "action 'speed' needs 'speed'")
     else:
         rt.set_speed(body.speed)
-    return sim_status(request)
+    return await sim_status(request)
 
 
 # ---- link ------------------------------------------------------------------------------------
 @router.get("/link/status")
-def link_status(request: Request) -> dict[str, Any]:
+async def link_status(request: Request) -> dict[str, Any]:
     rt = _rt(request)
     return {**rt.link_status(), "now": iso(rt.world.clock.now()), "phase": rt.world.sim.phase}
 
@@ -323,9 +325,9 @@ class BlackoutBody(BaseModel):
 
 
 @router.post("/link/blackout")
-def link_blackout(body: BlackoutBody, request: Request) -> dict[str, Any]:
+async def link_blackout(body: BlackoutBody, request: Request) -> dict[str, Any]:
     _rt(request).world.link.blackout = body.on
-    return link_status(request)
+    return await link_status(request)
 
 
 class DelayBody(BaseModel):
@@ -333,9 +335,9 @@ class DelayBody(BaseModel):
 
 
 @router.post("/link/delay")
-def link_delay(body: DelayBody, request: Request) -> dict[str, Any]:
+async def link_delay(body: DelayBody, request: Request) -> dict[str, Any]:
     _rt(request).world.delay_override = body.delay_s
-    return link_status(request)
+    return await link_status(request)
 
 
 class RecommendationBody(BaseModel):
@@ -345,13 +347,13 @@ class RecommendationBody(BaseModel):
 
 
 @router.post("/link/recommendation")
-def link_recommendation(body: RecommendationBody, request: Request) -> dict[str, Any]:
+async def link_recommendation(body: RecommendationBody, request: Request) -> dict[str, Any]:
     """Ground -> crew. Delivered onboard after the comm delay, never earlier."""
     return _rt(request).world.send_recommendation(body.text, body.checklist, body.crew_id)
 
 
 @router.get("/link/recommendations")
-def link_recommendations(request: Request, node: Node = "onboard") -> dict[str, Any]:
+async def link_recommendations(request: Request, node: Node = "onboard") -> dict[str, Any]:
     rt = _rt(request)
     w = rt.world
     items = w.ground.sent_recommendations if node == "ground" else w.recommendations
@@ -360,7 +362,7 @@ def link_recommendations(request: Request, node: Node = "onboard") -> dict[str, 
 
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
-def observations(items: list[Observation], request: Request) -> dict[str, int]:
+async def observations(items: list[Observation], request: Request) -> dict[str, int]:
     """Batch ingest, idempotent on Observation.id. Units must be canonical for the signal."""
     for obs in items:
         if obs.unit != SIGNALS[obs.signal.value].unit:
