@@ -1,4 +1,4 @@
-description: "Scripted demo (PRD section 14): ISS opening with an SAA pass, lunar stop (0.16 g), then Mars transit: sleep loss + CO2, SPE, Mars landing."
+description: "Scripted demo (PRD section 14): ISS opening with an SAA pass, lunar stop (0.16 g), then Mars transit: sleep loss + PVT-B lapses + CO2, SPE, low fluid and landing gate Hold, Mars landing + stand test."
 # History (142 d + 48 h prewarm) is Mars transit: this is a Mars mission. The opening phase tour starts at T0.
 phase: MARS_TRANSIT
 speed: 60
@@ -6,6 +6,10 @@ speed: 60
 # evening (50m-1h at 120x), ~18 s fast-forward (1-19 h at 3600x), 60 s compound/EVA/headache (19-20 h at 60x),
 # 80 s SPE + ground + blackout (20-21h20m at 60x), ~2 s fast-forward (21h20m-23h30m at 3600x), 60 s landing
 # (23h30m-24h30m at 60x). About 4 min 40 s, then it pauses.
+# T-10 adds 10 s at 60x before the landing (23h20m-23h30m) so the landing gate Hold is on screen: about 4 min 50 s.
+# T-10 test moments (approved by the user 2026-11-15) are scripted self-test results for the synthetic crew: they are
+# SYNTHETIC ("scripted self-test result"), never CREW_ENTERED. A presenter may also take pvt_b_short or the Amsler grid
+# live at any point; the script does not wait for it.
 # The phase tour is time-compressed for the demo (a real mission spends months in each phase). Radiation replays are
 # keyed to the scenario start and the history stays in Mars transit, so the Mars segments below replay the same RAD
 # data and keep the same alert times as before P-7, except rad.dose.24h: the 50-min tour has a lower background than
@@ -25,6 +29,10 @@ events:
   # 2. Fast-forward through a bad night for C1 and a slow CO2 rise the next day.
   - { at: 1h, type: speed, params: { speed: 3600 } }
   - { at: 1h, type: insomnia, duration: 30h, params: { crew: C1, sleep_fraction: 0.45 } }
+  # T-10 moment 1: after the short night (sleep.short_24h ~5h56m) C1 takes the morning PVT-B (due 07:30 crew time):
+  # 7 lapses (> 3) -> cog.pvt.lapses CAUTION, and with the short sleep cog.performance_risk opens here, ~10 h before
+  # the CO2 rise would have opened it. Values typical of sleep loss (Basner et al. 2011), scripted, not measured.
+  - { at: 7h45m, type: selftest, params: { crew: C1, test: pvt_b, values: { pvt_mean_rt: 395, pvt_lapses: 7, pvt_false_starts: 1 } } }
   # Peak ~3.7 mmHg (2.0 nominal + 1.7): above the [V2 6004] 3 mmHg 1-h limit and inside the 2.8-4.5 mmHg
   # headache band of OCHMO-TB-004 Rev D, the level where ISS crews reported headaches.
   - { at: 10h, type: co2_ramp, duration: 11h30m, params: { rate_per_h: 0.15, max_rise: 1.7 } }
@@ -41,15 +49,27 @@ events:
   - { at: 20h45m, type: blackout, params: { active: true } }
   - { at: 21h20m, type: blackout, params: { active: false } }
   - { at: 21h20m, type: speed, params: { speed: 3600 } }
+  # T-10 moment 2: before the landing C3 logs only 1200 mL of fluid (target 2000 mL): intake.fluid.low CAUTION, the
+  # SANS watch for C3 (low fluid after months in 0 g) and the LANDING gate shows HOLD for C3 on the Self-tests tab.
+  - { at: 22h, type: selftest, params: { crew: C3, test: intake, values: { fluid_intake: 1200 } } }
+  # Slow down 10 min before touchdown so the audience sees the landing gate (C3 on Hold) before the landing.
+  - { at: 23h20m, type: speed, params: { speed: 60 } }
   # 4. Mars landing: gravity transition, orthostatic indicators for C3.
   - { at: 23h30m, type: phase, params: { name: MARS_SURFACE } }
   - { at: 23h30m, type: orthostatic, duration: 3h, params: { crew: C3, sbp_drop: 40 } }
-  - { at: 23h30m, type: speed, params: { speed: 60 } }
+  # T-10 moment 3: C3 takes the 10-minute stand test after touchdown (scripted summary at the end of the test): top
+  # number falls 26 mmHg, pulse up 34 bpm -> cardio.stand.positive CAUTION next to cardio.orthostatic on the body
+  # map's Heart & vessels region. Only the summary is scripted, not the hand vitals (no 30-min hand-entry takeover).
+  - { at: 23h45m, type: selftest, params: { crew: C3, test: stand_test, values: { stand_sbp_drop: 26, stand_dbp_drop: 11, stand_hr_rise: 34, stand_pulse_pressure_min: 24, stand_pulse_pressure_pct: 22, stand_early_stop: 0, stand_minutes: 10 } } }
   - { at: 24h30m, type: pause }
 expected:
   - { rule_id: rad.saa.transit, severity: INFO, within: 30m }
   - { rule_id: sleep.short_24h, crew_id: C1, severity: CAUTION, within: 10h }
-  - { rule_id: cog.performance_risk, crew_id: C1, severity: CAUTION, within: 19h }
+  - { rule_id: cog.pvt.lapses, crew_id: C1, severity: CAUTION, within: 8h }
+  - { rule_id: cog.performance_risk, crew_id: C1, severity: CAUTION, within: 8h }
   - { rule_id: ctx.headache_tachy.co2, crew_id: C2, severity: CAUTION, within: 19h30m }
   - { rule_id: rad.spe.dose_rate, severity: EMERGENCY, within: 20h30m }
+  - { rule_id: intake.fluid.low, crew_id: C3, severity: CAUTION, within: 22h10m }
+  - { rule_id: sans.watch, crew_id: C3, severity: CAUTION, within: 22h10m }
   - { rule_id: cardio.orthostatic, crew_id: C3, severity: WARNING, within: 24h30m }
+  - { rule_id: cardio.stand.positive, crew_id: C3, severity: CAUTION, within: 24h }

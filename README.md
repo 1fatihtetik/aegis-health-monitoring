@@ -98,10 +98,12 @@ The same scenario and seed always produce the same alerts.
 | `leo_baseline` | ISS day (LEO, 0 g), measured DOSTEL-1 radiation | `rad.saa.transit` INFO per South Atlantic Anomaly pass; no SPE alarm |
 | `lunar_surface` | Lunar landing (0 -> 0.16 g), CRaTER surface dose | none (radiation switches to LRO CRaTER, bone loss slows to 84 % of the 0 g rate) |
 
-## Demo walkthrough (`demo_5min`, about 4 min 40 s, plays untouched)
+## Demo walkthrough (`demo_5min`, about 4 min 50 s, plays untouched)
 
 The scenario sets its own speed per segment, scripts a comm blackout and pauses at the end. Times are
 simulated offsets from the start. The story: the crew handles everything onboard, without a flight surgeon.
+Block T (T-10) adds three self-test moments. They are scripted results for the synthetic crew, badged
+"Synthetic" ("scripted self-test result"), never "Crew-entered".
 
 0. **0 to 30m, 60x, ~30 s. ISS (LEO, 0 g).** A time-compressed phase tour opens the demo (the crew history stays
    in Mars transit). Radiation is the measured ISS DOSTEL-1 replay ("ISS DOSTEL-1 (DLR) 2019", NASA OSDR archive).
@@ -113,9 +115,10 @@ simulated offsets from the start. The story: the crew handles everything onboard
    0 to 0.16 g step. Comm delay 1.3 s. No alerts.
 1. **50m to 1 h, 120x, ~5 s.** Normal evening in Mars transit (0 g, the delay jumps to ~11 min from JPL Horizons).
    Everything is green. Point out the neutron share on the radiation tile.
-2. **1 to 19 h, 3600x, ~18 s.** Fast-forward. C1 sleeps badly (`sleep.short_24h` at 5h56m), then cabin CO2
-   creeps up. At 17h26m `env.co2.high_1h` and the compound `cog.performance_risk` fire for C1, and C1's EVA
-   readiness drops to NO-GO.
+2. **1 to 19 h, 3600x, ~18 s.** Fast-forward. C1 sleeps badly (`sleep.short_24h` at 5h56m). **Test moment 1:**
+   C1 takes the morning reaction-time test (PVT-B) at 7h45m: 7 lapses, mean 395 ms. At 7h46m `cog.pvt.lapses`
+   and the compound `cog.performance_risk` (short sleep + PVT-B lapses) fire for C1, and C1's EVA readiness drops
+   to NO-GO. Then cabin CO2 creeps up: `env.co2.high_1h` at 17h26m becomes a second piece of evidence.
 3. **19 to 20 h, 60x, ~1 min.** Open the alerts: every member shows value, limit, window and the unverified
    marker, plus a plain-language checklist. At 19h16m C2 reports a headache with a raised heart rate:
    `ctx.headache_tachy.co2` says the cabin CO2 is the likely cause (with normal CO2 the same symptoms would
@@ -128,8 +131,19 @@ simulated offsets from the start. The story: the crew handles everything onboard
    ~20h33m; it arrives onboard one light time later. At 20h45m the link blacks out (scripted): the crew UI
    keeps working and the ground's data age grows until the link returns at 21h20m. `rad.dose.24h` WARNINGs
    fire onboard at 21h16m (during the blackout) and reach the ground at 21h27m.
-5. **21h20m to 23h30m, 3600x, ~2 s.** Fast-forward.
+5. **21h20m to 23h20m, 3600x, ~2 s.** Fast-forward. **Test moment 2:** at 22h C3 logs only 1200 mL of fluid
+   (target 2000 mL): `intake.fluid.low` and the SANS watch (`sans.watch`, months in 0 g + low fluid) open for C3
+   at 22h01m.
+5b. **23h20m to 23h30m, 60x, ~10 s.** Before touchdown, open the Self-tests tab: the landing gate shows C3 on
+   ▲ HOLD (lowest score, with the fluid action and a Synthetic badge on the scripted fluid log). The rest of the
+   crew is also on Hold, because the SPE's `rad.dose.24h` WARNING lowers every score by 20.
 6. **23h30m to 24h30m, 60x, ~1 min.** Mars landing (0 to 0.38 g). `cardio.orthostatic` WARNING for C3 at 23h45m.
+   **Test moment 3:** C3's 10-minute stand test ends at 23h45m (top number falls 26 mmHg, pulse up 34 bpm):
+   `cardio.stand.positive` CAUTION at 23h46m. Tap C3's Heart & vessels region on the body map: both alerts, the
+   stand-test readings and the Start button for the next test.
+   Optional live moment (the script does not wait): a presenter takes the 30-second reaction test
+   (`pvt_b_short`, labelled "Demo length, not the 3-minute protocol") or the Amsler grid on any crew member;
+   those values are badged "Crew-entered" and stay in memory only.
    Close on the long-term trends (BMD, body mass, VO2max proxy, exercise adherence over ~140 days).
    The simulation pauses at 24h30m.
 

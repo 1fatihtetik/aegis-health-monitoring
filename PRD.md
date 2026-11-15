@@ -4,7 +4,7 @@
 > Status: Draft v1.3 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
 > **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo. *Done: Gate P, tag `demo-ready-v2`.*
-> **v1.3 change (Block T, `ROADMAP.md` §0, planned, not started):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11.
+> **v1.3 change (Block T, `ROADMAP.md` §0, built: T-0..T-10):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11.
 
 ---
 
@@ -560,7 +560,11 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 0b. **Lunar surface stop (0.16 g).** Radiation switches to the LRO CRaTER surface dose (NASA-derived); the Gravity tile shows bone loss at 84 % of the 0 g rate and the fainting risk recorded for the gravity increase. Then on to Mars transit, where the comm delay jumps from 1.3 s to ~11 min.
 `README.md` keeps the rehearsed timings.
 
-*v1.3 (T-10, planned):* test moments are added to the same script, e.g. C1's scripted PVT-B lapses after the sleep loss (evidence for the cognitive CAUTION), the due board, and before the Mars landing the `LANDING` gate showing Hold for C3 with a scripted stand test. An optional live PVT-B in a labelled short mode may be shown; the script does not wait for it. The exact moments are agreed with the user before the rehearsal.
+*v1.3 (T-10, built; moments agreed with the user 2026-11-15):* three scripted self-test results for the synthetic crew (`SYNTHETIC`, "scripted self-test result", never `CREW_ENTERED`) are added to the same script:
+- **After step 2's sleep loss** (7h45m): C1's morning PVT-B shows 7 lapses → `cog.pvt.lapses` CAUTION and `cog.performance_risk` CAUTION (short sleep + lapses) at 7h46m, ahead of the CO₂ evidence.
+- **Before step 5's landing** (22h): C3 logs 1200 mL of fluid → `intake.fluid.low` + `sans.watch` CAUTION; the script slows to 60× for the last 10 simulated minutes before touchdown so the `LANDING` gate shows C3 on Hold.
+- **After the landing** (23h45m): C3's stand test is positive → `cardio.stand.positive` CAUTION beside `cardio.orthostatic` WARNING on the body map's Heart & vessels region.
+An optional live `pvt_b_short` (labelled demo length) or Amsler grid may be shown; the script does not wait for it. About 4 min 50 s real time; `README.md` keeps the timings.
 
 ## 15. Success metrics
 

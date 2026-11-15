@@ -174,3 +174,39 @@ def test_demo_opens_with_iss_and_lunar_tour(cfg):
     alerts = list(world.alerts.alerts.values())
     assert [(a.rule_id, a.severity.value) for a in alerts] == [("rad.saa.transit", "INFO")]
     assert alerts[0].resolved_ts is not None and alerts[0].resolved_ts <= world.start_ts + parse_duration("30m")
+
+
+# ---- T-10 extended demo: scripted self-test moments --------------------------------------------------------------
+def test_demo_self_test_moments_are_scripted_synthetic_and_land_on_time(cfg):
+    """T-10 (user-approved moments): C1 PVT-B lapses after the short night, C3 low fluid before the landing (gate
+    Hold), C3 stand test after touchdown on Heart & vessels. All SYNTHETIC scripted results, never CREW_ENTERED."""
+    from app.world import World
+
+    world = World(cfg, "demo_5min", 42)
+    gate_before_landing = None
+    for minute in range(25 * 60):
+        world.tick()
+        if minute == 23 * 60 + 25:
+            gate_before_landing = world.snapshot["readiness"]["C3"]["LANDING"]
+    results = [(r["test_id"], r["crew_id"], r["provenance"]) for r in world.entries.results]
+    assert results == [("pvt_b", "C1", "SYNTHETIC"), ("intake", "C3", "SYNTHETIC"), ("stand_test", "C3", "SYNTHETIC")]
+    assert all("scripted" in r["basis"].lower() and r["entry_method"] is None for r in world.entries.results)
+
+    first = {}
+    for a in sorted(world.alerts.alerts.values(), key=lambda a: a.raised_ts):
+        first.setdefault((a.rule_id, a.crew_id), a.raised_ts - world.start_ts)
+    t = parse_duration
+    assert t("7h45m") <= first[("cog.pvt.lapses", "C1")] <= t("8h")
+    assert first[("cog.performance_risk", "C1")] == first[("cog.pvt.lapses", "C1")]  # PVT-B is the second piece
+    assert first[("cog.performance_risk", "C1")] > first[("sleep.short_24h", "C1")]
+    assert t("22h") <= first[("intake.fluid.low", "C3")] <= t("22h10m")
+    assert t("23h45m") <= first[("cardio.stand.positive", "C3")] <= t("24h")
+
+    # The landing gate shows Hold for C3 before touchdown, with the scripted fluid log as a labelled component.
+    assert gate_before_landing is not None and not gate_before_landing["go"]
+    fluid = gate_before_landing["components"]["fluid"]
+    assert fluid["value"] == 1200 and fluid["source"]["provenance"] == "SYNTHETIC"
+    assert world.snapshot["phase"]["next_gravity_increase"] is None  # landed
+
+    heart = next(r for r in cfg.selftests.body_map if r.id == "heart_vessels")
+    assert {"cardio.orthostatic", "cardio.stand.positive"} <= set(heart.rules)
