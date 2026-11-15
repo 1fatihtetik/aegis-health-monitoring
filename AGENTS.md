@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current state (2026-11-15): Block L, data-honesty labels: BUILT, awaiting supervisor review** (`ROADMAP.md` §0a): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line; no data or limit changes. **Next: Block C, countermeasures and private journal (planned, `ROADMAP.md` §0b, §2c below).** Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current state (2026-11-15): Block L, data-honesty labels: DONE, approved** (`ROADMAP.md` §0a, `18f018e`): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line; no data or limit changes. **Next: Block C, countermeasures and private journal (planned, `ROADMAP.md` §0b, §2c below).** Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
@@ -273,6 +273,6 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`) → Block T (T-0..T-10, Gate T) → D-5 re-freeze (tag `demo-ready-v3`).
 
-→ Block L (L-1..L-3, built 2026-11-15, awaiting supervisor review).
+→ Block L (L-1..L-3, approved 2026-11-15).
 
-**Next:** supervisor review of Block L; no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
+**Next:** Block C (`ROADMAP.md` §0b): supervisor plan review, then C-0..C-5; no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.

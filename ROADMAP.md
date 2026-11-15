@@ -3,7 +3,7 @@
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
 **Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
-**Block L, data-honesty labels (§0a). Status: BUILT 2026-11-15 (L-1..L-3), awaiting supervisor review.** Wording only.
+**Block L, data-honesty labels (§0a). Status: DONE.** L-1..L-3 approved 2026-11-15 (`18f018e`). Wording only.
 **Next: Block C, countermeasures and private journal (§0b). Status: PLANNED (user decisions 2026-11-15).** About 13 h; starts after the supervisor approves the plan.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
@@ -46,7 +46,7 @@ Cut list for Block C if it runs behind: C-5 demo hook → C-3 model-effect line 
 
 Choices Claude made inside the user's decisions (the user or the supervisor may change them): the crew member sees only their own today list (no weekly % for themselves); supplements are left out (no source and no demo need); the early-warning rule is `INFO`, not `CAUTION`.
 
-## 0a. Block L: data-honesty labels (built, awaiting review)
+## 0a. Block L: data-honesty labels (done)
 
 Why: judges may read "Synthetic" and "unverified" as "fake". Both words say what a value is **not**. Block L makes every label say what the value **is**, explains the reasons once, and says it first in the demo. Nothing about the data changes: no new data, no rule, limit value or `verified` flag changes, and simulated values stay visibly simulated.
 

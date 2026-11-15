@@ -1,11 +1,12 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Antigravity: Block L L-1..L-3 APPROVED)
+Last updated: 2026-11-15 (Claude: Block C (countermeasures + private journal) planned after Antigravity approved Block L)
 State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5), group-A clause limits, and Block L (L-1..L-3) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: Ready for demo / submission. No re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
+Next: Antigravity reviews the Block C plan (ROADMAP §0b, section 6), then Claude builds C-0..C-5. The demo stays ready at `demo-ready-v3` meanwhile; no re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
 
-Read order: this file -> ROADMAP.md §0a (Block L) -> AGENTS.md §1, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
+Read order: this file -> ROADMAP.md §0b (Block C) -> AGENTS.md §1, §2c, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
 
 User directives (standing):
+- 2026-11-15 Block C (countermeasures + private journal, ROADMAP §0b): journal saved locally on the tablet; journal shareable only with the onboard CMO; weekly adherence / completion charts per person are wanted for the CMO and the ground (early warning), but no crew member may see a rank in the crew (no sorting, no averages, no best/worst).
 - 2026-11-15 Block L: judges may read "Synthetic" and "unverified" as "fake". Fix the WORDING without lying or spending much time: say what a value IS (simulated, cited source, design setting), explain once why, and say it first in the demo. Data, rules and verified flags do not change. Details: section 6 and ROADMAP §0a.
 - 2026-11-15 LANDING gate in `demo_5min`: keep as is (all crew on Hold before touchdown because the SPE `rad.dose.24h` WARNING penalty applies to everyone; C3 lowest, with the fluid action). Do not exclude radiation alerts from the LANDING penalty.
 - 2026-11-15 hand-entered values take over the wearable stream for 30 min (`manual_override`; source_ref in `config/selftests.yaml`).
@@ -103,6 +104,12 @@ no data, rule, limit value or `verified` flag changes.
   text; no re-freeze unless the user asks (it would be D-6, `demo-ready-v4`).
 Choices Claude made inside the user's decision (Antigravity or the user may change them): the badge says "Simulated"
 (not "Simulated crew vitals") because it also marks cabin values; the `nasa_reference` kind exists for one entry.
+
+Block C: countermeasures and private journal (PLANNED 2026-11-15, plan in ROADMAP §0b, about 13 h; awaiting supervisor
+plan review). C-0 catalog + logging -> C-1 countermeasures on the routine board -> C-2 weekly adherence for CMO + ground
+-> C-3 `cm.exercise.low_7d` INFO rule + model effect -> C-4 private journal -> C-5 optional demo hook + docs.
+Choices Claude made inside the user's decisions: crew sees only their own today list (no weekly %); supplements left
+out; the early-warning rule is INFO.
 
 Open question for the user: submission deadline/format.
 Stretch (only if the user asks): see ROADMAP §5.
