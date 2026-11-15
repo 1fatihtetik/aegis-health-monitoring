@@ -6,6 +6,7 @@
  * useLiveSocket.ts is only the offline fallback.
  */
 import {
+  BodyRegion,
   AegisSystemState,
   AlertEvidence,
   AlertEvidenceClause,
@@ -323,6 +324,10 @@ export const backendApi = {
   async selftestResults(crewId: CrewId): Promise<SelfTestResult[]> {
     const res = await getJson<{ results: SelfTestResult[] }>(`/selftests/results?crew_id=${crewId}`);
     return res?.results ?? [];
+  },
+  async bodyMap(crewId: CrewId): Promise<BodyRegion[] | null> {
+    const res = await getJson<{ regions: BodyRegion[] }>(`/bodymap?crew_id=${crewId}&node=onboard`);
+    return res?.regions ?? null;
   },
   async alerts(node: 'onboard' | 'ground'): Promise<BackendAlert[]> {
     const res = await getJson<{ alerts: BackendAlert[] }>(`/alerts?node=${node}`);

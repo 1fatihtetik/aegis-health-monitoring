@@ -77,6 +77,10 @@ class Config:
                     self.limit(ref)
                 except KeyError as exc:
                     raise ValueError(f"selftests.yaml {test.id}: {exc.args[0]}") from exc
+        for region in self.selftests.body_map:  # T-6: a region links only to rules that exist
+            unknown = [r for r in region.rules if r not in ids]
+            if unknown:
+                raise ValueError(f"selftests.yaml body map region {region.id}: unknown rule(s) {unknown}")
         parse_duration(self.selftests.setting("manual_override"))
         parse_duration(self.selftests.setting("after_gravity_window"))
         for kind, spec in self.readiness["kinds"].items():

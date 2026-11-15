@@ -142,16 +142,53 @@ class SelfTest(BaseModel):
         return self
 
 
+class BodyRegion(BaseModel):
+    """T-6: one region of the body map and what it links to. The drawing lives in the UI; the links live here."""
+
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    label: str
+    what: str = Field(min_length=1)  # what the region does, in plain words
+    hazards: list[Hazard] = Field(min_length=1)
+    hrp_risks: list[HrpRisk] = Field(min_length=1)
+    signals: list[str] = Field(default_factory=list)
+    rules: list[str] = Field(default_factory=list)  # rule ids; the region colour = highest open severity among them
+    tests: list[str] = Field(default_factory=list)
+    reference: Literal["inspiration4"] | None = None
+
+    @field_validator("signals")
+    @classmethod
+    def _known_signals(cls, v: list[str]) -> list[str]:
+        unknown = [s for s in v if s not in SIGNALS]
+        if unknown:
+            raise ValueError(f"unknown signal(s) {unknown}")
+        return v
+
+    @model_validator(mode="after")
+    def _linked(self) -> "BodyRegion":
+        if not self.signals and not self.tests:
+            raise ValueError(f"body map region {self.id}: link at least one signal or test")
+        return self
+
+
 class Catalog(BaseModel):
     model_config = ConfigDict(extra="forbid")
     settings: dict[str, Setting] = Field(default_factory=dict)
     tests: list[SelfTest]
+    body_map: list[BodyRegion] = Field(default_factory=list)  # T-6
 
     @model_validator(mode="after")
     def _unique(self) -> "Catalog":
         ids = [t.id for t in self.tests]
         if len(ids) != len(set(ids)):
             raise ValueError("selftests.yaml has duplicate test ids")
+        regions = [r.id for r in self.body_map]
+        if len(regions) != len(set(regions)):
+            raise ValueError("selftests.yaml has duplicate body map regions")
+        for region in self.body_map:
+            unknown = [t for t in region.tests if t not in ids]
+            if unknown:
+                raise ValueError(f"body map region {region.id}: unknown test(s) {unknown}")
         return self
 
     def test(self, test_id: str) -> SelfTest:

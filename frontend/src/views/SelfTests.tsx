@@ -43,13 +43,16 @@ export function useSelfTestCatalog(connected: boolean): SelfTestDef[] | null {
  * Block T: the crew takes tests and measurements themselves. One task per screen, numbered steps, big Done
  * buttons, the normal band and the unverified marker visible while entering. No points, streaks or scores.
  */
-export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId = 'C1' }) => {
+export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: string | null }> = ({
+  initialCrewId = 'C1',
+  initialTestId = null,
+}) => {
   const { state, submitSelfTest } = useAegis();
   const connected = state.sim.backend_connected;
   const tests = useSelfTestCatalog(connected);
   const [crewId, setCrewId] = useState<CrewId>(initialCrewId);
   const [hazard, setHazard] = useState<Hazard | 'ALL'>('ALL');
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialTestId);
   const [results, setResults] = useState<SelfTestResult[]>([]);
   const [routine, setRoutine] = useState<ScheduleItem[]>([]);
 

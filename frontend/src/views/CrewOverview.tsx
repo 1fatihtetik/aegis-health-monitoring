@@ -13,6 +13,7 @@ import {
 import { useAegis } from '../api/useLiveSocket';
 import { formatLimit } from '../api/limits';
 import { signalLabel } from '../api/backend';
+import { BodyMap } from '../components/BodyMap';
 import { GravityEffectNote } from '../components/GravityEffectNote';
 import { landingLine } from '../components/ReadinessGate';
 import { LimitBadge } from '../components/LimitBadge';
@@ -23,17 +24,21 @@ import { StatusRing } from '../components/StatusRing';
 export interface CrewOverviewProps {
   onSelectCrew: (crewId: CrewId) => void;
   onNavigateView: (view: 'radiation' | 'alerts' | 'ground' | 'selftests') => void;
+  /** T-6: open a self-test from the body map for that crew member. */
+  onStartTest?: (crewId: CrewId, testId: string) => void;
 }
 
 export const CrewOverview: React.FC<CrewOverviewProps> = ({
   onSelectCrew,
   onNavigateView,
+  onStartTest,
 }) => {
   const { state, acknowledgeRecommendationOnboard } = useAegis();
   const { crew, alerts, environment, radiation, limits, sim, link, recommendations } = state;
 
   const [envDrilldownOpen, setEnvDrilldownOpen] = useState<boolean>(false);
   const [selectedEvaCrew, setSelectedEvaCrew] = useState<CrewId>('C1');
+  const [bodyMapCrew, setBodyMapCrew] = useState<CrewId>('C1');
 
   const activeAlerts = alerts.filter(
     (a) => a.state === 'RAISED' || a.state === 'ACKNOWLEDGED' || a.state === 'IN_TREATMENT'
@@ -513,6 +518,9 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
           })}
         </div>
       </section>
+
+      {/* T-6: clickable body map (region links from config/selftests.yaml) */}
+      <BodyMap crewId={bodyMapCrew} onCrewChange={setBodyMapCrew} onStartTest={onStartTest} />
 
       {/* 3. Commander's EVA Go / No-Go Readiness Inspector (US-4) */}
       <section

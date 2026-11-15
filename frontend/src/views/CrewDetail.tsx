@@ -24,6 +24,7 @@ import { AutonomyNotice } from '../components/AutonomyNotice';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { ContextBadge } from '../components/EvidenceDetails';
 import { HeadacheReport } from '../components/HeadacheReport';
+import { BodyMap } from '../components/BodyMap';
 import { Inspiration4ReferencePanel } from '../components/Inspiration4Panel';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
@@ -49,12 +50,15 @@ export interface CrewDetailProps {
   selectedCrewId: CrewId;
   onSelectCrew: (crewId: CrewId) => void;
   onBackOverview: () => void;
+  /** T-6: open a self-test from the body map. */
+  onStartTest?: (crewId: CrewId, testId: string) => void;
 }
 
 export const CrewDetail: React.FC<CrewDetailProps> = ({
   selectedCrewId,
   onSelectCrew,
   onBackOverview,
+  onStartTest,
 }) => {
   const { state, acknowledgeAlert, resolveAlert } = useAegis();
   const { crew, alerts, limits } = state;
@@ -328,6 +332,9 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
       )}
 
       <HeadacheReport crewId={member.id} />
+
+      {/* T-6: body map for this crew member */}
+      <BodyMap crewId={selectedCrewId} onStartTest={onStartTest} />
 
       {/* Limit-Band Physiological Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

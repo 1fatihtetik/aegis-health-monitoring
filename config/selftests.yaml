@@ -374,3 +374,58 @@ tests:
     escalation: "Low for several days, or thoughts of harming yourself: talk with the CMO in private today."
     protocol: "Single-item mood self-rating, 1-5 (project heuristic)."
     schedule: { every: 1d, at: "20:00", due_window: 3h }
+
+# ---- T-6: body map. Regions of the clickable figure and what each one links to (signals, rules, tests). The colour
+# of a region = the highest open alert severity among its rules (crew member's own alerts plus cabin-wide ones), shown
+# with the icon and text. The map shows indicators; it never diagnoses. The drawing lives in the UI; the links live
+# here. `reference: inspiration4` adds the aggregate Inspiration4 panel (P-6) under that region.
+body_map:
+  - id: brain_eyes
+    label: "Brain & eyes"
+    what: "Thinking, alertness, mood, balance and vision. Short sleep, high cabin CO2 and isolation slow thinking and lower mood; a gravity change upsets balance; long stays in low gravity can change the eyes (SANS)."
+    hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV, GRAVITY_FIELDS]
+    hrp_risks: [HRP-02, HRP-10, HRP-12, HRP-14]
+    signals: [symptom_headache, sleep_hours_24h, pvt_mean_rt, pvt_lapses, amsler_flag, kss, tlx_workload, mood, motion_sickness]
+    rules: [cog.performance_risk, ctx.headache_tachy.co2, ctx.headache_tachy.hydration, sleep.short_24h, cog.pvt.lapses, cog.sleepiness, workload.high, psych.mood.low, vestib.motion_sickness, sans.watch, eye.amsler.distortion, env.co2.critical]
+    tests: [headache, pvt_b, amsler, kss, tlx, mood, motion_sickness]
+  - id: heart_vessels
+    label: "Heart & vessels"
+    what: "The heart and blood vessels move blood and oxygen. In low gravity fluids shift toward the head and the heart works less; back in gravity, standing up can make you dizzy or faint."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-09]
+    signals: [heart_rate, hrv_rmssd, bp_systolic, bp_diastolic, stand_hr_rise, stand_sbp_drop]
+    rules: [physio.hr.high, physio.hr.low, physio.bp.high, cardio.orthostatic, cardio.stand.positive, cardio.stand.early_stop, ctx.headache_tachy.co2, ctx.headache_tachy.hydration]
+    tests: [bp_spo2, stand_test]
+  - id: lungs
+    label: "Lungs & breathing"
+    what: "The lungs take in oxygen and remove CO2. The closed cabin air decides what you breathe: low oxygen or high CO2 shows up here first."
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-06, HRP-12]
+    signals: [spo2, resp_rate, ppco2, ppo2]
+    rules: [physio.spo2.low, env.o2.low, env.co2.high_1h, env.co2.critical]
+    tests: [bp_spo2]
+  - id: bones_muscles
+    label: "Bones & muscles"
+    what: "Bones and muscles carry your weight. Without gravity they weaken (bone about 1-1.5% a month at 0 g without enough exercise); daily exercise and enough food slow the loss."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-09, HRP-11, HRP-16]
+    signals: [bmd_estimate, body_mass, vo2max_proxy, exercise_adherence_pct]
+    rules: []
+    tests: [body_mass]
+  - id: kidneys
+    label: "Kidneys & fluids"
+    what: "The kidneys balance water and salt. Drinking too little and calcium released from weakening bones make kidney stones more likely in space."
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07, HRP-11]
+    signals: [fluid_intake, sodium_intake]
+    rules: [intake.fluid.low, intake.sodium.high, ctx.headache_tachy.hydration]
+    tests: [intake]
+  - id: blood_immune
+    label: "Blood & immune system"
+    what: "Blood carries oxygen and sugar; the immune system fights infection. Both change in space, germs spread easily in a closed cabin, and radiation can damage blood-forming cells."
+    hazards: [HOSTILE_CLOSED_ENV, RADIATION, ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-01, HRP-05, HRP-07, HRP-17]
+    signals: [body_temp, skin_temp, glucose, dose_rate_equivalent, dose_mission]
+    rules: [physio.temp.fever, physio.temp.low, physio.temp.baseline_dev, metab.glucose.low, metab.glucose.high, rad.spe.dose_rate, rad.dose.24h]
+    tests: [temperature, glucose]
+    reference: inspiration4

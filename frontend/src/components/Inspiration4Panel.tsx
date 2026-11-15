@@ -138,7 +138,10 @@ function inInterval(a: ReferenceAnalyte, v: number | null): boolean | null {
   return true;
 }
 
-export const Inspiration4ReferencePanel: React.FC<{ initial?: PanelData | null }> = ({ initial }) => {
+export const Inspiration4ReferencePanel: React.FC<{ initial?: PanelData | null; titleId?: string }> = ({
+  initial,
+  titleId = 'i4-title',
+}) => {
   const [live, setLive] = useState<PanelData | null>(initial ?? null);
   const [showAll, setShowAll] = useState(false);
   const bundled = useMemo(() => parseInspiration4Csv(bundledCsv), []);
@@ -167,11 +170,11 @@ export const Inspiration4ReferencePanel: React.FC<{ initial?: PanelData | null }
     <section
       className="rounded-xl border border-sky-800/60 bg-space-900/90 p-4 space-y-3"
       data-testid="inspiration4-panel"
-      aria-labelledby="i4-title"
+      aria-labelledby={titleId}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <h3 id="i4-title" className="text-sm font-semibold text-slate-100">
+          <h3 id={titleId} className="text-sm font-semibold text-slate-100">
             Reference: blood tests from a real flight crew (Inspiration4, 2021)
           </h3>
           <p className="text-xs text-slate-400">

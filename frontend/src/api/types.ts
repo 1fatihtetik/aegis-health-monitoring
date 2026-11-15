@@ -973,3 +973,26 @@ export interface ScheduleItem {
   done_ts: string | null;
   done_provenance: Provenance | null;
 }
+
+/** T-6 body map (GET /api/v1/bodymap?crew_id=). Region links come from config/selftests.yaml `body_map`. */
+export interface BodyRegionSignal {
+  signal: string;
+  unit: string;
+  scope: 'crew' | 'cabin';
+  onboard_only: boolean;
+  latest: { ts: string; value: number } | null;
+  recent: number[];
+  source: SignalSource;
+}
+
+export interface BodyRegion {
+  id: string;
+  label: string;
+  what: string;
+  hazards: Hazard[];
+  hrp_risks: HrpRiskId[];
+  signals: BodyRegionSignal[];
+  rules: Array<{ id: string; title: string; severity: Severity }>;
+  tests: Array<{ id: string; title: string; onboard_only: boolean }>;
+  reference: 'inspiration4' | null;
+}

@@ -468,6 +468,60 @@ async def selftest_results(request: Request, crew_id: str | None = None) -> dict
     return _envelope(rt, "onboard", results=rt.world.entries.results_for(crew_id))
 
 
+def _body_map(rt: Runtime, node: str, crew_id: str) -> list[dict[str, Any]]:
+    """T-6: regions with their linked signals (latest value, the last 2 h, source), rules and tests. The ground copy
+    leaves out onboard-only signals and the single-signal rules and tests built on them (T-4)."""
+    w, cfg = rt.world, rt.cfg
+    store = w.ground.store if node == "ground" else w.store
+    now = w.clock.now()
+    rules = {r.id: r for r in cfg.rules}
+
+    def onboard_only_rule(rule_id: str) -> bool:  # a compound reaches the ground with its onboard member redacted
+        rule = rules[rule_id]
+        return bool(rule.signal) and SIGNALS[str(rule.signal)].onboard_only
+
+    out = []
+    for region in cfg.selftests.body_map:
+        signals = []
+        for signal in region.signals:
+            meta = SIGNALS[signal]
+            if node == "ground" and meta.onboard_only:
+                continue
+            owner = crew_id if meta.scope == "crew" else None
+            latest = store.latest(owner, signal)
+            recent = store.points(owner, signal, now - timedelta(hours=2), now)
+            stride = max(1, -(-len(recent) // 30))
+            source = ((_snap(rt, node).get("provenance", {}).get(signal) or cfg.datasets.source(signal).as_dict())
+                      if node == "ground" else w.source_for(signal, owner))
+            signals.append({
+                "signal": signal, "unit": meta.unit, "scope": meta.scope, "onboard_only": meta.onboard_only,
+                "latest": {"ts": iso(latest[0]), "value": round(latest[1], 3)} if latest else None,
+                "recent": [round(v, 3) for _, v in recent[::stride]], "source": source,
+            })
+        tests = [cfg.selftests.test(t) for t in region.tests]
+        out.append({
+            "id": region.id, "label": region.label, "what": region.what,
+            "hazards": [h.value for h in region.hazards], "hrp_risks": [h.value for h in region.hrp_risks],
+            "signals": signals,
+            "rules": [{"id": r, "title": rules[r].title or r, "severity": rules[r].severity.value}
+                      for r in region.rules if not (node == "ground" and onboard_only_rule(r))],
+            "tests": [{"id": t.id, "title": t.title, "onboard_only": t.onboard_only}
+                      for t in tests if not (node == "ground" and t.onboard_only)],
+            "reference": region.reference,
+        })
+    return out
+
+
+@router.get("/bodymap")
+async def body_map(request: Request, crew_id: str, node: Node = "onboard") -> dict[str, Any]:
+    """T-6 body map for one crew member: what each region does and what it links to (config/selftests.yaml).
+    The UI colours each region from the open alerts of its rules; the map never diagnoses."""
+    rt = _rt(request)
+    if crew_id not in rt.world.crew_ids:
+        raise HTTPException(404, f"Unknown crew member '{crew_id}'")
+    return _envelope(rt, node, crew_id=crew_id, regions=_body_map(rt, node, crew_id))
+
+
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
 async def observations(items: list[Observation], request: Request) -> dict[str, int]:

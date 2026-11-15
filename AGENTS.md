@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current priority (2026-11-15): Block T, crew self-tests and body map: IN PROGRESS** (`ROADMAP.md` §0). Built: T-0, T-3, T-1, T-2, T-4, T-5, T-7, T-8. Next: T-9 Amsler grid. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current priority (2026-11-15): Block T, crew self-tests and body map: IN PROGRESS** (`ROADMAP.md` §0). Built: T-0, T-3, T-1, T-2, T-4, T-5, T-7, T-8, T-9, T-6. Next: T-10 extended demo (test moments to agree with the user). Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 

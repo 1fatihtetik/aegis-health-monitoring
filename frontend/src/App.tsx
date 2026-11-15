@@ -26,6 +26,13 @@ const AegisShell: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [selectedCrewId, setSelectedCrewId] = useState<CrewId>('C1');
+  // T-6: a Start button on the body map opens that self-test for that crew member
+  const [startTest, setStartTest] = useState<{ crewId: CrewId; testId: string; n: number } | null>(null);
+  const handleStartTest = (crewId: CrewId, testId: string): void => {
+    setSelectedCrewId(crewId);
+    setStartTest((prev) => ({ crewId, testId, n: (prev?.n ?? 0) + 1 }));
+    setActiveTab('selftests');
+  };
   const [emergencyModalDismissed, setEmergencyModalDismissed] = useState<boolean>(false);
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
@@ -185,7 +192,10 @@ const AegisShell: React.FC = () => {
             <button
               type="button"
               data-testid="tab-selftests"
-              onClick={() => setActiveTab('selftests')}
+              onClick={() => {
+                setStartTest(null);
+                setActiveTab('selftests');
+              }}
               className={`min-h-[44px] rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                 activeTab === 'selftests'
                   ? 'bg-cyan-500 text-slate-950 shadow'
@@ -256,6 +266,7 @@ const AegisShell: React.FC = () => {
           <CrewOverview
             onSelectCrew={handleSelectCrew}
             onNavigateView={(v) => setActiveTab(v)}
+            onStartTest={handleStartTest}
           />
         )}
 
@@ -264,10 +275,17 @@ const AegisShell: React.FC = () => {
             selectedCrewId={selectedCrewId}
             onSelectCrew={(id) => setSelectedCrewId(id)}
             onBackOverview={() => setActiveTab('overview')}
+            onStartTest={handleStartTest}
           />
         )}
 
-        {activeTab === 'selftests' && <SelfTests initialCrewId={selectedCrewId} />}
+        {activeTab === 'selftests' && (
+          <SelfTests
+            key={startTest ? `start-${startTest.n}` : 'selftests'}
+            initialCrewId={startTest?.crewId ?? selectedCrewId}
+            initialTestId={startTest?.testId ?? null}
+          />
+        )}
 
         {activeTab === 'radiation' && (
           <Radiation onOpenEmergencyModal={() => setEmergencyModalDismissed(false)} />
