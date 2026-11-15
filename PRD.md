@@ -4,7 +4,7 @@
 > Status: Draft v1.3 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
 > **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo. *Done: Gate P, tag `demo-ready-v2`.*
-> **v1.3 change (Block T, `ROADMAP.md` §0, built: T-0..T-10):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11.
+> **v1.3 change (Block T, `ROADMAP.md` §0, built: T-0..T-10):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11. *Done: Gate T, tag `demo-ready-v3`.*
 
 ---
 
@@ -156,7 +156,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - `scripts/fetch_nasa_data.py` (build time only) downloads the D1–D5 windows into `data/nasa/raw/`, writes normalized files to `data/nasa/derived/`, and records each in `data/nasa/MANIFEST.yaml` (dataset id, tier, source URL, retrieval date, sha256, terms, transform).
 - `config/datasets.yaml` maps datasets to signals, phases and scenarios, plus the time mapping (window start, compression, loop/hold, gap hold time).
 - Replay adapters (`backend/app/datasets/`) implement the same `DeviceAdapter → Observation` interface as M1, so the engine path does not change.
-- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `CREW_ENTERED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency. `CREW_ENTERED` (v1.3, planned) is a value a person typed or tapped in the UI: no `dataset_id`, kept in memory only, ranked between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`; scripted results for the synthetic crew stay `SYNTHETIC`.
+- Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `CREW_ENTERED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency. `CREW_ENTERED` (v1.3) is a value a person typed or tapped in the UI: no `dataset_id`, kept in memory only, ranked between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`; scripted results for the synthetic crew stay `SYNTHETIC`.
 - Startup verifies the manifest and sha256. A missing or bad file falls back to the synthetic generator for that signal, labelled `SYNTHETIC`, and never stops the crew app.
 - `GET /api/v1/datasets` lists the sources. The UI shows a `DataSourceBadge` on every chart, tile and alert evidence block.
 - Work items R-0…R-6 and Gate R: done (`ROADMAP.md` §3). Block P (P-0…P-7, Gate P): `ROADMAP.md` §0.3.
@@ -200,7 +200,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - **Compound rules**: boolean or weighted combinations across modalities (e.g., `sleep_debt > 6h AND ppCO2 > limit_1h AND workload_high` → cognitive performance risk, HRP-14 + Hostile Env).
 - **Readiness scores** (0–100) per crew member: Overall, EVA, Cognitive, Physical. Transparent weighted formulas whose components can be inspected.
 - **Scores ported from literature** (optional, P1): VTE risk indicator, kidney stone risk indicator, orthostatic intolerance prediction after landing.
-- *(v1.3, planned)* Self-test results use the same rule types, no new engine: thresholds on the new entries, a SANS compound rule (HRP-10; low-g days, ppCO₂, sodium/fluid intake, Amsler flag; heuristic, evidence stated as limited), PVT-B lapses + sleepiness as extra evidence for `cog.performance_risk`, the stand test feeding `cardio.orthostatic`, and a new `LANDING` readiness kind (Go / Hold).
+- *(v1.3)* Self-test results use the same rule types, no new engine: thresholds on the new entries, a SANS compound rule (HRP-10; low-g days, ppCO₂, sodium/fluid intake, Amsler flag; heuristic, evidence stated as limited), PVT-B lapses + sleepiness as extra evidence for `cog.performance_risk`, the stand test feeding `cardio.orthostatic`, and a new `LANDING` readiness kind (Go / Hold).
 - Each rule has an `id`, `hazard[]`, `hrp_risk[]`, `severity`, `rationale`, `recommended_action`, and `source_ref` (e.g., "NASA-STD-3001 Vol 2 §6.x, VERIFY").
 
 ### M4. Alerting & crew guidance ★
@@ -512,7 +512,7 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 
 **Gate P:** measured radiation with correct provenance in every phase, cited gravity parameters, aggregate-only Inspiration4 data, extended demo offline, checks pass. Then the D-4 re-freeze (`demo-ready-v2`). *Done: Gate P approved, tag `demo-ready-v2`.*
 
-**Block T (v1.3, current priority, planned; build after the user's go-ahead).** Full table in `ROADMAP.md` §0.4. About 29 h.
+**Block T (v1.3, done).** Full table in `ROADMAP.md` §0.4. About 29 h.
 
 | Hours | Item | Done when |
 |---|---|---|
@@ -528,7 +528,7 @@ The 30-hour plan below replaces the original milestones. `ROADMAP.md` has the fu
 | T+23 to 27 | T-6 Clickable body map | Region colour follows open alerts; every region links a test or signal |
 | T+27 to 29 | T-10 Extended demo + rehearsal | Plays twice untouched, offline |
 
-**Gate T:** every test explains why / how / normal; `CREW_ENTERED` only on UI input and never stored; questionnaires never reach the ground; no gamification; new rules carry hazards + HRP risks and honest limits; the body map never diagnoses; offline and blackout safe; checks pass. Then the D-5 re-freeze (`demo-ready-v3`). Cut order if behind: T-9 → T-8 → T-7 → T-10 as a separate scenario; never T-0..T-6.
+**Gate T:** every test explains why / how / normal; `CREW_ENTERED` only on UI input and never stored; questionnaires never reach the ground; no gamification; new rules carry hazards + HRP risks and honest limits; the body map never diagnoses; offline and blackout safe; checks pass. Then the D-5 re-freeze (`demo-ready-v3`). Cut order if behind: T-9 → T-8 → T-7 → T-10 as a separate scenario; never T-0..T-6. *Done: Gate T approved, tag `demo-ready-v3`.*
 
 Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infection` scenarios, Countermeasures and Wellbeing views (M5), research export (M9), admin/config (M10), a separate ground process and docker compose (§11).
 

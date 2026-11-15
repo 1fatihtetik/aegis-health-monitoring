@@ -14,12 +14,12 @@ Horizons, about 11 min one way on the demo date).
 > **Block P (phases and gravity), done.** Measured radiation for LEO, the lunar surface and Earth, physiology
 > that responds to each phase's gravity (linear model), an Inspiration4 aggregate blood panel, and the extended demo.
 
-> **Next: Block T (crew self-tests and body map), planned, not started.** The crew takes tests and measurements
+> **Block T (crew self-tests and body map), done; demo re-frozen at tag `demo-ready-v3`.** The crew takes tests and measurements
 > themselves on a plain due / done / overdue routine: reaction-time test (PVT-B), guided blood pressure, SpO2,
 > temperature, body mass, glucose and intake entries, sleepiness and workload questionnaires (stay on board),
 > a 10-minute stand test, an Amsler grid eye check, a SANS (eye/brain) rule and a landing Go / Hold gate.
 > Results show on a clickable body map. Values typed by a person are labelled `CREW_ENTERED`. No gamification.
-> Plan: `ROADMAP.md` §0.
+> The demo adds three scripted self-test moments (see the walkthrough below). Plan: `ROADMAP.md` §0.
 
 Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block T is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
@@ -37,7 +37,7 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 | LEO, lunar-surface and post-landing radiation | **Measured (Block P).** LEO: ISS Columbus DOSTEL-1 via NASA OSDR RadLab (Jan 2019), with South Atlantic Anomaly passes flagged so they do not trigger the SPE alarm. Lunar surface: LRO CRaTER, surface-corrected by the CRaTER team (NASA ISWA), checked against Chang'e-4. After landing: EPA RadNet Houston (non-NASA, labelled `MEASURED_OTHER`). | P-1..P-3, done |
 | Gravity effects on the body | **Synthetic, linear model (P-5, user's pick)**: bone and fitness loss run at (1 - g) x the zero-g rate (animal partial-loading data, Ellman 2013; Mortreux 2018), blood pressure rises g x 8/9 mmHg (Norsk 2015), fainting risk after a landing from Meck 2001. No human data exist at 0.16 g or 0.38 g | P-5, done |
 | Inspiration4 blood panels | **Measured, aggregate only (P-6)**: pre/post-flight CBC/CMP mean ± SD per time point from NASA OSDR (OSD-569 CBC, OSD-575 CMP), cells with n < 3 dropped, never one person's values; reference only, never feeds alerts | P-6, done |
-| Crew self-test entries | **Planned (Block T)**: values a person enters in the UI, labelled `CREW_ENTERED`, kept in memory only. Scripted results for the synthetic crew stay `SYNTHETIC` | planned |
+| Crew self-test entries | **Block T**: values a person enters in the UI, labelled `CREW_ENTERED`, kept in memory only. Scripted results for the synthetic crew stay `SYNTHETIC` | T-0..T-10, done |
 
 NASA files are downloaded once (`python -P scripts/fetch_nasa_data.py rad-cruise` / `rad-surface` / `rad-spe` /
 `horizons` / `space-weather`, build time only; `verify` re-checks the hashes) into `data/nasa/` (~2.1 MB),

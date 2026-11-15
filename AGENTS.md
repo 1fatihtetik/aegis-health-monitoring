@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current priority (2026-11-15): Block T, crew self-tests and body map: IN PROGRESS** (`ROADMAP.md` §0). Built: T-0, T-3, T-1, T-2, T-4, T-5, T-7, T-8, T-9, T-6, T-10 (extended demo, ready for review). Next: Gate T, then D-5 re-freeze `demo-ready-v3` (user go-ahead). Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current state (2026-11-15): Block T, crew self-tests and body map: DONE** (`ROADMAP.md` §0). Built and approved: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. No new block is planned; stretch items only if the user asks. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
@@ -102,7 +102,7 @@ Rules:
 - **LEO SAA (P-1):** the ISS crosses the South Atlantic Anomaly several times a day and the measured dose rate spikes past the SPE alarm level. The replay emits `saa_transit` (position inside the SAA box of Berger et al. 2017) and `rad.spe.dose_rate` stands down through its `unless:` predicate. Never "fix" this by editing or capping the data.
 - **Partial gravity:** the user picked model A, LINEAR (P-4): drift rate = 0 g rate x (1 - g), BP = in-flight baseline + g x Norsk 2015 offset, orthostatic risk after a gravity increase = Meck 2001 fraction x the increase. Parameters live in `mission.yaml sim.gravity` and each cites its source or says `heuristic`. Do not swap the model without the user.
 
-## 2b. Crew self-tests (Block T, planned)
+## 2b. Crew self-tests (Block T, done)
 
 Decided by the user on 2026-11-14; plan in `ROADMAP.md` §0. Do not start before the go-ahead.
 
@@ -196,7 +196,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Block P (P-5, built): gravity drives physiology with the user's LINEAR model (bone and fitness drift at (1 - g) x the 0 g rate, BP rises g x 8/9 mmHg, orthostatic risk recorded after a gravity increase).
 - Radiation stream split into total and **neutron** components (neutrons ≈ 30% in LEO per CSA).
 - The simulator feeds the engine in-process on each simulated tick. `POST /api/v1/observations` exists and uses the same code path, but the simulator does not go through HTTP.
-- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Block T (planned) adds scripted self-test results to scenarios (seeded, `SYNTHETIC`) and extends `demo_5min` again (T-10). Deferred: `arrhythmia`, `eva`, `infection`.
+- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Block T adds scripted self-test results to scenarios (seeded, `SYNTHETIC`) and extends `demo_5min` again (T-10). Deferred: `arrhythmia`, `eva`, `infection`.
 - `demo_5min` sets the simulation speed per segment, so a 12-minute comm delay passes in about 10 real seconds.
 - Speed control 1×–10,000×. Simulated clock is injectable everywhere (never call `datetime.now()` in domain code; use `Clock`).
 
@@ -227,7 +227,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
   - **Inspiration4:** the bundled file has no per-person rows.
   - **Extended demo:** plays twice with identical alerts and passes the no-network test.
 
-- Block T (planned):
+- Block T:
   - **Provenance:** `CREW_ENTERED` needs no `dataset_id`, ranks between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`, and is never put on a scripted scenario value.
   - **Catalog:** every self-test has why / steps / hazards / HRP risks; every limit ref exists in `limits.yaml`.
   - **Schedule:** same scenario + seed gives the same due list; a gravity increase adds the extra checks; overdue never goes above `INFO`.
@@ -262,6 +262,6 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 ## 10. Build order
 
-Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`).
+Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`) → Block T (T-0..T-10, Gate T) → D-5 re-freeze (tag `demo-ready-v3`).
 
-**Next (planned, needs the user's go-ahead):** Block T (`ROADMAP.md` §0.4): T-0 foundation (`CREW_ENTERED`, catalog, severity sublabel) → T-3 guided measurements → T-1 schedule → T-2 PVT-B → T-4 questionnaires → T-5 stand test → T-7 SANS rule → T-8 landing gate → T-9 Amsler grid → T-6 body map → T-10 extended demo → **Gate T** → D-5 re-freeze (`demo-ready-v3`). If behind, cut in the order given in `ROADMAP.md` §0.5. Block P is done (P-0..P-7, Gate P, `demo-ready-v2`).
+**Next:** nothing planned. Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.

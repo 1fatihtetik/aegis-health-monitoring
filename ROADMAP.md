@@ -2,14 +2,14 @@
 
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
-**Current state (2026-11-14):** the 30-hour MVP, Block R (real NASA data) and Block P (phases and gravity) are built and approved. The demo is frozen at tag `demo-ready-v2` (D-4); the Block R demo stays at `demo-ready`. See `implementationsandgoals.txt`.
-**Current priority: Block T, crew self-tests and body map (§0). Status: IN PROGRESS (go-ahead 2026-11-15).** Built: T-0..T-9 (approved), T-10 extended demo (ready for review; moments agreed with the user 2026-11-15). Next: Gate T, then D-5 re-freeze `demo-ready-v3` (user go-ahead).
+**Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
+**Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
 ---
 
-## 0. Block T: crew self-tests and body map (PRIORITY 1, planned)
+## 0. Block T: crew self-tests and body map (done)
 
 ### 0.1 Challenge coverage (from the brief, 2026-11-14)
 
@@ -104,6 +104,8 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 | Freeze | D-3, tag `demo-ready` | approved |
 | Block P: phases and gravity | P-0 `MEASURED_OTHER`; P-1 LEO = ISS DOSTEL-1 (DLR, via NASA OSDR RadLab) with SAA stand-down + INFO notice; P-2 lunar = LRO CRaTER (NASA ISWA, checked vs Chang'e-4); P-3 Earth = EPA RadNet Houston; P-4/P-5 linear partial-gravity model; P-6 Inspiration4 aggregate panel; P-7 `leo_baseline`, `lunar_surface`, extended `demo_5min`; **Gate P** | approved |
 | Re-freeze | D-4, tag `demo-ready-v2` | approved |
+| Block T: crew self-tests | T-0 `CREW_ENTERED` + catalog + LOMO/LOM/LOC sublabel; T-1 routine board; T-2 PVT-B; T-3 guided measurements; T-4 onboard-only questionnaires; T-5 stand test; T-6 body map; T-7 SANS watch; T-8 landing gate; T-9 Amsler grid; T-10 extended demo; **Gate T** | approved |
+| Re-freeze | D-5, tag `demo-ready-v3` (Block T) | done |
 
 Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`. The full Block P plan is in git history (`ROADMAP.md` before 2026-11-14 Block T planning).
 

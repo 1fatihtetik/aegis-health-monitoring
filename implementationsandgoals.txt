@@ -1,7 +1,7 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: T-10 extended demo BUILT, READY FOR REVIEW; checks: pytest 213 passed, ruff clean, manifest all match, tsc clean, vitest 106 passed)
-State: MVP, Block R, Block P, D-4 APPROVED; frozen at `demo-ready` (Block R) and `demo-ready-v2` (Block P). Block T: T-0..T-9 APPROVED; T-10 READY FOR REVIEW; F-001..F-014 CLOSED.
-Next: review T-10 -> Gate T -> D-5 re-freeze (`demo-ready-v3`, user go-ahead).
+Last updated: 2026-11-15 (Claude: D-5 re-freeze done, tag `demo-ready-v3`; Block T complete)
+State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P) and `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
+Next: nothing queued. Supervisor: confirm D-5. Stretch items only if the user asks (section 6).
 
 Read order: this file -> ROADMAP.md §0 -> AGENTS.md (§2b for Block T) -> PRD.md (§6 M11, §7.4 severity, §9 limits, then only needed sections). Older detail lives in git history (`git log -p implementationsandgoals.txt`).
 
@@ -40,14 +40,24 @@ User directives:
 - Block T: results are Observations on the existing path; `CREW_ENTERED` only for UI input; scripted results stay SYNTHETIC; new limits `verified: false` unless a clause is read; T-4 signals onboard-only; LOMO/LOM/LOC is a UI sublabel; no gamification, no camera, no downlink packet.
 
 4. SUPERVISOR FINDINGS (Antigravity)
-- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P P-0..P-7 + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T plan; T-0 (`96c5c36`), T-3 (`603b76c`), T-1 (`2704bf2`), T-2 (`81eaef4`), T-4 (`7fa305a`), T-5 (`cacebca`), T-7 (`f1a7f91`), T-8 (`cb16926`), T-9 (`0627e7a`), T-6 (`0c5d4db`). Full review notes in git history.
+- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P P-0..P-7 + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T plan; T-0 (`96c5c36`), T-3 (`603b76c`), T-1 (`2704bf2`), T-2 (`81eaef4`), T-4 (`7fa305a`), T-5 (`cacebca`), T-7 (`f1a7f91`), T-8 (`cb16926`), T-9 (`0627e7a`), T-6 (`0c5d4db`), **T-10 (`014ae27`)**, and **Gate T** (2026-11-15: all checks verified — pytest 213 passed, ruff clean, manifest 16/16 match, tsc clean, vitest 106 passed; catalog why/steps/escalation, CREW_ENTERED memory-only, T-4 onboard-only, no gamification, no diagnosis copy, no-network + blackout verified). Full review notes in git history.
 - F-001..F-014: CLOSED (F-014 verified in `frontend/src/index.css`: `bg-space-950/60` and `/70` light-mode overrides).
+- Note for D-5 (non-blocking): README lines 17/40 "planned, not started" -> FIXED in D-5 (README, AGENTS, ROADMAP, PRD now say Block T done, `demo-ready-v3`).
 - Standing supervisor notes for Block T (non-medical-expert crew, extreme/offline environments):
   - Escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; stand test keeps the always-visible STOP control (Lee et al. 2015 wall-lean protocol).
   - T-9 Amsler grid: plain one-eye-at-a-time steps (cover other eye, focus on center dot, tap wavy/blurry/missing areas), >= 44 px tap targets on tablet, no image stored, `CREW_ENTERED` provenance, onboard CMO guidance (no diagnosis copy).
   - T-6 Body map: plain region labels + color + icon, >= 44 px touch/keyboard targets, "Indicators consistent with..." copy only.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 D-5 re-freeze `demo-ready-v3` (user: "work on your next tasks ... commit", after Gate T approval).
+  Docs: README (Block T done banner, self-test data row, supervisor's lines 17/40 note), AGENTS (current state, §2b,
+  build order, next = nothing planned), ROADMAP (state, §0 header, Block T + D-5 rows), PRD (v1.3 banner and §6
+  wording no longer "planned", Gate T done). Code unchanged since T-10 (`014ae27`), whose checks were green:
+  pytest 213, ruff clean (backend + scripts), manifest verify all match, tsc clean, vitest 106.
+  Live rehearsal (backend 8010 / frontend 5180, demo_5min seed 42, untouched): every alert at its documented time
+  (PVT-B 7h46m, fluid + SANS 22h01m, gate 23h28m C3 HOLD 26.1 with fluid 1200 SYNTHETIC, orthostatic 23h45m,
+  stand positive 23h46m), scripted results badged SYNTHETIC, paused at 24h31m, no console errors.
+  Tag `demo-ready-v3` on the D-5 commit, pushed.
 - 2026-11-15 T-10 extended demo (user: "work on your next tasks ... commit"), with the 4 moments the user approved.
   `demo_5min.yaml`: three `selftest` events (SYNTHETIC "scripted self-test result", no entry_method, never
   CREW_ENTERED): (1) 7h45m C1 `pvt_b` {mean 395 ms, 7 lapses, 1 false start} -> `cog.pvt.lapses` CAUTION and
@@ -122,11 +132,9 @@ User directives:
   T-4 (`7fa305a`), T-2 (`81eaef4`), T-1 (`2704bf2`), T-3 (`603b76c`), T-0 (`96c5c36`); details in commit messages.
 
 6. WORK QUEUE
-Done (APPROVED): MVP, Block R, D-3, Block P + Gate P, D-4; Block T T-0..T-9.
-READY FOR REVIEW: T-10 extended demo (see section 5).
-Block T (PRIORITY 1, ROADMAP.md §0.4):
-- GATE T, then D-5 re-freeze `demo-ready-v3` (user go-ahead).
-Cut order if behind: T-9 -> T-10 reduced to a separate scenario. Never cut T-0..T-6.
+Done (APPROVED): MVP, Block R, D-3, Block P + Gate P, D-4; Block T T-0..T-10 + Gate T.
+Done by Claude, awaiting supervisor confirmation: D-5 re-freeze (`demo-ready-v3`).
+Queue empty.
 Open question for the user: submission deadline/format.
 Stretch (only if the user asks, after Gate T): `arrhythmia` scenario; a second real SPE; Countermeasures view + private journal.
 
@@ -140,6 +148,6 @@ Stretch (only if the user asks, after Gate T): `arrhythmia` scenario; a second r
 - WS `/ws/live?node=onboard|ground`: `{type: "snapshot", ...}` (~5/s), `{type: "alert", node, alert}`, `{type: "recommendation", node: "onboard", recommendation}`.
 
 8. GIT & ENVIRONMENT NOTES
-- Remote: `https://github.com/1fatihtetik/aegis-health-monitoring` (`main`). Tags: `g3-1`, `gate3-ready`, `gate3-approved`, `demo-ready`, `demo-ready-v2`. Never force-push `main`; use `git revert` for rollbacks.
+- Remote: `https://github.com/1fatihtetik/aegis-health-monitoring` (`main`). Tags: `g3-1`, `gate3-ready`, `gate3-approved`, `demo-ready`, `demo-ready-v2`, `demo-ready-v3`. Never force-push `main`; use `git revert` for rollbacks.
 - Windows: no `make`; run the commands from `README.md`. Python 3.14 global install. pytest may need to run outside the Windows sandbox (it blocks `socket.socketpair()` used by asyncio).
 - Downloaded data files are untrusted input: parse them with `python -P`, never execute anything from `data/nasa/raw/`.
