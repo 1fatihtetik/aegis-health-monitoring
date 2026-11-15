@@ -7,8 +7,8 @@
 # The briefs quote NASA-STD-3001 Vol 1 Rev C and Vol 2 Rev D. Keep one entry per line (frontend/src/api/limits.ts).
 # 2026-11-15 group-A read: NASA-STD-3001 Vol 2 Rev F (approved 2026-07-14) and Rev D; OCHMO-TB-004 Rev D, TB-013 Rev C,
 # TB-027 Rev B, MTB-003 Rev A, MTB-001, MTB-013 Rev D. [V2 6004] 3 mmHg, [V2 6006], [V2 6012] and [V2 6077] are unchanged
-# in Rev F. None of the six group-A entries below has a NASA number for the quantity this config measures; each
-# source_ref says what the documents do contain.
+# in Rev F. Built from it (user, 2026-11-15): fluid 2.5 L [V2 6109]; inspired O2 (signal pio2) 127 / 122 mmHg
+# [V2 6003]; 24-h noise dose [V2 6115]. The other group-A entries stay heuristics and say what the documents contain.
 radiation:
   career_effective_dose_mSv:  { value: 600, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4030] Career Space Permissible Exposure Limit, via OCHMO-TB-020 Rev G", verified: true }
   spe_event_effective_dose_mSv: { value: 250, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4031] Short-Term Radiation Limits - Solar Particle Events (design event), via OCHMO-TB-020 Rev G", verified: true }
@@ -21,11 +21,14 @@ environment:
   ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
   ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6004] note: off-nominal CO2 values are not in the standard (set per program); OCHMO-TB-004 Rev D lists fatigue, malaise and nausea above 4.5 mmHg (background, not a limit)", verified: false }
   ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic for cabin (ambient) ppO2. NASA-STD-3001 Vol 2 Rev F [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2), not ambient ppO2: target 145-155 mmHg, mild-hypoxia lower limit 127 mmHg (1-h TWA), absolute 122 mmHg; 19.5 kPa ambient at 101 kPa cabin = PIO2 ~137 mmHg", verified: false }
+  pio2_mmHg_min:       { value: 127, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6003] O2 Partial Pressure Range for Crew Exposure, Table 6.2-1: mild-hypoxia lower limit PIO2 127 mmHg (1-hour time-weighted average)", verified: true }
+  pio2_mmHg_floor:     { value: 122, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6003] O2 Partial Pressure Range for Crew Exposure, Table 6.2-1 note: absolute lower limit PIO2 122 mmHg for the mild-hypoxia range", verified: true }
   cabin_pressure_kPa:  { min: 34.5, max: 103, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6006] Total Pressure Tolerance Range for Indefinite Crew Exposure, via OCHMO-TB-003 Rev A", verified: true }
   cabin_temp_C:        { min: 18, max: 27, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   humidity_pct:        { min: 25, max: 75, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   noise_dBA_hazardous_max: { value: 85, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6077] Hazardous Noise Limits, via OCHMO-TB-035 Rev C", verified: true }
   noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6079] limits continuous noise in sleep areas (missions > 30 d) to the NC-40 octave-band curve (Table 6.6-3), which has no single dBA value; [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis, ~70 dBA over 24 h)", verified: false }
+  noise_dose_24h_max:  { value: 100, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6115] 24-Hour Noise Exposure Limits: noise dose D limited to 100 over any 24 h (8-h 75 dBA basis, 3 dB exchange rate; ~70 dBA over 24 h)", verified: true }
 physiology:
   spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false }
   hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false }
@@ -51,7 +54,7 @@ questionnaire:
 metabolic:
   glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }
 nutrition:
-  fluid_intake_mL_day_min:   { value: 2000, source_ref: "Project heuristic (drinks only). NASA-STD-3001 Vol 2 Rev F [V2 6109] Table 6.3-1 requires the vehicle to supply a minimum 2.5 L per crewmember per day of potable water for hydration (drinking and food rehydration), via OCHMO-TB-027 Rev B; ISS crews averaged ~2.0-2.3 L/day (TB-013 Rev C)", verified: false }
+  fluid_intake_mL_day_min:   { value: 2500, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6109] Water Quantity, Table 6.3-1: potable water for hydration minimum 2.5 L per crewmember per day (drinking and food rehydration), via OCHMO-TB-027 Rev B (water-intake requirement)", verified: true }
   sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 7100] Food Nutrient Composition defers to the NIH Dietary Reference Intakes (Table 7.1-2 adjusts only vitamin D) and states no sodium number; ISS intake was ~3800-4700 mg/day (OCHMO-TB-013 Rev C, background)", verified: false }
 # Block T, T-5: 10-minute stand test (wall-lean adaptation of Lee et al. 2015). Clinical criteria, not NASA-STD-3001.
 stand_test:

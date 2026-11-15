@@ -630,6 +630,8 @@ export interface EnvironmentState {
   status: OperationalStatus;
   ppco2_mmHg: number;
   ppo2_kPa: number;
+  /** Inspired O2 (PIO2) derived from cabin ppO2 and pressure, NASA-STD-3001 [V2 6003] (0 when unknown). */
+  pio2_mmHg: number;
   cabin_pressure_kPa: number;
   cabin_temp_c: number;
   humidity_pct: number;

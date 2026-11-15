@@ -39,24 +39,66 @@ rules:
       - "Wear portable breathing gear if anyone feels unwell"
       - "Recheck CO2 every 10 minutes until it is back under the limit"
 
+  # NASA-STD-3001 Vol 2 Rev F [V2 6115]: 24-h noise dose D <= 100 (8-h 75 dBA basis, 3 dB exchange rate). Hearing
+  # loss has no entry in HRP-01..17 here; the nearest are sleep (HRP-14) and behavioural health (HRP-12).
+  - id: env.noise.dose_24h
+    type: CUMULATIVE
+    title: "Cabin noise dose for the last 24 h above the limit"
+    signal: noise_dose_rate
+    op: ">"
+    limit_ref: environment.noise_dose_24h_max
+    window: 24h
+    unit: "dose (100 = limit)"
+    severity: CAUTION
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-14, HRP-12]
+    rationale: "Cabin noise over the last 24 h adds up to more than the NASA daily noise dose; long loud exposure can damage hearing and disturb sleep."
+    action: "Find and quiet the loudest source; use hearing protection in loud areas; protect the next sleep period."
+    checklist:
+      - "Find the loudest equipment and quiet it (covers, mufflers, turn off what is not needed)"
+      - "Wear hearing protection in loud areas until the dose is back under the limit"
+      - "Keep sleep areas as quiet as possible"
+      - "Tell the CMO if anyone notices ringing ears or muffled hearing"
+
+  # Inspired O2 (PIO2 = O2 in the air you breathe after it is warmed and humidified), NASA-STD-3001 Vol 2 Rev F
+  # [V2 6003] Table 6.2-1: 1-hour average at or above 127 mmHg, never below 122 mmHg. Same pair as CO2 (1 h + critical).
   - id: env.o2.low
     type: THRESHOLD
-    title: "Cabin O2 partial pressure low"
-    signal: ppo2
+    title: "Breathable oxygen low (1-hour average)"
+    signal: pio2
     op: "<"
-    limit_ref: environment.ppo2_kPa_min
-    window: 10m
+    limit_ref: environment.pio2_mmHg_min
+    window: 1h
     agg: mean
-    severity: WARNING
+    severity: CAUTION
     hazards: [HOSTILE_CLOSED_ENV]
     hrp_risks: [HRP-06]
-    rationale: "Low O2 partial pressure is a hypoxia risk."
+    rationale: "Inspired oxygen below the NASA mild-hypoxia limit for an hour is a hypoxia risk."
     action: "Check O2 supply and cabin pressure; prepare portable breathing apparatus."
     checklist:
       - "Check the O2 supply and the cabin pressure readout"
       - "Get the portable breathing apparatus ready"
       - "Stop heavy exercise until O2 is back to normal"
       - "Recheck O2 every 10 minutes"
+
+  - id: env.o2.critical
+    type: THRESHOLD
+    title: "Breathable oxygen below the absolute floor"
+    signal: pio2
+    op: "<"
+    limit_ref: environment.pio2_mmHg_floor
+    window: 5m
+    agg: mean
+    severity: WARNING
+    hazards: [HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-06, HRP-08]
+    rationale: "Inspired oxygen below the NASA absolute lower limit: hypoxia can impair judgement before you notice it."
+    action: "Start the O2 contingency procedure; put on portable breathing apparatus; check each other for symptoms."
+    checklist:
+      - "Put on the portable breathing apparatus now"
+      - "Start the O2 contingency procedure (O2 supply, leaks, cabin pressure)"
+      - "Check each other: confusion, headache, fast breathing, blue lips"
+      - "No EVA, exercise or critical tasks until O2 is back above the floor; tell the CMO"
 
   - id: physio.spo2.low
     type: THRESHOLD

@@ -178,7 +178,9 @@ def test_measurement_rules_fire_on_entries(client, test_id, values, rule_id, sev
     w.tick()
     alert = open_alert(w, rule_id, "C3")
     assert alert is not None and alert.severity.value == severity
-    assert alert.evidence["provenance"] == "CREW_ENTERED" and alert.evidence["limit_verified"] is False
+    assert alert.evidence["provenance"] == "CREW_ENTERED"
+    # Only the fluid minimum has a NASA clause ([V2 6109], read 2026-11-15); the other bands stay unverified.
+    assert alert.evidence["limit_verified"] is (rule_id == "intake.fluid.low")
 
 
 def test_normal_entries_raise_nothing(client):
@@ -198,7 +200,8 @@ def test_out_of_range_typing_is_refused(client):
 
 
 def test_new_measurement_limits_are_honestly_unverified(cfg):
-    for ref in ("physiology.body_temp_C.max", "metabolic.glucose_mg_dL.min", "nutrition.fluid_intake_mL_day_min",
+    # nutrition.fluid_intake_mL_day_min is verified since 2026-11-15 ([V2 6109]); see test_group_a_limits.py.
+    for ref in ("physiology.body_temp_C.max", "metabolic.glucose_mg_dL.min",
                 "nutrition.sodium_intake_mg_day_max", "physiology.bp_diastolic_mmHg.min"):
         assert cfg.limit(ref).verified is False
 

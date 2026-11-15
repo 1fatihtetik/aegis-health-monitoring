@@ -6,7 +6,7 @@ Horizons, about 11 min one way on the demo date).
 
 > Decision support only, not a medical diagnosis.
 > **Real NASA data (Block R + Block P, approved; demo re-frozen at tag `demo-ready-v2`).** 9 limits verified against NASA-STD-3001
-> clauses (R-1); cabin radiation in Mars transit, on the Mars surface and during the March 2012 solar particle
+> clauses (R-1), plus water 2.5 L/day, inspired O2 and the 24-h noise dose from Vol 2 Rev F (2026-11-15); cabin radiation in Mars transit, on the Mars surface and during the March 2012 solar particle
 > event is replayed from MSL Curiosity RAD measurements (R-2, R-3); the comm delay is the JPL Horizons Earth–Mars
 > light time (R-4); the ground console shows the real DONKI/OMNI2 record of that event (R-5); every simulator
 > constant cites a source or says "heuristic" (R-6). Crew physiology is synthetic and labelled so.
@@ -28,7 +28,7 @@ Agent handoff and the API contract: `implementationsandgoals.txt`.
 
 | Data | Source | Status |
 |---|---|---|
-| Limits (CO2, radiation career dose, cabin atmosphere, noise…) | NASA-STD-3001 Vol 1/Vol 2 and OCHMO Technical Briefs, with clause ids (e.g. 1-h ppCO2 <= 3 mmHg, [V2 6004]) | R-1, done (9 limits; the rest stay `verified: false` and are marked) |
+| Limits (CO2, radiation career dose, cabin atmosphere, noise…) | NASA-STD-3001 Vol 1/Vol 2 and OCHMO Technical Briefs, with clause ids (e.g. 1-h ppCO2 <= 3 mmHg, [V2 6004]) | R-1, done (9 limits); 2026-11-15 adds water 2.5 L/day [V2 6109], inspired O2 127/122 mmHg [V2 6003] and the 24-h noise dose [V2 6115] (Vol 2 Rev F); the rest stay `verified: false` and are marked |
 | Deep-space and Mars-surface radiation, including a real solar particle event | MSL Curiosity RAD measurements (PDS PPI `MSL-M-RAD-3-RDR-V1.0`, SPDF CDAWeb `MSL_RAD_OBS-L2`) | Done: quiet-GCR cruise (2012-04-10..19, mean 449 µGy/day x <Q> 3.82 = 1.72 mSv/day; published 1.84 ± 0.33), Gale crater (2013-03-23..04-01, 211 µGy/day x 3.05 = 0.64 mSv/day; published 0.64 ± 0.12) and the March 7-10, 2012 SPE (peak 672 µGy/h, replayed x20) |
 | Space-weather context for that event | NASA CCMC DONKI (SEP, flare, CME records), SPDF OMNIWeb (OMNI2 hourly >10 MeV proton flux) | Done: X5.4 flare, 2200 km/s CME, near-Earth flux peak 4560 pfu (NOAA S3) on the ground console; the ground can forward it to the crew through the delayed link |
 | Earth–Mars comm delay | JPL Horizons ephemeris (daily Earth–Mars one-way light time, 2026-08..2027-08) | Done: 657 s at the demo start (2026-11-14 20:00 UTC), changes with the date; 720 s fallback if the file is missing |

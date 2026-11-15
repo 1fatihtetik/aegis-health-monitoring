@@ -14,6 +14,12 @@ signals:
   low_g_days:
     provenance: SYNTHETIC
     basis: "Mission timeline: scenario mission day for the time before T0 at the starting phase's gravity, plus simulated time below 1 g; resets on reaching 1 g (P-5 assumption)."
+  pio2:
+    provenance: SYNTHETIC
+    basis: "Derived from the synthetic cabin ppO2 and pressure: PIO2 = ppO2 x (PB - 47 mmHg) / PB (NASA-STD-3001 Vol 2 Rev F, Table 6.2-1 formula)."
+  noise_dose_rate:
+    provenance: SYNTHETIC
+    basis: "Derived from the synthetic cabin noise level: 12.5 x 2^((L - 75) / 3) % per hour, the NASA-STD-3001 Vol 2 Rev F [V2 6115] noise-dose formula (8-h 75 dBA, 3 dB exchange)."
   ppco2:
     provenance: SYNTHETIC_CALIBRATED
     basis: "Nominal 2.0 mmHg (OCHMO-TB-004 Rev D: ISS 24-h average at or below 3.00 mmHg since 2016; CDRA sized for 2.0-3.9 mmHg). Scrubber-degradation peaks 3.7-3.8 mmHg sit in the TB-004 headache band (2.8-4.5 mmHg)."

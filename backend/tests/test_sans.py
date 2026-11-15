@@ -56,7 +56,7 @@ def test_does_not_fire_before_a_month_or_without_a_contributor(cfg, store):
     t1 = T0 + timedelta(minutes=1)
     store.add(None, "low_g_days", t1, 60.0)
     store.add("C1", "sodium_intake", t1, 2000)
-    store.add("C2", "fluid_intake", t1, 2500)
+    store.add("C2", "fluid_intake", t1, 3000)  # above the [V2 6109] 2.5 L minimum
     f = findings(engine, t1)
     assert not f[("sans.watch", "C1")].firing and not f[("sans.watch", "C2")].firing
 

@@ -21,6 +21,21 @@ DatedSample = tuple[datetime, str | None, str, float]
 
 EFFECT_TYPES = {"spe", "co2_ramp", "insomnia", "orthostatic", "symptom"}
 
+KPA_TO_MMHG = 7.50062
+WATER_VAPOUR_MMHG = 47.0  # saturated water vapour at 37 C in the airways
+
+
+def inspired_o2_mmHg(ppo2_kpa: float, pressure_kpa: float) -> float:
+    """PIO2 = FIO2 x (PB - 47 mmHg), FIO2 = dry-gas O2 fraction (NASA-STD-3001 Vol 2 Rev F, Table 6.2-1 header)."""
+    pb = pressure_kpa * KPA_TO_MMHG
+    return ppo2_kpa * KPA_TO_MMHG * (pb - WATER_VAPOUR_MMHG) / pb
+
+
+def noise_dose_rate_pct_h(level_dba: float) -> float:
+    """Noise dose per hour at a steady level, [V2 6115]: D = 100 x sum(C/T), T = 480 / 2^((L - 75) / 3) minutes.
+    One hour at L adds 100 x 60 / T = 12.5 x 2^((L - 75) / 3); integrated over 24 h, 100 is the limit."""
+    return 12.5 * 2 ** ((level_dba - 75.0) / 3.0)
+
 
 @dataclass
 class Effect:
@@ -289,13 +304,22 @@ class Simulator:
         noise = cab["noise_dBA"]
         day_shift = noise["day_start_h"] <= h < noise["day_end_h"]
         temp = cab["temp_C"]
+        # Draw order unchanged (ppO2, pressure, temp, humidity, noise), so every other stream stays the same.
+        ppo2 = cab["ppo2_kPa"]["mean"] + g(0, cab["ppo2_kPa"]["sd"])
+        pressure = cab["pressure_kPa"]["mean"] + g(0, cab["pressure_kPa"]["sd"])
+        cabin_temp = temp["mean"] + diurnal(temp) + g(0, temp["sd"])
+        humidity = cab["humidity_pct"]["mean"] + g(0, cab["humidity_pct"]["sd"])
+        noise_dba = (noise["day"] if day_shift else noise["night"]) + g(0, noise["sd"])
         out += [
             (None, "ppco2", co2),
-            (None, "ppo2", cab["ppo2_kPa"]["mean"] + g(0, cab["ppo2_kPa"]["sd"])),
-            (None, "cabin_pressure", cab["pressure_kPa"]["mean"] + g(0, cab["pressure_kPa"]["sd"])),
-            (None, "cabin_temp", temp["mean"] + diurnal(temp) + g(0, temp["sd"])),
-            (None, "humidity", cab["humidity_pct"]["mean"] + g(0, cab["humidity_pct"]["sd"])),
-            (None, "noise_level", (noise["day"] if day_shift else noise["night"]) + g(0, noise["sd"])),
+            (None, "ppo2", ppo2),
+            (None, "cabin_pressure", pressure),
+            (None, "cabin_temp", cabin_temp),
+            (None, "humidity", humidity),
+            (None, "noise_level", noise_dba),
+            # Derived, no RNG draw: inspired O2 ([V2 6003] Table 6.2-1) and the noise-dose rate ([V2 6115]).
+            (None, "pio2", inspired_o2_mmHg(ppo2, pressure)),
+            (None, "noise_dose_rate", noise_dose_rate_pct_h(noise_dba)),
             (None, "area_dose_rate_absorbed", area_absorbed),
             (None, "area_dose_rate_equivalent", area),
             # Neutron share: fixed fraction of the area dose equivalent (CSA LEO ~30%, heuristic). Its noise is drawn

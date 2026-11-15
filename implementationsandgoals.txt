@@ -1,5 +1,5 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: group-A limit clauses read; source_refs updated, no value or verified flag changed; 3 decisions for the user)
+Last updated: 2026-11-15 (Claude: group-A clause limits BUILT (fluid 2.5 L, inspired O2, 24-h noise dose), READY FOR REVIEW)
 State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P) and `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
 Next: nothing queued (D-5 confirmed). Stretch items only if the user asks (section 6).
 
@@ -25,7 +25,7 @@ User directives:
 - Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 9 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND (`all`/`any`/`none`, hysteresis, context branching); alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
 - Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts`; views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`.
 - Data (Block R/P): `backend/app/datasets/` replays with manifest + sha256 check and synthetic fallback; `data/nasa/MANIFEST.yaml` (16 files verified). Radiation replays per phase: MSL/RAD cruise (TRANSIT/MARS_TRANSIT/RETURN), Gale (MARS_SURFACE), March 2012 SPE (`spe_event`, demo), ISS DOSTEL-1 (LEO, SAA stand-down), LRO CRaTER (LUNAR_SURFACE), EPA RadNet (POST_LANDING, MEASURED_OTHER). JPL Horizons light time; DONKI + OMNI2 space-weather card; Inspiration4 aggregate CBC/CMP panel (reference only).
-- Limits: 9 `verified: true` with clause ids (ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rate [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise [V2 6077]; BMD [V1 4027]). Everything else `verified: false` with an honest source_ref.
+- Limits: 9 `verified: true` from R-1 (ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rate [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise [V2 6077]; BMD [V1 4027]) plus 3 from Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1-h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref.
 - Gravity (P-5, LINEAR): drift = 0 g rate x (1 - g); BP = baseline + g x Norsk 2015 offset; a gravity increase records the Meck 2001 risk x the increase.
 - Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` catalog (15 tests: headache, bp_spo2, temperature, body_mass, glucose, intake, pvt_b, pvt_b_short, kss, tlx, motion_sickness, mood, stand_test, stand_test_short, amsler) + `body_map` (6 regions); `app/selftests/` (catalog, entries, schedule); Self-Tests tab (routine board, one test per screen, MeasurementForm, PvtTest, Questionnaire, StandTest, ReadinessGate); onboard-only questionnaires; SANS watch (`sans.watch`, cabin signal `low_g_days`); LANDING gate (T-8); Amsler grid (T-9, `eye.amsler.distortion`, joins `sans.watch` any); BodyMap on Crew Overview + Crew Detail (T-6).
 - `demo_5min` (seed 42, T-10): ISS/LEO 0-30m (SAA INFO 0h05m); lunar surface 30m-50m; Mars transit from 50m; `sleep.short_24h` 5h56m; scripted C1 PVT-B 7h45m -> `cog.pvt.lapses` + `cog.performance_risk` 7h46m; `env.co2.high_1h` 17h26m; `ctx.headache_tachy.co2` 19h16m; SPE EMERGENCY 20h09m onboard / 20h20m ground; blackout 20h45m-21h20m; `rad.dose.24h` WARNINGs 21h16m / 21h27m; scripted C3 fluid 1200 mL 22h -> `intake.fluid.low` + `sans.watch` 22h01m; 60x from 23h20m (landing gate: C3 HOLD 26); landing 23h30m; `cardio.orthostatic` 23h45m; scripted C3 stand test 23h45m -> `cardio.stand.positive` 23h46m; pause 24h30m (~4 min 50 s real time).
@@ -49,6 +49,28 @@ User directives:
   - T-6 Body map: plain region labels + color + icon, >= 44 px touch/keyboard targets, "Indicators consistent with..." copy only.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 Group-A clause limits BUILT (user: "Build all three"). READY FOR REVIEW.
+  (1) Fluid: `nutrition.fluid_intake_mL_day_min` 2000 -> 2500, verified: true, NASA-STD-3001 Vol 2 Rev F [V2 6109]
+  Table 6.3-1 via OCHMO-TB-027 Rev B. The intake form now asks for "Water today (drinks + water added to food)", since
+  the clause counts drinking and food rehydration. Scenario values (1200 mL) still raise intake.fluid.low.
+  (2) Inspired O2: new cabin signal `pio2` (mmHg) = ppO2 x (PB - 47) / PB from the synthetic ppO2 and pressure
+  (Table 6.2-1 formula; SYNTHETIC with that basis in datasets.yaml; no extra RNG draw, all other streams unchanged).
+  Limits `environment.pio2_mmHg_min` 127 (1-h TWA) and `pio2_mmHg_floor` 122 (absolute), both verified [V2 6003].
+  `env.o2.low` now uses pio2, 1 h mean, CAUTION (was ppo2 10 m, WARNING, heuristic); new `env.o2.critical` pio2 5 m
+  < 122, WARNING (same pair shape as CO2). `environment.ppo2_kPa_min` stays as the unverified display limit on the
+  ppO2 tile; the tile now also shows "Breathable (inspired)" with the NASA [V2 6003] badge. Nominal PIO2 ~149 mmHg
+  (inside the 145-155 target).
+  (3) Noise dose: new cabin signal `noise_dose_rate` (%/h) = 12.5 x 2^((L - 75) / 3) ([V2 6115] formula); CUMULATIVE
+  rule `env.noise.dose_24h` > 100 over 24 h, CAUTION, HOSTILE_CLOSED_ENV, HRP-14 + HRP-12 (no hearing entry in
+  HRP-01..17; said in the rule comment). Nominal cabin ~8 %/day.
+  Body map: lungs adds pio2 + env.o2.critical; brain & eyes adds hearing to its text, noise_level and
+  env.noise.dose_24h. Frontend labels for the new signals and limits.
+  Tests: backend/tests/test_group_a_limits.py (6: verified + Rev F clause, PIO2 formula vs Table 6.2-1 examples,
+  noise-dose formula hits 100 at 8 h/75 dBA and 24 h/~70 dBA, O2 rule pair fires 1 h vs floor, noise dose integrates,
+  nominal quiet). Updated: test_sans (recovery value 3000 mL), test_selftests (fluid limit now verified),
+  standtest.test.tsx (>= 2500 mL). Live: O2 tile shows "Breathable (inspired): 148.6 mmHg, 1 h min >= 127 mmHg,
+  NASA [V2 6003]"; intake form serves the new wording with the verified 2500 mL band.
+  Checks: pytest 219 passed, ruff clean (backend + scripts), manifest all match, tsc clean, vitest 106 passed.
 - 2026-11-15 Group-A limit reading (user: "read the NASA clauses for the group A limits"). Read with pdftotext from
   nasa.gov / standards.nasa.gov: NASA-STD-3001 Vol 2 Rev F (approved 2026-07-14, current) and Rev D; OCHMO-TB-004 Rev D,
   TB-013 Rev C, TB-027 Rev B, MTB-003 Rev A, MTB-001, MTB-013 Rev D. Result: none of the six can honestly flip to
@@ -65,9 +87,8 @@ User directives:
   * bmd_loss_pct_per_month_expected_0g 1.0-1.5: MTB-013 Rev D has no in-flight rate (only [V1 4026]-[V1 4028]).
   Also: the 4 verified Vol 2 limits ([V2 6004] 3 mmHg, [V2 6006] 34.5-103 kPa, [V2 6012], [V2 6077] 85 dBA) are
   unchanged in Rev F; source_refs still cite Rev D (read in R-1).
-  OPEN USER DECISIONS (nothing built): (1) fluid -> 2500 mL verified [V2 6109] with the form counting water added to
-  food; (2) ppO2 -> add a derived PIO2 signal + verified 127 mmHg [V2 6003] rule; (3) noise -> add a verified 24-h
-  dose rule [V2 6115]. Sodium 2300 mg (DRI) would need the NASEM document read; stays a heuristic.
+  User decisions (1)-(3) below were taken ("Build all three") and built in the next entry. Sodium 2300 mg (DRI) would
+  need the NASEM document read; stays a heuristic.
   Checks: pytest 213 passed, ruff clean, tsc clean, vitest 106, manifest all match.
 - 2026-11-15 D-5 re-freeze `demo-ready-v3` (user: "work on your next tasks ... commit", after Gate T approval).
   Docs: README (Block T done banner, self-test data row, supervisor's lines 17/40 note), AGENTS (current state, §2b,

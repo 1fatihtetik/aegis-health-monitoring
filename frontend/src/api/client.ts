@@ -308,6 +308,7 @@ export function buildInitialSystemState(seed = 42): AegisSystemState {
     status: 'NOMINAL',
     ppco2_mmHg: 2.1,
     ppo2_kPa: 21.1,
+    pio2_mmHg: 148.3,
     cabin_pressure_kPa: 101.3,
     cabin_temp_c: 21.8,
     humidity_pct: 46.0,

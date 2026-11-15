@@ -282,6 +282,13 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
               <div className="text-[10px] text-slate-400 font-mono">
                 Min: {formatLimit(limits['environment.ppo2_kPa_min'], '>=') || 'no limit configured'}
               </div>
+              <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-slate-300 font-mono">
+                <span>
+                  Breathable (inspired): {environment.pio2_mmHg || '–'} mmHg · 1 h min{' '}
+                  {formatLimit(limits['environment.pio2_mmHg_min'], '>=') || 'no limit configured'}
+                </span>
+                <LimitBadge limit={limits['environment.pio2_mmHg_min']} />
+              </div>
             </div>
 
             <div className="rounded-xl border border-slate-800 bg-space-950/80 p-3">

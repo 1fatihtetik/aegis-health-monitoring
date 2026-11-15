@@ -229,7 +229,7 @@ describe('Gravity tile stand-test line (T-5)', () => {
 
 describe('F-010 self-test bands in plain words', () => {
   it('formats Block T limits with unit and direction', () => {
-    expect(formatLimit(BUNDLED_LIMITS['nutrition.fluid_intake_mL_day_min'])).toBe('≥ 2000 mL');
+    expect(formatLimit(BUNDLED_LIMITS['nutrition.fluid_intake_mL_day_min'])).toBe('≥ 2500 mL');
     expect(formatLimit(BUNDLED_LIMITS['nutrition.sodium_intake_mg_day_max'])).toBe('≤ 3000 mg');
     expect(formatLimit(BUNDLED_LIMITS['cognition.pvt_lapse_ms'])).toBe('> 355 ms');
     expect(formatLimit(BUNDLED_LIMITS['physiology.bp_diastolic_mmHg'])).toBe('50–100 mmHg');

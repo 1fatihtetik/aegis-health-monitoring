@@ -111,13 +111,13 @@ tests:
     kind: measurement
     entry_method: form
     fields:
-      - { signal: fluid_intake, label: "Fluid drunk today", input_min: 0, input_max: 8000, step: 50, hint: "Count every drink bag; 1 bag is usually 500 mL" }
+      - { signal: fluid_intake, label: "Water today (drinks + water added to food)", input_min: 0, input_max: 8000, step: 50, hint: "Count every drink bag (usually 500 mL) and the water you added to rehydrate food" }
       - { signal: sodium_intake, label: "Sodium eaten today", input_min: 0, input_max: 10000, step: 50, hint: "Add up the sodium on the food labels" }
     why: "Too little fluid makes fainting on standing (after landing) and kidney stones more likely. Salt is one of several suspected contributors to eye changes in space (SANS)."
     hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
     hrp_risks: [HRP-07, HRP-03, HRP-10]
     steps:
-      - "Count the drink bags you finished today and add any other drinks (mL)"
+      - "Count the drink bags you finished today, add any other drinks and the water you added to rehydrate food (mL)"
       - "Add up the sodium (mg) printed on today's food packages"
       - "Type both numbers and tap Done"
     limit_refs: [nutrition.fluid_intake_mL_day_min, nutrition.sodium_intake_mg_day_max]
@@ -382,11 +382,11 @@ tests:
 body_map:
   - id: brain_eyes
     label: "Brain & eyes"
-    what: "Thinking, alertness, mood, balance and vision. Short sleep, high cabin CO2 and isolation slow thinking and lower mood; a gravity change upsets balance; long stays in low gravity can change the eyes (SANS)."
+    what: "Thinking, alertness, mood, balance, vision and hearing. Short sleep, high cabin CO2 and isolation slow thinking and lower mood; a gravity change upsets balance; long stays in low gravity can change the eyes (SANS); a loud cabin all day can harm hearing and sleep."
     hazards: [ISOLATION_CONFINEMENT, HOSTILE_CLOSED_ENV, GRAVITY_FIELDS]
     hrp_risks: [HRP-02, HRP-10, HRP-12, HRP-14]
-    signals: [symptom_headache, sleep_hours_24h, pvt_mean_rt, pvt_lapses, amsler_flag, kss, tlx_workload, mood, motion_sickness]
-    rules: [cog.performance_risk, ctx.headache_tachy.co2, ctx.headache_tachy.hydration, sleep.short_24h, cog.pvt.lapses, cog.sleepiness, workload.high, psych.mood.low, vestib.motion_sickness, sans.watch, eye.amsler.distortion, env.co2.critical]
+    signals: [symptom_headache, sleep_hours_24h, noise_level, pvt_mean_rt, pvt_lapses, amsler_flag, kss, tlx_workload, mood, motion_sickness]
+    rules: [cog.performance_risk, ctx.headache_tachy.co2, ctx.headache_tachy.hydration, sleep.short_24h, cog.pvt.lapses, cog.sleepiness, workload.high, psych.mood.low, vestib.motion_sickness, sans.watch, eye.amsler.distortion, env.noise.dose_24h, env.co2.critical]
     tests: [headache, pvt_b, amsler, kss, tlx, mood, motion_sickness]
   - id: heart_vessels
     label: "Heart & vessels"
@@ -401,8 +401,8 @@ body_map:
     what: "The lungs take in oxygen and remove CO2. The closed cabin air decides what you breathe: low oxygen or high CO2 shows up here first."
     hazards: [HOSTILE_CLOSED_ENV]
     hrp_risks: [HRP-06, HRP-12]
-    signals: [spo2, resp_rate, ppco2, ppo2]
-    rules: [physio.spo2.low, env.o2.low, env.co2.high_1h, env.co2.critical]
+    signals: [spo2, resp_rate, ppco2, ppo2, pio2]
+    rules: [physio.spo2.low, env.o2.low, env.o2.critical, env.co2.high_1h, env.co2.critical]
     tests: [bp_spo2]
   - id: bones_muscles
     label: "Bones & muscles"

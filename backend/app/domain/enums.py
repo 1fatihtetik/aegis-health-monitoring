@@ -109,6 +109,8 @@ SIGNALS: dict[str, SignalMeta] = {
     "cabin_temp": SignalMeta("°C", "cabin", "cabin"),
     "humidity": SignalMeta("%RH", "cabin", "cabin"),
     "noise_level": SignalMeta("dBA", "cabin", "cabin"),
+    "pio2": SignalMeta("mmHg", "cabin", "derived"),  # inspired O2 from ppo2 + cabin_pressure ([V2 6003])
+    "noise_dose_rate": SignalMeta("%/h", "cabin", "derived"),  # [V2 6115] noise dose per hour; 100 over 24 h = limit
     "area_dose_rate_absorbed": SignalMeta("µGy/h", "cabin", "area_dosimeter"),
     "area_dose_rate_equivalent": SignalMeta("µSv/h", "cabin", "area_dosimeter"),
     "neutron_dose_equivalent_rate": SignalMeta("µSv/h", "cabin", "neutron_spectrometer"),
