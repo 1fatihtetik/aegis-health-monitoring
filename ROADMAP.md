@@ -2,10 +2,10 @@
 
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
-**Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity), Block T (crew self-tests) and Block L (labels) are built and approved; Block C (countermeasures, journal) and Block S (simpler UI) are built and await supervisor review. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
+**Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity), Block T (crew self-tests) and Block L (labels) Block C (countermeasures, journal) and Block S (simpler UI) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
 **Block L, data-honesty labels (§0a). Status: DONE.** L-1..L-3 approved 2026-11-15 (`18f018e`). Wording only.
-**Block S, simpler UI (§0c). Status: BUILT 2026-11-15 (S-1, S-2, S-3, S-5; user decision), awaiting supervisor review.**
-**Block C, countermeasures and private journal (§0b). Status: BUILT (C-0..C-4, C-5 docs), awaiting supervisor review (Gate C).** The C-5 demo hook was cut (cut list item 1); the `exercise_lapse` scenario shows the early warning instead. No re-freeze.
+**Block S, simpler UI (§0c). Status: DONE (S-1, S-2, S-3, S-5; user decision), approved 2026-11-15 (`a7da7f8`).**
+**Block C, countermeasures and private journal (§0b). Status: DONE (C-0..C-4, C-5 docs), Gate C approved 2026-11-15 (`5171753`).** The C-5 demo hook was cut (cut list item 1); the `exercise_lapse` scenario shows the early warning instead. No re-freeze.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
@@ -28,7 +28,7 @@ and 7 (wording pass) are not part of it. The demo is decided later (the walkthro
 
 Rules: every honesty element stays (markers, badges, footer, "Data as of T−…"); crew view stays neutral (Block C); EMERGENCY takeover still takes the full screen in the Crew and CMO roles.
 
-## 0b. Block C: countermeasures and private journal (built, awaiting Gate C)
+## 0b. Block C: countermeasures and private journal (done)
 
 Why: PRD M5 lists a Countermeasures view and a private journal; both were deferred. Countermeasures show the crew **what to do today to stay healthy and why**, and give the onboard CMO and the ground team a **per-person weekly trend** so they can act before a problem shows up (for example falling exercise before bone or orthostatic trouble). The journal gives each crew member a private place to write. Design rule: **no third to-do list.** Countermeasures live on the existing routine board (T-1); since Block S (§0c, S-2) they are rows in the crew's one Today list. The journal is a quiet, separate screen.
 
@@ -176,8 +176,8 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 | Block T: crew self-tests | T-0 `CREW_ENTERED` + catalog + LOMO/LOM/LOC sublabel; T-1 routine board; T-2 PVT-B; T-3 guided measurements; T-4 onboard-only questionnaires; T-5 stand test; T-6 body map; T-7 SANS watch; T-8 landing gate; T-9 Amsler grid; T-10 extended demo; **Gate T** | approved |
 | Re-freeze | D-5, tag `demo-ready-v3` (Block T) | done |
 | Block L: data-honesty labels | L-1 labels by `source_kind`, L-2 data-sources panel, L-3 demo opening line | approved |
-| Block C: countermeasures + journal | C-0 catalog + logging, C-1 plan, C-2 weekly adherence (CMO + ground via link), C-3 `cm.exercise.low_7d`, C-4 private journal, C-5 docs (demo hook cut) | built, awaiting Gate C |
-| Block S: simpler UI | S-1 roles + demo drawer, S-2 one Today list, S-3 alerts in one panel, S-5 folded by default | built, awaiting review |
+| Block C: countermeasures + journal | C-0 catalog + logging, C-1 plan, C-2 weekly adherence (CMO + ground via link), C-3 `cm.exercise.low_7d`, C-4 private journal, C-5 docs (demo hook cut) | approved |
+| Block S: simpler UI | S-1 roles + demo drawer, S-2 one Today list, S-3 alerts in one panel, S-5 folded by default | approved |
 
 Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`. The full Block P plan is in git history (`ROADMAP.md` before 2026-11-14 Block T planning).
 

@@ -31,11 +31,11 @@ User directives (standing):
 - Limits: 14 `verified: true` entries (49 `verified: false`, each with `source_kind`: 13 published, 8 clinical, 26 design, 2 nasa_reference; Block C added 6). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
 - Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` (15 tests + 6 body-map regions); routine board; PVT-B; guided measurements; onboard-only questionnaires; stand test; SANS watch; LANDING gate; Amsler grid; body map.
 - `demo_5min` (seed 42, ~4 min 50 s): timings and walkthrough in README.md "Demo walkthrough".
-- Block C (built, awaiting Gate C): `config/countermeasures.yaml` (6 items), `backend/app/countermeasures/`, 10 scenarios
+- Block C (approved, Gate C): `config/countermeasures.yaml` (6 items), `backend/app/countermeasures/`, 10 scenarios
   (+ `exercise_lapse`), rule `cm.exercise.low_7d` (INFO), 6 new `countermeasures.*` limits (all `verified: false`);
   frontend countermeasure rows in `TodayList` (first `CountermeasurePlan`, replaced in Block S), `AdherenceChart`/`WeeklyAdherence`,
   `SharedJournal`, view `Journal`.
-- Block S (built, awaiting review): roles, one Today list, alerts panel, folds (log in section 5, plan ROADMAP §0c).
+- Block S (approved): roles, one Today list, alerts panel, folds (log in section 5, plan ROADMAP §0c).
 
 3. KEY DECISIONS (DO NOT REOPEN WITHOUT USER)
 - One FastAPI process, two stores; ground is written only by delivered `link/` messages.
@@ -70,6 +70,12 @@ User directives (standing):
 - Standing note: escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; "Indicators consistent with..." copy only, never a diagnosis.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 Full health check (user: "test if everything works"). No code change. pytest 262 passed, backend + scripts
+  ruff clean, manifest verify "all files match", tsc clean, vitest 19 files / 141 passed. Live check (backend :8000 +
+  Vite :5173): REST through the Vite proxy 200, live clock in the UI, `spe_event` raises the EMERGENCY takeover in the
+  UI and reaches the ground 660 s later, journal `?node=ground` -> 403. Only finding: docs drift; AGENTS / ROADMAP /
+  README / section 2 still said Block C and Block S "await review" although section 4 records both APPROVED; fixed.
+  Section 4's note "README walkthrough still names old tabs" is outdated (walkthrough updated in `2430bbc`).
 - 2026-11-15 Demo walkthrough updated for Block S (user: "update the demo walkthrough for the new UI"). README "Demo
   walkthrough": setup (CMO role, Demo controls → Play 5-Min Scripted Demo, close the drawer), each step names its
   screen (CMO → Crew / Crew member, Alerts (n) chip, one switch to Ground during the SPE, optional Crew → Today →
