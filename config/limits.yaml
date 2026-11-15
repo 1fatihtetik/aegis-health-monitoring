@@ -1,7 +1,11 @@
 # All thresholds used by AEGIS (PRD section 9). Nothing here may be hardcoded elsewhere.
 # verified: true  = the number was read in a NASA document; source_ref names document, revision and clause id.
 # verified: false = project heuristic or not yet traced to a clause. It must NOT be presented as a NASA value;
-#                   the UI shows an "unverified" marker for those entries.
+#                   the UI shows "Not a NASA limit · <kind>" for those entries (Block L).
+# source_kind (required when verified: false, refused when true) says what the number IS:
+#   published = "Published source" (paper, NOAA scale, ADA); clinical = "Clinical guideline" (clinical rule of thumb);
+#   design = "AEGIS design setting" (flag cut, Go minimum, project heuristic); nasa_reference = "NASA reference,
+#   not a standard" (a number from a NASA page that is not a NASA-STD-3001 clause).
 # R-1 (2026-11-14) sources read: OCHMO-TB-004 Rev D (CO2), OCHMO-TB-020 Rev G (radiation), OCHMO-TB-002 Rev B
 # (ECLSS), OCHMO-TB-003 Rev A (habitable atmosphere), OCHMO-TB-035 Rev C (acoustics), OCHMO-MTB-013 Rev D (bone).
 # The briefs quote NASA-STD-3001 Vol 1 Rev C and Vol 2 Rev D. Keep one entry per line (frontend/src/api/limits.ts).
@@ -14,81 +18,81 @@ radiation:
   spe_event_effective_dose_mSv: { value: 250, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4031] Short-Term Radiation Limits - Solar Particle Events (design event), via OCHMO-TB-020 Rev G", verified: true }
   gcr_rate_free_space_mSv_day: { value: 1.3, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (free-space design rate), via OCHMO-TB-020 Rev G", verified: true }
   gcr_rate_surface_mSv_day:   { value: 0.9, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4033] Crew Radiation Limits from GCR (planetary-surface design rate), via OCHMO-TB-020 Rev G", verified: true }
-  spe_alert_dose_rate_uSv_h:  { value: 250, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false }
-  dose_24h_mSv_max:           { value: 2.0, source_ref: "Project heuristic", verified: false }
-  saa_transit_flag:           { value: 0.5, source_ref: "Flag cut for saa_transit (0 or 1), not a dose limit; SAA box per Berger et al. (2017) J. Space Weather Space Clim. 7:A8", verified: false }
+  spe_alert_dose_rate_uSv_h:  { value: 250, source_ref: "Project heuristic ([V2 6164] requires an alert at predefined thresholds but sets no number)", verified: false, source_kind: design }
+  dose_24h_mSv_max:           { value: 2.0, source_ref: "Project heuristic", verified: false, source_kind: design }
+  saa_transit_flag:           { value: 0.5, source_ref: "Flag cut for saa_transit (0 or 1), not a dose limit; SAA box per Berger et al. (2017) J. Space Weather Space Clim. 7:A8", verified: false, source_kind: design }
 environment:
   ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
-  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6004] note: off-nominal CO2 values are not in the standard (set per program); OCHMO-TB-004 Rev D lists fatigue, malaise and nausea above 4.5 mmHg (background, not a limit)", verified: false }
-  ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic for cabin (ambient) ppO2. NASA-STD-3001 Vol 2 Rev F [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2), not ambient ppO2: target 145-155 mmHg, mild-hypoxia lower limit 127 mmHg (1-h TWA), absolute 122 mmHg; 19.5 kPa ambient at 101 kPa cabin = PIO2 ~137 mmHg", verified: false }
+  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6004] note: off-nominal CO2 values are not in the standard (set per program); OCHMO-TB-004 Rev D lists fatigue, malaise and nausea above 4.5 mmHg (background, not a limit)", verified: false, source_kind: design }
+  ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic for cabin (ambient) ppO2. NASA-STD-3001 Vol 2 Rev F [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2), not ambient ppO2: target 145-155 mmHg, mild-hypoxia lower limit 127 mmHg (1-h TWA), absolute 122 mmHg; 19.5 kPa ambient at 101 kPa cabin = PIO2 ~137 mmHg", verified: false, source_kind: design }
   pio2_mmHg_min:       { value: 127, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6003] O2 Partial Pressure Range for Crew Exposure, Table 6.2-1: mild-hypoxia lower limit PIO2 127 mmHg (1-hour time-weighted average)", verified: true }
   pio2_mmHg_floor:     { value: 122, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6003] O2 Partial Pressure Range for Crew Exposure, Table 6.2-1 note: absolute lower limit PIO2 122 mmHg for the mild-hypoxia range", verified: true }
   cabin_pressure_kPa:  { min: 34.5, max: 103, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6006] Total Pressure Tolerance Range for Indefinite Crew Exposure, via OCHMO-TB-003 Rev A", verified: true }
   cabin_temp_C:        { min: 18, max: 27, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   humidity_pct:        { min: 25, max: 75, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   noise_dBA_hazardous_max: { value: 85, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6077] Hazardous Noise Limits, via OCHMO-TB-035 Rev C", verified: true }
-  noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6079] limits continuous noise in sleep areas (missions > 30 d) to the NC-40 octave-band curve (Table 6.6-3), which has no single dBA value; [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis, ~70 dBA over 24 h)", verified: false }
+  noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6079] limits continuous noise in sleep areas (missions > 30 d) to the NC-40 octave-band curve (Table 6.6-3), which has no single dBA value; [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis, ~70 dBA over 24 h)", verified: false, source_kind: design }
   noise_dose_24h_max:  { value: 100, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6115] 24-Hour Noise Exposure Limits: noise dose D limited to 100 over any 24 h (8-h 75 dBA basis, 3 dB exchange rate; ~70 dBA over 24 h)", verified: true }
 physiology:
-  spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false }
-  hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false }
-  hr_orthostatic_bpm:  { value: 95, source_ref: "Project heuristic", verified: false }
-  bp_systolic_mmHg:    { min: 90, max: 160, source_ref: "Clinical heuristic", verified: false }
-  baseline_z_alert:    { value: 3.0, source_ref: "Project heuristic", verified: false }
-  hr_tachycardia_bpm:  { value: 100, source_ref: "Clinical heuristic", verified: false }
-  hrv_rmssd_ms_min:    { value: 20, source_ref: "Project heuristic", verified: false }
-  bp_diastolic_mmHg:   { min: 50, max: 100, source_ref: "Clinical heuristic (no NASA-STD-3001 clause read)", verified: false }
-  body_temp_C:         { min: 35.0, max: 38.0, source_ref: "Clinical heuristic (fever commonly taken as 38.0 C or more, hypothermia below 35.0 C); no NASA-STD-3001 clause read", verified: false }
+  spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false, source_kind: clinical }
+  hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false, source_kind: clinical }
+  hr_orthostatic_bpm:  { value: 95, source_ref: "Project heuristic", verified: false, source_kind: design }
+  bp_systolic_mmHg:    { min: 90, max: 160, source_ref: "Clinical heuristic", verified: false, source_kind: clinical }
+  baseline_z_alert:    { value: 3.0, source_ref: "Project heuristic", verified: false, source_kind: design }
+  hr_tachycardia_bpm:  { value: 100, source_ref: "Clinical heuristic", verified: false, source_kind: clinical }
+  hrv_rmssd_ms_min:    { value: 20, source_ref: "Project heuristic", verified: false, source_kind: design }
+  bp_diastolic_mmHg:   { min: 50, max: 100, source_ref: "Clinical heuristic (no NASA-STD-3001 clause read)", verified: false, source_kind: clinical }
+  body_temp_C:         { min: 35.0, max: 38.0, source_ref: "Clinical heuristic (fever commonly taken as 38.0 C or more, hypothermia below 35.0 C); no NASA-STD-3001 clause read", verified: false, source_kind: clinical }
 # Block T, T-2: PVT-B reaction-time test. Not NASA-STD-3001 limits.
 cognition:
-  pvt_lapse_ms:        { value: 355, source_ref: "Basner, Mollicone & Dinges (2011) Acta Astronautica 69:949-959, PVT-B: a response slower than 355 ms is a lapse (method parameter, not a NASA-STD-3001 limit)", verified: false }
-  pvt_lapses_max:      { value: 3, source_ref: "Project heuristic (more than 3 lapses in one 3-minute PVT-B)", verified: false }
+  pvt_lapse_ms:        { value: 355, source_ref: "Basner, Mollicone & Dinges (2011) Acta Astronautica 69:949-959, PVT-B: a response slower than 355 ms is a lapse (method parameter, not a NASA-STD-3001 limit)", verified: false, source_kind: published }
+  pvt_lapses_max:      { value: 3, source_ref: "Project heuristic (more than 3 lapses in one 3-minute PVT-B)", verified: false, source_kind: design }
 # Block T, T-4: questionnaire cut-offs (answers stay on board). Scale anchors from the cited papers; cut-offs are
 # project choices, not NASA-STD-3001 limits.
 questionnaire:
-  kss_sleepy_min:          { value: 7, source_ref: "Akerstedt & Gillberg (1990) Int J Neurosci 52:29-37, Karolinska Sleepiness Scale: 7 = sleepy, but no effort to keep awake (cut-off: project choice)", verified: false }
-  tlx_workload_max:        { value: 70, source_ref: "Project heuristic (raw NASA-TLX, Hart & Staveland 1988 / Hart 2006; no NASA-STD-3001 cut-off)", verified: false }
-  motion_sickness_misc_min: { value: 6, source_ref: "Bos, MacKinnon & Patterson (2005) Aviat Space Environ Med 76:1111-1118, MISC: 6 = slight nausea (cut-off: project choice)", verified: false }
-  mood_low_max:            { value: 2, source_ref: "Project heuristic (1-5 self-rating; 2 = low)", verified: false }
+  kss_sleepy_min:          { value: 7, source_ref: "Akerstedt & Gillberg (1990) Int J Neurosci 52:29-37, Karolinska Sleepiness Scale: 7 = sleepy, but no effort to keep awake (cut-off: project choice)", verified: false, source_kind: published }
+  tlx_workload_max:        { value: 70, source_ref: "Project heuristic (raw NASA-TLX, Hart & Staveland 1988 / Hart 2006; no NASA-STD-3001 cut-off)", verified: false, source_kind: design }
+  motion_sickness_misc_min: { value: 6, source_ref: "Bos, MacKinnon & Patterson (2005) Aviat Space Environ Med 76:1111-1118, MISC: 6 = slight nausea (cut-off: project choice)", verified: false, source_kind: published }
+  mood_low_max:            { value: 2, source_ref: "Project heuristic (1-5 self-rating; 2 = low)", verified: false, source_kind: design }
 # Block T, T-3: hand measurements. No NASA-STD-3001 clause has been read for these, so all are unverified.
 metabolic:
-  glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }
+  glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false, source_kind: published }
 nutrition:
   fluid_intake_mL_day_min:   { value: 2500, source_ref: "NASA-STD-3001 Vol 2 Rev F [V2 6109] Water Quantity, Table 6.3-1: potable water for hydration minimum 2.5 L per crewmember per day (drinking and food rehydration), via OCHMO-TB-027 Rev B (water-intake requirement)", verified: true }
-  sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 7100] Food Nutrient Composition defers to the NIH Dietary Reference Intakes (Table 7.1-2 adjusts only vitamin D) and states no sodium number; ISS intake was ~3800-4700 mg/day (OCHMO-TB-013 Rev C, background)", verified: false }
+  sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 7100] Food Nutrient Composition defers to the NIH Dietary Reference Intakes (Table 7.1-2 adjusts only vitamin D) and states no sodium number; ISS intake was ~3800-4700 mg/day (OCHMO-TB-013 Rev C, background)", verified: false, source_kind: design }
 # Block T, T-5: 10-minute stand test (wall-lean adaptation of Lee et al. 2015). Clinical criteria, not NASA-STD-3001.
 stand_test:
-  sbp_drop_mmHg_min:       { value: 20, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 Clin Auton Res 21:69-72 consensus: systolic fall of 20 mmHg or more within 3 min of standing); protocol after Lee et al. (2015) Aerosp Med Hum Perform 86(12):A54-A67; no NASA-STD-3001 clause read", verified: false }
-  dbp_drop_mmHg_min:       { value: 10, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 consensus: diastolic fall of 10 mmHg or more); no NASA-STD-3001 clause read", verified: false }
-  hr_rise_bpm_min:         { value: 30, source_ref: "Clinical criterion (Freeman et al. 2011 consensus: sustained heart-rate rise of 30 bpm or more on standing); no NASA-STD-3001 clause read", verified: false }
-  pulse_pressure_mmHg_min: { value: 20, source_ref: "Clinical heuristic (narrowed pulse pressure below 20 mmHg while standing); no NASA-STD-3001 clause read", verified: false }
-  pulse_pressure_pct_min:  { value: 25, source_ref: "Clinical heuristic (pulse pressure below 25% of systolic while standing); no NASA-STD-3001 clause read", verified: false }
-  early_stop_flag:         { value: 0.5, source_ref: "Flag cut for stand_early_stop (0 or 1), not a medical limit: stopping early for symptoms counts as a positive test (supervisor protocol, 2026-11-15)", verified: false }
+  sbp_drop_mmHg_min:       { value: 20, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 Clin Auton Res 21:69-72 consensus: systolic fall of 20 mmHg or more within 3 min of standing); protocol after Lee et al. (2015) Aerosp Med Hum Perform 86(12):A54-A67; no NASA-STD-3001 clause read", verified: false, source_kind: published }
+  dbp_drop_mmHg_min:       { value: 10, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 consensus: diastolic fall of 10 mmHg or more); no NASA-STD-3001 clause read", verified: false, source_kind: published }
+  hr_rise_bpm_min:         { value: 30, source_ref: "Clinical criterion (Freeman et al. 2011 consensus: sustained heart-rate rise of 30 bpm or more on standing); no NASA-STD-3001 clause read", verified: false, source_kind: published }
+  pulse_pressure_mmHg_min: { value: 20, source_ref: "Clinical heuristic (narrowed pulse pressure below 20 mmHg while standing); no NASA-STD-3001 clause read", verified: false, source_kind: clinical }
+  pulse_pressure_pct_min:  { value: 25, source_ref: "Clinical heuristic (pulse pressure below 25% of systolic while standing); no NASA-STD-3001 clause read", verified: false, source_kind: clinical }
+  early_stop_flag:         { value: 0.5, source_ref: "Flag cut for stand_early_stop (0 or 1), not a medical limit: stopping early for symptoms counts as a positive test (supervisor protocol, 2026-11-15)", verified: false, source_kind: design }
 # Block T, T-7: SANS watch (HRP-10). No NASA limit exists for any of these as SANS triggers; the links between CO2,
 # sodium, fluid intake and SANS are hypotheses with limited evidence. All are project heuristics.
 sans:
-  low_g_days_min:        { value: 30, source_ref: "Project heuristic: start of the SANS watch after 30 days below 1 g. SANS findings are reported after long-duration flights (Mader et al. 2011 Ophthalmology 118:2058-2069; Lee et al. 2020 npj Microgravity 6:7); partial-gravity effect unknown; no NASA-STD-3001 clause read", verified: false }
-  ppco2_mmHg_24h_mean_max: { value: 3.0, source_ref: "Project heuristic: 24-h mean above the level ISS has stayed at or below since 2016 (OCHMO-TB-004 Rev D p. 7). CO2 as a SANS contributor is a hypothesis (Lee et al. 2020 review); not a NASA SANS limit", verified: false }
+  low_g_days_min:        { value: 30, source_ref: "Project heuristic: start of the SANS watch after 30 days below 1 g. SANS findings are reported after long-duration flights (Mader et al. 2011 Ophthalmology 118:2058-2069; Lee et al. 2020 npj Microgravity 6:7); partial-gravity effect unknown; no NASA-STD-3001 clause read", verified: false, source_kind: design }
+  ppco2_mmHg_24h_mean_max: { value: 3.0, source_ref: "Project heuristic: 24-h mean above the level ISS has stayed at or below since 2016 (OCHMO-TB-004 Rev D p. 7). CO2 as a SANS contributor is a hypothesis (Lee et al. 2020 review); not a NASA SANS limit", verified: false, source_kind: design }
 # Block T, T-9: Amsler grid self-check. A flag cut, not a medical limit.
 eye:
-  amsler_flag_min:       { value: 0.5, source_ref: "Flag cut for amsler_flag (0 or 1), not a medical limit: any area marked wavy, blurred or missing on the Amsler grid counts (project choice; self-monitoring of central vision after Amsler 1953 Br J Ophthalmol 37:521-531); no NASA-STD-3001 clause read", verified: false }
+  amsler_flag_min:       { value: 0.5, source_ref: "Flag cut for amsler_flag (0 or 1), not a medical limit: any area marked wavy, blurred or missing on the Amsler grid counts (project choice; self-monitoring of central vision after Amsler 1953 Br J Ophthalmol 37:521-531); no NASA-STD-3001 clause read", verified: false, source_kind: design }
 symptoms:
-  headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
+  headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false, source_kind: design }
 sleep:
-  min_sleep_h_24h:     { value: 6, source_ref: "Project heuristic", verified: false }
+  min_sleep_h_24h:     { value: 6, source_ref: "Project heuristic", verified: false, source_kind: design }
 bone:
-  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate). No NASA-STD-3001 clause: OCHMO-MTB-013 Rev D lists [V1 4026]-[V1 4028] (pre/post-mission BMD) and gives no in-flight monthly rate", verified: false }
+  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate). No NASA-STD-3001 clause: OCHMO-MTB-013 Rev D lists [V1 4026]-[V1 4028] (pre/post-mission BMD) and gives no in-flight monthly rate", verified: false, source_kind: nasa_reference }
   bmd_pct_of_baseline_min: { value: 95, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4027] Pre-mission Bone Countermeasures (hip and spine >= 95% of pre-mission BMD), via OCHMO-MTB-013 Rev D", verified: true }
 readiness:
-  eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false }
-  landing_go_min:      { value: 70, source_ref: "Project heuristic (T-8 landing gate Go minimum; no NASA-STD-3001 clause read)", verified: false }
+  eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false, source_kind: design }
+  landing_go_min:      { value: 70, source_ref: "Project heuristic (T-8 landing gate Go minimum; no NASA-STD-3001 clause read)", verified: false, source_kind: design }
 # Block T, T-8: landing readiness anchor for time spent below 1 g. Not a medical limit.
 landing:
-  low_g_days_long: { value: 129, source_ref: "Meck et al. (2001) Psychosom Med 63:865-873: 83 % of astronauts near fainting on a tilt test after flights of 129 days or more vs 17 % after short flights (16 d, also the readiness `good` anchor); used as a readiness anchor (project heuristic), no NASA-STD-3001 clause read", verified: false }
+  low_g_days_long: { value: 129, source_ref: "Meck et al. (2001) Psychosom Med 63:865-873: 83 % of astronauts near fainting on a tilt test after flights of 129 days or more vs 17 % after short flights (16 d, also the readiness `good` anchor); used as a readiness anchor (project heuristic), no NASA-STD-3001 clause read", verified: false, source_kind: published }
 # R-5 space-weather card only (no rule uses these). NOAA scale levels for the near-Earth >10 MeV proton flux.
 space_weather:
-  proton_flux_s1_pfu: { value: 10, source_ref: "NOAA SWPC Space Weather Scales, S1 Minor radiation storm (>10 MeV flux 10 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }
-  proton_flux_s2_pfu: { value: 100, source_ref: "NOAA SWPC Space Weather Scales, S2 Moderate radiation storm (>10 MeV flux 100 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }
-  proton_flux_s3_pfu: { value: 1000, source_ref: "NOAA SWPC Space Weather Scales, S3 Strong radiation storm (>10 MeV flux 1000 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }
-  proton_flux_s4_pfu: { value: 10000, source_ref: "NOAA SWPC Space Weather Scales, S4 Severe radiation storm (>10 MeV flux 10^4 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }
-  proton_flux_s5_pfu: { value: 100000, source_ref: "NOAA SWPC Space Weather Scales, S5 Extreme radiation storm (>10 MeV flux 10^5 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }
+  proton_flux_s1_pfu: { value: 10, source_ref: "NOAA SWPC Space Weather Scales, S1 Minor radiation storm (>10 MeV flux 10 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false, source_kind: published }
+  proton_flux_s2_pfu: { value: 100, source_ref: "NOAA SWPC Space Weather Scales, S2 Moderate radiation storm (>10 MeV flux 100 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false, source_kind: published }
+  proton_flux_s3_pfu: { value: 1000, source_ref: "NOAA SWPC Space Weather Scales, S3 Strong radiation storm (>10 MeV flux 1000 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false, source_kind: published }
+  proton_flux_s4_pfu: { value: 10000, source_ref: "NOAA SWPC Space Weather Scales, S4 Severe radiation storm (>10 MeV flux 10^4 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false, source_kind: published }
+  proton_flux_s5_pfu: { value: 100000, source_ref: "NOAA SWPC Space Weather Scales, S5 Extreme radiation storm (>10 MeV flux 10^5 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false, source_kind: published }

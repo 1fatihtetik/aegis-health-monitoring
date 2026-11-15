@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { notNasaLabel, limitKindOf } from '../api/limits';
 import { signalLabel } from '../api/backend';
 import { formatDurationSeconds } from '../api/client';
 import { CrewId, LandingComponent, LandingGate, NextGravityIncrease } from '../api/types';
@@ -53,8 +54,8 @@ const GateRow: React.FC<{ crewId: CrewId; gate: LandingGate; onStartTest?: (test
           <span className="text-xs text-slate-300">
             Score {round(gate.value)} (Go at {gate.go_min} or more
             {!gate.go_min_verified && (
-              <span className="ml-1 font-mono text-amber-300" title={`Unverified: ${gate.go_min_source_ref ?? 'project heuristic'}`}>
-                ⚠ unverified
+              <span className="ml-1 font-mono text-amber-300" title={gate.go_min_source_ref ?? 'config/limits.yaml'}>
+                {notNasaLabel(limitKindOf({ kind: gate.go_min_source_kind, ref: 'readiness.landing_go_min', sourceRef: gate.go_min_source_ref }))}
               </span>
             )}
             ){gate.alert_penalty > 0 ? ` · open-alert penalty −${gate.alert_penalty}` : ''}
@@ -98,8 +99,8 @@ const GateRow: React.FC<{ crewId: CrewId; gate: LandingGate; onStartTest?: (test
                     </span>
                   )}
                   {!c.limit_verified && (
-                    <span className="ml-1 font-mono text-amber-300" title={`Unverified: ${c.limit_source_ref}`}>
-                      ⚠ unverified
+                    <span className="ml-1 font-mono text-amber-300" title={c.limit_source_ref}>
+                      {notNasaLabel(limitKindOf({ kind: c.limit_source_kind, ref: c.limit_ref, sourceRef: c.limit_source_ref }))}
                     </span>
                   )}
                   {needsAction(c) && c.action && <p className="mt-0.5 text-amber-200">▸ {c.action}</p>}

@@ -15,6 +15,14 @@ from app.util import parse_duration
 CONFIG_DIR = Path(__file__).resolve().parents[2] / "config"
 # A verified limit must name a NASA-STD-3001 clause, e.g. "[V2 6004]" (AGENTS.md section 2a).
 CLAUSE_ID = re.compile(r"\[V[12] \d{4,5}\]")
+# Block L: what an unverified number IS (ROADMAP section 0a). Required on every verified: false entry, refused on a
+# verified: true one. The UI shows "Not a NASA limit · <label>".
+SOURCE_KINDS = {
+    "published": "Published source",
+    "clinical": "Clinical guideline",
+    "design": "AEGIS design setting",
+    "nasa_reference": "NASA reference, not a standard",
+}
 
 
 @dataclass(frozen=True)
@@ -23,9 +31,11 @@ class Limit:
     value: float
     source_ref: str
     verified: bool
+    source_kind: str | None = None  # Block L: set exactly when verified is False
 
     def as_dict(self) -> dict[str, Any]:
-        return {"ref": self.ref, "value": self.value, "source_ref": self.source_ref, "verified": self.verified}
+        return {"ref": self.ref, "value": self.value, "source_ref": self.source_ref, "verified": self.verified,
+                "source_kind": self.source_kind}
 
 
 def _load(path: Path) -> Any:
@@ -50,7 +60,8 @@ class Config:
         try:
             entry = self.limits[parts[0]][parts[1]]
             field = parts[2] if len(parts) > 2 else "value"
-            return Limit(ref, float(entry[field]), str(entry["source_ref"]), bool(entry["verified"]))
+            return Limit(ref, float(entry[field]), str(entry["source_ref"]), bool(entry["verified"]),
+                         entry.get("source_kind"))
         except (KeyError, IndexError) as exc:
             raise KeyError(f"Unknown limit_ref '{ref}'") from exc
 
@@ -61,6 +72,13 @@ class Config:
                     raise ValueError(f"limits.yaml {section}.{name} needs source_ref and verified")
                 if entry["verified"] and not CLAUSE_ID.search(str(entry["source_ref"])):
                     raise ValueError(f"limits.yaml {section}.{name} is verified but source_ref names no clause id")
+                kind = entry.get("source_kind")
+                if entry["verified"] and kind is not None:
+                    raise ValueError(f"limits.yaml {section}.{name} is verified and must not carry source_kind")
+                if not entry["verified"] and kind not in SOURCE_KINDS:
+                    raise ValueError(
+                        f"limits.yaml {section}.{name} is unverified and needs source_kind, one of {sorted(SOURCE_KINDS)}"
+                    )
         ids = {r.id for r in self.rules}
         if len(ids) != len(self.rules):
             raise ValueError("rules.yaml has duplicate rule ids")

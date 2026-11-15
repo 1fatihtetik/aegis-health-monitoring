@@ -1,4 +1,4 @@
-import { ConfigLimit } from './types';
+import { ConfigLimit, LimitSourceKind } from './types';
 // The one source of truth for thresholds (AGENTS.md ground rule 2). Bundled raw so the offline fallback
 // shows the same numbers as the backend; with the backend up, GET /api/v1/limits replaces it.
 import limitsYaml from '../../../config/limits.yaml?raw';
@@ -10,6 +10,8 @@ export interface RawLimit {
   max?: number;
   source_ref?: string;
   verified?: boolean;
+  /** Block L: required on every verified: false entry (backend refuses the config otherwise). */
+  source_kind?: LimitSourceKind;
 }
 
 export type LimitsTree = Record<string, Record<string, RawLimit>>;
@@ -107,6 +109,7 @@ export function flattenLimits(tree: LimitsTree): Record<string, ConfigLimit> {
         max: raw.max,
         source_ref: raw.source_ref ?? 'config/limits.yaml',
         verified: raw.verified === true,
+        source_kind: raw.verified === true ? undefined : raw.source_kind,
       };
     }
   }
@@ -178,6 +181,80 @@ export function parseLimitsYaml(text: string): LimitsTree {
 
 /** Limits bundled from config/limits.yaml, used until the backend answers GET /api/v1/limits. */
 export const BUNDLED_LIMITS: Record<string, ConfigLimit> = flattenLimits(parseLimitsYaml(limitsYaml));
+
+/** Block L (ROADMAP §0a): what an unverified number IS, in plain words. */
+export const SOURCE_KIND_LABEL: Record<LimitSourceKind, string> = {
+  published: 'Published source',
+  clinical: 'Clinical guideline',
+  design: 'AEGIS design setting',
+  nasa_reference: 'NASA reference, not a standard',
+};
+
+export const NOT_NASA = 'Not a NASA limit';
+
+/**
+ * Marker text for a `verified: false` limit: "Not a NASA limit · Clinical guideline". It may change words but never
+ * disappears and never claims NASA (AGENTS.md ground rule 2). Without a known kind it reads "Not a NASA limit".
+ */
+export function notNasaLabel(kind?: LimitSourceKind | string | null): string {
+  const label = kind && kind in SOURCE_KIND_LABEL ? SOURCE_KIND_LABEL[kind as LimitSourceKind] : null;
+  return label ? `${NOT_NASA} · ${label}` : NOT_NASA;
+}
+
+/**
+ * Finds the kind of an unverified limit: the explicit field first, then the limit ref, then a bundled entry with
+ * the same source_ref (all from config/limits.yaml, so it also works offline).
+ */
+export function limitKindOf(
+  hint: { kind?: LimitSourceKind | string | null; ref?: string | null; sourceRef?: string | null },
+  limits: Record<string, ConfigLimit> = BUNDLED_LIMITS,
+): LimitSourceKind | undefined {
+  if (hint.kind && hint.kind in SOURCE_KIND_LABEL) return hint.kind as LimitSourceKind;
+  if (hint.ref) {
+    const base = hint.ref.replace(/\.(min|max|value)$/, '');
+    const byRef = limits[base] ?? limits[hint.ref];
+    if (byRef?.source_kind) return byRef.source_kind;
+  }
+  if (hint.sourceRef) {
+    const match = Object.values(limits).find((l) => !l.verified && l.source_ref === hint.sourceRef);
+    if (match?.source_kind) return match.source_kind;
+  }
+  return undefined;
+}
+
+/** The whole marker for a limit-like value: "✓ NASA [V2 6004]" or "Not a NASA limit · <kind>". */
+export function limitMarker(
+  verified: boolean,
+  hint: { kind?: LimitSourceKind | string | null; ref?: string | null; sourceRef?: string | null },
+): string {
+  if (verified) return `✓ NASA ${clauseId(hint.sourceRef ?? undefined) ?? 'standard'}`;
+  return notNasaLabel(limitKindOf(hint));
+}
+
+/** Marker for an alert's evidence (or one compound member): uses the kind the backend sent, else the bundled one. */
+export function evidenceMarker(ev: {
+  limit_source_kind?: LimitSourceKind | string | null;
+  limit_ref?: string | null;
+  source_ref?: string | null;
+}): string {
+  return notNasaLabel(limitKindOf({ kind: ev.limit_source_kind, ref: ev.limit_ref, sourceRef: ev.source_ref }));
+}
+
+/** Block L / L-2: how many limits come from each kind of source, counted from the limits tree (never typed). */
+export function limitCounts(limits: Record<string, ConfigLimit> = BUNDLED_LIMITS): {
+  nasa: number;
+  byKind: Record<LimitSourceKind, number>;
+  total: number;
+} {
+  const byKind: Record<LimitSourceKind, number> = { published: 0, clinical: 0, design: 0, nasa_reference: 0 };
+  let nasa = 0;
+  const all = Object.values(limits);
+  for (const l of all) {
+    if (l.verified) nasa += 1;
+    else if (l.source_kind) byKind[l.source_kind] += 1;
+  }
+  return { nasa, byKind, total: all.length };
+}
 
 const SIGN: Record<string, string> = { '>=': '≥ ', '<=': '≤ ', '>': '> ', '<': '< ' };
 

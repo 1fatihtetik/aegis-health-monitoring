@@ -50,7 +50,7 @@ describe('R-1 verified limits', () => {
     const { rerender } = render(<LimitBadge limit={BUNDLED_LIMITS['environment.ppco2_mmHg_1h_max']} />);
     expect(screen.getByText(/✓ NASA \[V2 6004\]/)).toBeInTheDocument();
     rerender(<LimitBadge limit={BUNDLED_LIMITS['environment.ppco2_mmHg_critical']} />);
-    expect(screen.getByText(/⚠ unverified/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Not a NASA limit/).length).toBeGreaterThan(0);
   });
 });
 
@@ -59,7 +59,7 @@ describe('F-007 crew usability', () => {
     render(<AlertBanner alerts={[co2Alert]} onAcknowledge={() => undefined} />);
     const banner = screen.getByTestId('alert-banner');
     expect(banner).toHaveTextContent('✓ NASA limit [V2 6004]');
-    expect(banner).toHaveTextContent('Synthetic · NASA-calibrated');
+    expect(banner).toHaveTextContent('Simulated · NASA-calibrated');
     expect(screen.getByTestId('checklist-alert-co2-verified')).toHaveTextContent('Turn cabin fans up');
     fireEvent.click(screen.getByRole('button', { name: /Hide steps/i }));
     expect(screen.queryByTestId('checklist-alert-co2-verified')).toBeNull();

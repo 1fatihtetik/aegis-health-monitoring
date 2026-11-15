@@ -4,6 +4,7 @@ import { CrewId, STATUS_DISPLAY } from './api/types';
 import { AegisProvider, useAegis } from './api/useLiveSocket';
 import { AlertBanner } from './components/AlertBanner';
 import { dataSourcesLine } from './components/DataSourceBadge';
+import { DataSourcesPanel } from './components/DataSourcesPanel';
 import { EmergencyTakeover } from './components/EmergencyTakeover';
 import { ScenarioDock } from './components/ScenarioDock';
 import { AlertCenter } from './views/AlertCenter';
@@ -305,11 +306,14 @@ const AegisShell: React.FC = () => {
         <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="font-semibold text-slate-300">
             Decision support only, not a medical diagnosis.{' '}
-            <span data-testid="data-sources-line">{dataSourcesLine(state.provenance)}</span>
+            <span data-testid="data-sources-line">{dataSourcesLine(state.provenance, state.limits)}</span>
           </span>
           <span className="font-mono text-[11px] text-slate-400">
-            AEGIS Onboard-First Architecture · NASA-STD-3001 &amp; HRP-01..17 Traceable · Unverified limits marked (⚠)
+            AEGIS Onboard-First Architecture · NASA-STD-3001 &amp; HRP-01..17 Traceable · Other limits marked &quot;Not a NASA limit&quot;
           </span>
+        </div>
+        <div className="mx-auto mt-2 max-w-[1440px] text-left">
+          <DataSourcesPanel provenance={state.provenance} limits={state.limits} />
         </div>
       </footer>
     </div>

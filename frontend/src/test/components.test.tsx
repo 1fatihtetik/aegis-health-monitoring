@@ -23,7 +23,7 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     expect(screen.getByTestId('status-ring')).toHaveTextContent('✖ emergency');
   });
 
-  it('AlertBanner shows hazards, HRP risks, evidence, unverified limit marker, and triggers acknowledge', () => {
+  it('AlertBanner shows hazards, HRP risks, evidence, not-NASA limit marker, and triggers acknowledge', () => {
     const onAck = vi.fn();
     const sampleAlert: AlertItem = {
       id: 'alert-co2-test',
@@ -58,7 +58,7 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     expect(banner).toHaveTextContent('HRP-14');
     expect(banner).toHaveTextContent('Cabin CO₂');
     expect(banner).toHaveTextContent('3.6 mmHg');
-    expect(banner).toHaveTextContent('⚠ unverified limit');
+    expect(banner).toHaveTextContent('Not a NASA limit');
 
     fireEvent.click(screen.getByRole('button', { name: /Acknowledge Alert/i }));
     expect(onAck).toHaveBeenCalledWith('alert-co2-test');
@@ -121,7 +121,7 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     expect(dialog).toHaveTextContent('EMERGENCY — LEVEL 1');
     expect(dialog).toHaveTextContent('32% neutron share');
     expect(dialog).toHaveTextContent('0/4 Accounted');
-    expect(dialog).toHaveTextContent('⚠ unverified limit');
+    expect(dialog).toHaveTextContent('Not a NASA limit');
 
     fireEvent.click(screen.getByRole('button', { name: /Confirm All 4 Crew in Shelter/i }));
     expect(onEvacuateAll).toHaveBeenCalledTimes(1);
@@ -137,8 +137,8 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     expect(screen.getByTestId('persistent-disclaimer-footer')).toHaveTextContent(
       'Decision support only, not a medical diagnosis.'
     );
-    // Browser-only fallback (no backend): the data line says everything is synthetic.
-    expect(screen.getByTestId('data-sources-line')).toHaveTextContent('all synthetic');
+    // Browser-only fallback (no backend): the data line says the live values are simulated.
+    expect(screen.getByTestId('data-sources-line')).toHaveTextContent('browser-only fallback, simulated');
 
     // Trigger CO2 scrubber fault from ScenarioDock
     fireEvent.click(screen.getByRole('button', { name: /CO₂ Scrubber Fault/i }));

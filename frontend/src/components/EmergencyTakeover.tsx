@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { evidenceMarker } from '../api/limits';
 import { formatDurationSeconds } from '../api/client';
 import {
   AlertItem,
@@ -158,7 +159,7 @@ export const EmergencyTakeover: React.FC<EmergencyTakeoverProps> = ({
                 />
                 {!alert.evidence.limit_verified && (
                   <span className="rounded bg-amber-500/25 border border-amber-300/60 px-2 py-0.5 text-xs font-bold text-amber-100">
-                    ⚠ unverified limit · {alert.evidence.source_ref ?? 'config/limits.yaml'}
+                    {evidenceMarker(alert.evidence)} · {alert.evidence.source_ref ?? 'config/limits.yaml'}
                   </span>
                 )}
               </div>

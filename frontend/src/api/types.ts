@@ -70,7 +70,12 @@ export interface ConfigLimit {
   op?: '<' | '<=' | '>' | '>=';
   source_ref: string;
   verified: boolean;
+  /** Block L: what an unverified number is (config/limits.yaml); absent on verified limits. */
+  source_kind?: LimitSourceKind;
 }
+
+/** Block L (ROADMAP §0a): the kind of an unverified limit, shown as "Not a NASA limit · <kind>". */
+export type LimitSourceKind = 'published' | 'clinical' | 'design' | 'nasa_reference';
 
 export interface HazardMeta {
   id: Hazard;
@@ -443,6 +448,8 @@ export interface AlertEvidenceClause {
   op: string;
   limit_verified: boolean;
   source_ref: string;
+  limit_ref?: string;
+  limit_source_kind?: LimitSourceKind | null;
   /** Compound members: whether this condition is currently met. */
   firing?: boolean;
   /** A `none:` member: the alert needs this condition to be NOT met. */
@@ -471,6 +478,8 @@ export interface AlertEvidence {
   op?: string;
   limit_verified: boolean;
   source_ref?: string;
+  limit_ref?: string;
+  limit_source_kind?: LimitSourceKind | null;
   window: string;
   z_score?: number;
   clauses?: AlertEvidenceClause[];
@@ -517,6 +526,7 @@ export interface ReadinessComponent {
   limitLabel: string;
   limitVerified: boolean;
   sourceRef: string;
+  sourceKind?: LimitSourceKind | null;
   status: OperationalStatus;
 }
 
@@ -756,6 +766,7 @@ export interface LandingComponent {
   limit_ref: string;
   limit_verified: boolean;
   limit_source_ref: string;
+  limit_source_kind?: LimitSourceKind | null;
   window?: string;
   /** Plain step for the crew when this part is low or missing (from config/readiness.yaml). */
   action?: string;
@@ -772,6 +783,7 @@ export interface LandingGate {
   go_min: number;
   go_min_verified: boolean;
   go_min_source_ref?: string;
+  go_min_source_kind?: LimitSourceKind | null;
   components: Record<string, LandingComponent>;
   hold_alerts: Array<{ id: string; rule_id: string; severity: Severity; title: string }>;
   hold_actions: string[];
@@ -869,6 +881,7 @@ export interface SelfTestRuleLimit {
   value: number;
   source_ref: string;
   verified: boolean;
+  source_kind?: LimitSourceKind | null;
 }
 
 export interface SelfTestField {
@@ -892,6 +905,7 @@ export interface SelfTestLimit {
   value: number;
   source_ref: string;
   verified: boolean;
+  source_kind?: LimitSourceKind | null;
 }
 
 export interface SelfTestSchedule {

@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { AegisSystemState, DatasetMeta, Provenance, SignalSource } from '../api/types';
+import { BUNDLED_LIMITS, limitCounts } from '../api/limits';
+import { AegisSystemState, ConfigLimit, DatasetMeta, Provenance, SignalSource } from '../api/types';
+import { openDataSourcesPanel } from './DataSourcesPanel';
 
-/** Plain labels + a shape per provenance, so the badge reads without colour (AGENTS.md §8). */
+/**
+ * Plain labels + a shape per provenance, so the badge reads without colour (AGENTS.md §8). Block L: every label says
+ * what the value IS ("Simulated"), never only what it is not.
+ */
 const META: Record<Provenance, { icon: string; label: string; className: string; help: string }> = {
   NASA_MEASURED: {
     icon: '◆',
@@ -29,15 +34,15 @@ const META: Record<Provenance, { icon: string; label: string; className: string;
   },
   SYNTHETIC_CALIBRATED: {
     icon: '○',
-    label: 'Synthetic · NASA-calibrated',
+    label: 'Simulated · NASA-calibrated',
     className: 'border-slate-500 bg-slate-800/60 text-slate-200',
-    help: 'Simulated. Its parameters come from a cited NASA source.',
+    help: 'Simulated value. Its parameters come from a cited NASA source (config/mission.yaml, config/crew.yaml).',
   },
   SYNTHETIC: {
     icon: '·',
-    label: 'Synthetic',
+    label: 'Simulated',
     className: 'border-slate-600 bg-slate-900/60 text-slate-300',
-    help: 'Simulated with project heuristics. Not a measurement.',
+    help: 'Simulated value with project settings. Not a measurement: no public in-flight astronaut data exists.',
   },
 };
 
@@ -105,6 +110,17 @@ export const DataSourceBadge: React.FC<DataSourceBadgeProps> = ({ source, compac
           {basis && (!dataset || !basis.startsWith(dataset.title)) && (
             <span className="mt-1 block text-slate-300">Basis: {basis}</span>
           )}
+          <button
+            type="button"
+            data-testid="data-source-panel-link"
+            onClick={() => {
+              setOpen(false);
+              openDataSourcesPanel();
+            }}
+            className="mt-2 min-h-[44px] w-full rounded-md border border-slate-600 px-2 text-left text-xs font-semibold text-sky-200 hover:bg-slate-800"
+          >
+            Where our data comes from ›
+          </button>
         </span>
       )}
     </span>
@@ -122,10 +138,23 @@ function otherAgency(dataset: DatasetMeta | null): string {
   return agency && agency.toUpperCase() !== 'NASA' ? agency : 'non-NASA';
 }
 
-/** Footer line: what is real right now, derived from the live provenance map (AGENTS.md §8). */
-export function dataSourcesLine(provenance: AegisSystemState['provenance']): string {
+/** Block L: the fixed part of the footer, said the same way everywhere (AGENTS.md §8). */
+export const PHYSIOLOGY_LINE = 'Crew physiology: simulated (no public in-flight astronaut data).';
+
+/**
+ * Footer line: what is real right now, derived from the live provenance map (AGENTS.md §8, Block L wording):
+ * "Radiation, space weather and <N> limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut
+ * data)." N is counted from limits.yaml. A non-NASA measured source is named when it is active.
+ */
+export function dataSourcesLine(
+  provenance: AegisSystemState['provenance'],
+  limits: Record<string, ConfigLimit> = BUNDLED_LIMITS,
+): string {
+  const n = limitCounts(limits).nasa;
   const values = Object.values(provenance);
-  if (values.length === 0) return 'Data: browser-only fallback simulation, all synthetic.';
+  if (values.length === 0) {
+    return `Space weather and ${n} limits: NASA sources. Live values: browser-only fallback, simulated. ${PHYSIOLOGY_LINE}`;
+  }
   const nasa = values.filter((v) => v.provenance === 'NASA_MEASURED' || v.provenance === 'NASA_DERIVED');
   const labels = [...new Set(nasa.map((v) => v.dataset?.label ?? v.dataset_id ?? 'NASA archive'))];
   // P-0: non-NASA measurements are named with their agency, apart from the NASA sources.
@@ -134,12 +163,16 @@ export function dataSourcesLine(provenance: AegisSystemState['provenance']): str
     ...new Set(other.map((v) => `${otherAgency(v.dataset ?? null)} ${v.dataset?.label ?? v.dataset_id ?? ''}`.trim())),
   ];
   const parts: string[] = [];
-  const crewEntered = values.some((v) => v.provenance === 'CREW_ENTERED');
-  if (labels.length) parts.push(`Radiation: NASA data (${labels.join(', ')}).`);
-  if (otherLabels.length) parts.push(`Non-NASA measurements: ${otherLabels.join(', ')}.`);
-  if (crewEntered) parts.push('Self-test entries: crew-entered.');
-  if (parts.length === 0) {
-    return 'Data: synthetic simulator (no NASA replay active). Limits: NASA-STD-3001 where marked ✓. Each value shows its source.';
+  if (labels.length) {
+    parts.push(`Radiation, space weather and ${n} limits: NASA sources.`);
+    parts.push(PHYSIOLOGY_LINE);
+    parts.push(`Replaying: ${labels.join(', ')}.`);
+  } else {
+    parts.push(`Space weather and ${n} limits: NASA sources.`);
+    parts.push(PHYSIOLOGY_LINE);
+    if (!otherLabels.length) parts.push('Radiation: simulated (no NASA replay active).');
   }
-  return `${parts.join(' ')} Limits: NASA-STD-3001 where marked ✓. Crew physiology and cabin air: synthetic. Each value shows its source.`;
+  if (otherLabels.length) parts.push(`Ground radiation: ${otherLabels.join(', ')} (measured, not NASA).`);
+  if (values.some((v) => v.provenance === 'CREW_ENTERED')) parts.push('Self-test entries: crew-entered.');
+  return parts.join(' ');
 }

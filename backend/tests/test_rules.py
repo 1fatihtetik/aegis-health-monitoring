@@ -208,7 +208,8 @@ def test_verified_limit_without_clause_fails_to_load(tmp_path):
         shutil.copy(f, tmp_path / f.name)
     text = (tmp_path / "limits.yaml").read_text(encoding="utf-8")
     (tmp_path / "limits.yaml").write_text(
-        text.replace('source_ref: "Project heuristic", verified: false }', 'source_ref: "trust me", verified: true }', 1),
+        text.replace('source_ref: "Project heuristic", verified: false, source_kind: design }',
+                     'source_ref: "trust me", verified: true }', 1),
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="no clause id"):

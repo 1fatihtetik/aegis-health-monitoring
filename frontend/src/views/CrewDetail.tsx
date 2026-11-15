@@ -1,4 +1,5 @@
 import React from 'react';
+import { limitKindOf, notNasaLabel } from '../api/limits';
 import { SeveritySublabel } from '../components/SeveritySublabel';
 import {
   Bar,
@@ -178,7 +179,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                     : 'bg-amber-500/20 border-amber-400/50 text-amber-200'
                 }`}
               >
-                {zLimit.verified ? '✓' : '⚠ unverified'} limit: |z| &gt; {zLimit.value}σ ({zLimit.source_ref})
+                {zLimit.verified ? '✓ NASA' : notNasaLabel(limitKindOf({ kind: zLimit.source_kind, ref: zLimit.key }))}: |z| &gt; {zLimit.value}σ ({zLimit.source_ref})
               </span>
             )}
           </div>
@@ -405,7 +406,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
             </div>
             {sleepLimit && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
-                {sleepLimit.verified ? '✓' : '⚠ unverified'} limit: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
+                {sleepLimit.verified ? '✓ NASA' : notNasaLabel(limitKindOf({ kind: sleepLimit.source_kind, ref: sleepLimit.key }))}: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
               </span>
             )}
           </div>
@@ -429,7 +430,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                   stroke="#f59e0b"
                   strokeDasharray="4 4"
                   label={{
-                    value: `Min ${sleepLimit.value} h${sleepLimit.verified ? '' : ' (⚠ unverified)'}`,
+                    value: `Min ${sleepLimit.value} h${sleepLimit.verified ? '' : ' (not a NASA limit)'}`,
                     position: 'insideTopRight',
                     fill: '#fcd34d',
                     fontSize: 10,
@@ -475,7 +476,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
                   }`}
                   title={bmdFloor.source_ref}
                 >
-                  {bmdFloor.verified ? '✓ NASA limit' : '⚠ unverified'}: keep ≥ {bmdFloor.value} {bmdFloor.unit}
+                  {bmdFloor.verified ? '✓ NASA limit' : notNasaLabel(limitKindOf({ kind: bmdFloor.source_kind, ref: bmdFloor.key }))}: keep ≥ {bmdFloor.value} {bmdFloor.unit}
                 </span>
               )}
               {bmdLimit && (

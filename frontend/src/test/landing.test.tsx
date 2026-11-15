@@ -53,10 +53,10 @@ describe('T-8 landing readiness gate', () => {
     expect(hold.textContent).toMatch(/Low blood pressure on standing/);
     expect(hold.querySelector('[data-testid="severity-sublabel"]')?.textContent).toMatch(/LOM/);
     expect(screen.getByTestId('landing-hold-actions-C3').textContent).toMatch(/Tell the CMO/);
-    // Hold rows open by default and show every component, the unverified marker and the plain action.
+    // Hold rows open by default and show every component, the not-NASA marker and the plain action.
     const fluid = screen.getByTestId('landing-comp-C3-fluid');
     expect(fluid.textContent).toMatch(/1200 mL/);
-    expect(fluid.textContent).toMatch(/⚠ unverified/);
+    expect(fluid.textContent).toMatch(/Not a NASA limit/);
     expect(fluid.textContent).toMatch(/Drink to the daily fluid target/);
     expect(screen.getByTestId('landing-comp-C3-stand').textContent).toMatch(/no result yet, left out of the score/);
     expect(screen.getByTestId('readiness-gate').textContent).not.toMatch(/you have|point|streak|badge|leaderboard/i);

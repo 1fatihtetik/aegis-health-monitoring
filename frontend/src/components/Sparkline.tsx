@@ -45,10 +45,10 @@ export const Sparkline: React.FC<SparklineProps> = ({
           <span className="text-[11px] font-medium text-slate-400 truncate">{label}</span>
           {(limitMin !== undefined || limitMax !== undefined) && !limitVerified && (
             <span
-              title="Unverified threshold from config/limits.yaml"
+              title="Not a NASA limit: threshold from config/limits.yaml"
               className="text-[10px] text-amber-300/90 font-mono"
             >
-              ⚠
+              not NASA
             </span>
           )}
         </div>

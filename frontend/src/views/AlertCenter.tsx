@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { evidenceMarker } from '../api/limits';
 import { SeveritySublabel } from '../components/SeveritySublabel';
 import {
   HAZARD_CATALOG,
@@ -248,11 +249,11 @@ export const AlertCenter: React.FC = () => {
                     </span>
                     {alert.evidence.limit_verified ? (
                       <span className="rounded bg-emerald-500/15 border border-emerald-500/40 px-2 py-0.5 text-xs font-semibold text-emerald-300">
-                        ✓ verified limit · {alert.evidence.source_ref}
+                        ✓ NASA limit · {alert.evidence.source_ref}
                       </span>
                     ) : (
                       <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-xs font-semibold text-amber-200">
-                        ⚠ unverified limit · {alert.evidence.source_ref ?? 'config/limits.yaml'}
+                        {evidenceMarker(alert.evidence)} · {alert.evidence.source_ref ?? 'config/limits.yaml'}
                       </span>
                     )}
                   </div>

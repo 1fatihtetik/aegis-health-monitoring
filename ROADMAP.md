@@ -3,14 +3,14 @@
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
 **Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
-**Next: Block L, data-honesty labels (§0a). Status: PLANNED (user decision 2026-11-15).** About 2-3 h, wording only.
+**Block L, data-honesty labels (§0a). Status: BUILT 2026-11-15 (L-1..L-3), awaiting supervisor review.** Wording only.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
 ---
 
-## 0a. Block L: data-honesty labels (planned)
+## 0a. Block L: data-honesty labels (built, awaiting review)
 
 Why: judges may read "Synthetic" and "unverified" as "fake". Both words say what a value is **not**. Block L makes every label say what the value **is**, explains the reasons once, and says it first in the demo. Nothing about the data changes: no new data, no rule, limit value or `verified` flag changes, and simulated values stay visibly simulated.
 

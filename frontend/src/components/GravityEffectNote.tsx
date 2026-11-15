@@ -59,7 +59,7 @@ export const GravityEffectNote: React.FC<{ gravity?: GravityEffect | null; alert
         </p>
       )}
       <p className="text-[10px] text-slate-500" title={gravity.basis}>
-        ◇ Synthetic (linear gravity model; sources: Ellman 2013, Norsk 2015, Meck 2001)
+        ◇ Simulated (linear gravity model; sources: Ellman 2013, Norsk 2015, Meck 2001)
       </p>
     </div>
   );

@@ -10,7 +10,7 @@ export const ReplayLine: React.FC<{ replay?: RadReplayInfo | null }> = ({ replay
   if (!replay) {
     return (
       <p className="text-xs text-slate-400" data-testid="rad-replay-line">
-        Radiation source: synthetic background (no measured replay active for this mission phase).
+        Radiation source: simulated background (no measured replay active for this mission phase).
       </p>
     );
   }
@@ -59,7 +59,7 @@ export const ReplayLine: React.FC<{ replay?: RadReplayInfo | null }> = ({ replay
       )}
       {replay.synthetic_spe_overlay && (
         <span className="rounded border border-slate-500 bg-slate-800/70 px-2 py-0.5 font-semibold text-slate-100">
-          · SPE profile is synthetic (real MSL/RAD SPE replay inactive)
+          · SPE profile is simulated (real MSL/RAD SPE replay inactive)
         </span>
       )}
     </p>

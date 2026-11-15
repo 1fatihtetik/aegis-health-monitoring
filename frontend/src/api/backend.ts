@@ -26,6 +26,7 @@ import {
   HrpRiskId,
   LandingComponent,
   LandingGate,
+  LimitSourceKind,
   NextGravityIncrease,
   Inspiration4Panel,
   LinkStatus,
@@ -63,6 +64,7 @@ export interface BackendEvidence {
   limit_ref?: string;
   limit_verified?: boolean;
   limit_source_ref?: string;
+  limit_source_kind?: LimitSourceKind | null;
   window?: string;
   agg?: string;
   hysteresis_hold?: boolean;
@@ -109,6 +111,7 @@ export interface BackendReadinessComponent {
   limit_ref: string;
   limit_verified: boolean;
   limit_source_ref: string;
+  limit_source_kind?: LimitSourceKind | null;
   window: string;
   score: number | null;
   weight: number;
@@ -127,6 +130,7 @@ export interface BackendReadiness {
   go_min?: number;
   go_min_verified?: boolean;
   go_min_source_ref?: string;
+  go_min_source_kind?: LimitSourceKind | null;
   hold_alerts?: LandingGate['hold_alerts'];
   hold_actions?: string[];
 }
@@ -565,6 +569,7 @@ function mapReadiness(
     limitLabel: `limit ${c.limit} ${c.unit} (good ${c.good})`,
     limitVerified: c.limit_verified,
     sourceRef: c.limit_source_ref,
+    sourceKind: c.limit_source_kind ?? null,
     status: componentStatus(c.score),
   }));
   const go = r.go ?? (r.go_min !== undefined ? r.value >= r.go_min : r.alert_penalty === 0);
@@ -675,6 +680,8 @@ function mapClause(m: BackendEvidence): AlertEvidenceClause {
     limit: m.limit,
     limit_verified: m.limit_verified ?? false,
     source_ref: m.limit_source_ref ?? '',
+    limit_ref: m.limit_ref,
+    limit_source_kind: m.limit_source_kind ?? null,
     provenance: m.provenance,
     dataset_id: m.dataset_id,
     basis: m.basis,
@@ -692,6 +699,8 @@ export function mapAlert(a: BackendAlert): AlertItem {
     op: e.op,
     limit_verified: e.limit_verified ?? (e.members ?? []).every((m) => m.limit_verified !== false),
     source_ref: e.limit_source_ref ?? (e.members ? 'see members' : undefined),
+    limit_ref: e.limit_ref,
+    limit_source_kind: e.limit_source_kind ?? null,
     window: e.window ?? '',
     clauses: e.members?.map(mapClause),
     context: e.context,
@@ -1013,6 +1022,7 @@ export function mapLanding(snap: BackendSnapshot): Partial<Record<CrewId, Landin
       go_min: g.go_min,
       go_min_verified: g.go_min_verified ?? false,
       go_min_source_ref: g.go_min_source_ref,
+      go_min_source_kind: g.go_min_source_kind ?? null,
       components: g.components as unknown as Record<string, LandingComponent>,
       hold_alerts: g.hold_alerts ?? [],
       hold_actions: g.hold_actions ?? [],

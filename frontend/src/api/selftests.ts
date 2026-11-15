@@ -2,7 +2,16 @@
  * Block T self-test helpers: pure functions, no thresholds of their own. Every number comes from the catalog
  * (GET /api/v1/selftests), which resolves limits from config/limits.yaml and rule limits from config/rules.yaml.
  */
-import { CrewId, EntryMethod, SelfTestField, SelfTestRuleLimit, Severity } from './types';
+import { limitKindOf } from './limits';
+import {
+  CrewId,
+  EntryMethod,
+  LimitSourceKind,
+  SelfTestField,
+  SelfTestLimit,
+  SelfTestRuleLimit,
+  Severity,
+} from './types';
 
 const OPS: Record<string, (a: number, b: number) => boolean> = {
   '>': (a, b) => a > b,
@@ -66,6 +75,23 @@ export function bandUnverified(field: SelfTestField): boolean {
   const simple = field.rule_limits.filter((r) => r.rule_type === 'THRESHOLD');
   if (simple.length) return simple.some((r) => !r.verified);
   return [field.band?.low, field.band?.high].some((l) => l && !l.verified);
+}
+
+/** Block L: the kind of the first unverified limit behind the band ("Not a NASA limit · <kind>"). */
+export function bandKind(field: SelfTestField): LimitSourceKind | undefined {
+  const lim = unverifiedBandLimit(field);
+  return lim ? limitKindOf({ kind: lim.source_kind, ref: lim.ref, sourceRef: lim.source_ref }) : undefined;
+}
+
+/** The source_ref of the first unverified limit behind the band, for the marker's tooltip. */
+export function bandSourceRef(field: SelfTestField): string | undefined {
+  return unverifiedBandLimit(field)?.source_ref;
+}
+
+function unverifiedBandLimit(field: SelfTestField): SelfTestRuleLimit | SelfTestLimit | undefined {
+  const simple = field.rule_limits.filter((r) => r.rule_type === 'THRESHOLD');
+  if (simple.length) return simple.find((r) => !r.verified);
+  return [field.band?.low, field.band?.high].find((l): l is SelfTestLimit => !!l && !l.verified);
 }
 
 export interface ObservationPayload {

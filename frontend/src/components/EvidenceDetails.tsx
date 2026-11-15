@@ -1,4 +1,5 @@
 import React from 'react';
+import { evidenceMarker } from '../api/limits';
 import { AlertEvidence } from '../api/types';
 import { signalLabel } from '../api/backend';
 import { DataSourceBadge } from './DataSourceBadge';
@@ -112,7 +113,7 @@ export const EvidenceDetails: React.FC<{ evidence: AlertEvidence }> = ({ evidenc
                   {fmt(cl.value)} {cl.unit} ({cl.op} {fmt(cl.limit)} {cl.unit})
                 </div>
                 <div className="mt-0.5 text-[10px] text-slate-400">
-                  {cl.limit_verified ? '✓ verified' : '⚠ unverified'} · {cl.source_ref}
+                  {cl.limit_verified ? '✓ NASA limit' : evidenceMarker(cl)} · {cl.source_ref}
                   {cl.hysteresis_hold ? ' · ↺ hysteresis hold' : ''}
                 </div>
                 <div className="mt-1">

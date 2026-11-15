@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { bandText, bandUnverified, needsConfirmation, parseEntry, rulesTripped } from '../api/selftests';
+import { notNasaLabel } from '../api/limits';
+import { bandKind, bandSourceRef, bandText, bandUnverified, needsConfirmation, parseEntry, rulesTripped } from '../api/selftests';
 import { SelfTestDef, SelfTestRuleLimit, SubmitOutcome } from '../api/types';
 import { SeveritySublabel } from './SeveritySublabel';
 
@@ -94,8 +95,8 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({ test, connecte
                   <span className="block text-xs text-slate-300" data-testid={`band-${f.signal}`}>
                     Normal: {band}{' '}
                     {bandUnverified(f) && (
-                      <span className="font-mono text-amber-300" title="Project or clinical heuristic, not a NASA value">
-                        ⚠ unverified
+                      <span className="font-mono text-amber-300" title={bandSourceRef(f) ?? 'config/limits.yaml'}>
+                        {notNasaLabel(bandKind(f))}
                       </span>
                     )}
                   </span>

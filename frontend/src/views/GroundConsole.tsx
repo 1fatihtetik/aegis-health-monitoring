@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { evidenceMarker } from '../api/limits';
 import { SeveritySublabel } from '../components/SeveritySublabel';
 import { formatDurationSeconds, formatOneWayDelay } from '../api/client';
 import {
@@ -230,7 +231,7 @@ export const GroundConsole: React.FC = () => {
                       <div className="font-bold text-slate-100">{a.title}</div>
                       <div className="font-mono text-slate-300">
                         Evidence: {signalLabel(a.evidence.signal)} = {a.evidence.value} {a.evidence.unit ?? ''} (Limit{' '}
-                        {a.evidence.limit} · {a.evidence.limit_verified ? '✓ verified' : '⚠ unverified'})
+                        {a.evidence.limit} · {a.evidence.limit_verified ? '✓ NASA limit' : evidenceMarker(a.evidence)})
                       </div>
                     </div>
                   );

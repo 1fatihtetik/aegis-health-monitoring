@@ -2,7 +2,7 @@ import React from 'react';
 import { formatDurationSeconds } from '../api/client';
 import { STATUS_DISPLAY } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
-import { clauseId, formatLimit } from '../api/limits';
+import { clauseId, formatLimit, notNasaLabel, limitKindOf } from '../api/limits';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { ReplayLine } from '../components/ReplayLine';
@@ -85,7 +85,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <div className="flex items-center justify-between text-xs text-slate-400">
             <span>Total Dose-Equivalent Rate</span>
             {speLimit && !speLimit.verified && (
-              <span className="text-amber-300 font-mono text-[10px]">⚠ unverified limit</span>
+              <span className="text-amber-300 font-mono text-[10px]">
+                {notNasaLabel(limitKindOf({ kind: speLimit.source_kind, ref: speLimit.key }))}
+              </span>
             )}
           </div>
           <div className="mt-1">
@@ -180,7 +182,9 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           {gcrDesign && (
             <div className="mt-0.5 text-[10px] text-slate-400" title={gcrDesign.source_ref}>
               Habitat design target (deep space): &lt; {gcrDesign.value} {gcrDesign.unit}{' '}
-              {gcrDesign.verified ? `✓ NASA ${clauseId(gcrDesign.source_ref) ?? ''}` : '⚠ unverified'}
+              {gcrDesign.verified
+                ? `✓ NASA ${clauseId(gcrDesign.source_ref) ?? ''}`
+                : notNasaLabel(limitKindOf({ kind: gcrDesign.source_kind, ref: gcrDesign.key }))}
             </div>
           )}
         </div>
@@ -194,7 +198,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
             subtitle={
               radiation.replay
                 ? `Area dose equivalent from ${radiation.replay.label} vs neutron share (heuristic 30% split)`
-                : 'Area dose rate (synthetic GCR/SPE) vs neutron share (heuristic 30% split)'
+                : 'Area dose rate (simulated GCR/SPE) vs neutron share (heuristic 30% split)'
             }
             data={radiation.history}
             unit="µSv/h"
@@ -264,7 +268,7 @@ export const Radiation: React.FC<RadiationProps> = ({ onOpenEmergencyModal }) =>
           <div className="flex items-center gap-2">
             {careerLimit && !careerLimit.verified && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2.5 py-1 text-xs font-semibold text-amber-200">
-                ⚠ unverified limit: {careerLimit.value} {careerLimit.unit} ({careerLimit.source_ref})
+                {notNasaLabel(limitKindOf({ kind: careerLimit.source_kind, ref: careerLimit.key }))}: {careerLimit.value} {careerLimit.unit} ({careerLimit.source_ref})
               </span>
             )}
             {careerLimit?.verified && (

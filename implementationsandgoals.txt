@@ -1,7 +1,7 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: Block L (data-honesty labels) planned and documented; handoff pruned)
+Last updated: 2026-11-15 (Claude: Block L L-1..L-3 built, READY FOR REVIEW)
 State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) and the group-A clause limits APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: Block L (section 6): plan review by Antigravity, then L-1 -> L-2 -> L-3 (wording only, no data or limit changes).
+Next: Antigravity reviews Block L (section 6, READY FOR REVIEW). No re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
 
 Read order: this file -> ROADMAP.md §0a (Block L) -> AGENTS.md §1, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
 
@@ -22,9 +22,9 @@ User directives (standing):
 
 2. WHAT IS BUILT
 - Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 9 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND; alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
-- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts` (bundled limits.yaml); views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`, `BodyMap`, `ReadinessGate`.
+- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts` (bundled limits.yaml; Block L `notNasaLabel` / `limitKindOf` / `evidenceMarker` / `limitCounts`); `DataSourcesPanel` (footer, Block L); views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`, `BodyMap`, `ReadinessGate`.
 - Data: replays with manifest + sha256 check and synthetic fallback; `data/nasa/MANIFEST.yaml` (16 files). Radiation per phase: MSL/RAD cruise, Gale, March 2012 SPE, ISS DOSTEL-1 (LEO, SAA stand-down), LRO CRaTER (lunar), EPA RadNet (POST_LANDING, MEASURED_OTHER). JPL Horizons light time; DONKI + OMNI2 space-weather card; Inspiration4 aggregate CBC/CMP panel.
-- Limits: 14 `verified: true` entries (43 `verified: false`). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
+- Limits: 14 `verified: true` entries (43 `verified: false`, each with `source_kind`: 13 published, 8 clinical, 21 design, 1 nasa_reference). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
 - Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` (15 tests + 6 body-map regions); routine board; PVT-B; guided measurements; onboard-only questionnaires; stand test; SANS watch; LANDING gate; Amsler grid; body map.
 - `demo_5min` (seed 42, ~4 min 50 s): timings and walkthrough in README.md "Demo walkthrough".
 
@@ -41,9 +41,32 @@ User directives (standing):
 4. SUPERVISOR FINDINGS (Antigravity)
 - Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T T-0..T-10 (last: T-10 `014ae27`), Gate T, D-5 (`b255101`, `demo-ready-v3`); group-A clause limits (`2272b8f`, `f51b448`; 2026-11-15, independently verified: pytest 219, ruff clean, manifest 16/16, tsc clean, vitest 106; [V2 6109], [V2 6003], [V2 6115] with honest SYNTHETIC provenance on derived signals, no extra RNG draws). Full review notes in git history.
 - F-001..F-014: CLOSED.
+- Block L plan (`ROADMAP.md` §0a, `af03b9c`): APPROVED for L-1 -> L-2 -> L-3. Clearer for non-medical-expert crew ("Simulated" and "Not a NASA limit · <kind>" avoid false doubt during off-nominal ops). Implementation notes for Claude:
+  1. Keep `frontend/src/api/limits.ts` (`RawLimit` + parser) in sync with `source_kind` so offline fallback works identically without ground/network.
+  2. Footer data line renders the clean string `"Radiation, space weather and <N> limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data)."` (without the parenthetical note in section 6).
+  3. In tests, assert unverified limits carry `"Not a NASA limit"` and never the verified `"✓ NASA"` badge (note `"Not a NASA limit · NASA reference, not a standard"` intentionally contains the word "NASA" as a disclaimer).
+  4. Ensure `"Not a NASA limit · ..."` badges wrap cleanly at 1024x768, `"Where our data comes from"` panel controls are >= 44 px, and the panel never blocks or obscures `EmergencyTakeover` or `AlertBanner`.
 - Standing note: escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; "Indicators consistent with..." copy only, never a diagnosis.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 Block L built (L-1..L-3), wording only; no data, rule, limit value or `verified` flag changed.
+  L-1: `source_kind` on all 43 unverified entries in `config/limits.yaml`; `Config` refuses an unverified entry without
+  a known kind and a verified entry with one; `Limit.as_dict()`, alert evidence (`limit_source_kind`), readiness
+  components and the gate (`go_min_source_kind`) carry it. Frontend: `RawLimit`/parser + `ConfigLimit.source_kind`
+  (supervisor note 1: offline fallback identical); one helper in `api/limits.ts` makes every marker "Not a NASA limit
+  · <kind>" (LimitBadge, AlertBanner, EmergencyTakeover, AlertCenter, EvidenceDetails, GroundConsole, LimitBandChart,
+  MeasurementForm, ReadinessGate, CrewOverview, CrewDetail, Radiation, Sparkline "not NASA"); verified stays
+  "✓ NASA [Vx nnnn]". Badges "Simulated" / "Simulated · NASA-calibrated"; other visible "synthetic" copy (gravity note,
+  replay line, overview title, radiation chart) now "simulated". Footer line (note 2): "Radiation, space weather and 14
+  limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data)." + "Replaying: …", "Ground
+  radiation: EPA RadNet … (measured, not NASA)" or "Radiation: simulated (no NASA replay active)" when that applies.
+  L-2: `DataSourcesPanel` opens inline in the footer (never covers EmergencyTakeover/AlertBanner, note 4) and from any
+  badge's details ("Where our data comes from ›", 44 px); counts per kind computed from the live/bundled limits.
+  L-3: opening line in README walkthrough (already in PRD §14). Docs: README data table + Block L note, AGENTS §1/§8/§10,
+  PRD v1.4 marked built, ROADMAP §0a status. Tests: backend `test_block_l.py` (8), frontend `blockL.test.tsx` (16, incl.
+  note 3: no unverified limit renders "✓ NASA"); old-word assertions updated. Checked in the browser at 1024x768: no
+  "unverified"/"Synthetic" text on screen, markers wrap cleanly. Checks: pytest 227, ruff clean, manifest 16/16,
+  tsc clean, vitest 122.
 - 2026-11-15 Block L planned (user: "add options 1, 2 and 3 ... change other docs to reach this goal ... delete redundant
   information"). Docs only, no code: ROADMAP §0a (new), AGENTS §1 rule 2 + §8 + §10, PRD §6 M0 + §9 + §14 + §16.
   This file pruned: finished-work detail (T-8..T-10, D-5, group-A reading) now lives in git history and commit messages.
@@ -56,7 +79,7 @@ User directives (standing):
 6. WORK QUEUE
 Done (APPROVED): MVP, Block R + D-3, Block P + D-4, Block T + Gate T + D-5, group-A clause limits.
 
-Block L: data-honesty labels (PLANNED, user decision 2026-11-15; plan in ROADMAP §0a; about 2-3 h). Wording only:
+Block L: data-honesty labels (READY FOR REVIEW 2026-11-15; plan in ROADMAP §0a; log in section 5). Wording only:
 no data, rule, limit value or `verified` flag changes.
 - L-1 Labels say what a value is.
   * `DataSourceBadge`: "Synthetic" -> "Simulated"; "Synthetic (NASA-calibrated)" -> "Simulated · NASA-calibrated".
@@ -94,7 +117,7 @@ Stretch (only if the user asks): see ROADMAP §5.
 - Block T: `GET /selftests` (catalog with resolved limits), `GET /selftests/schedule?crew_id=`, `GET /selftests/results?crew_id=`. Observation adds `entry_method` (required for CREW_ENTERED) and `test_id`; stand-test entries below `min_gravity_g` -> 422. Alert adds `onboard_only`.
 - `GET /bodymap?crew_id=&node=` -> `{regions: [{id, label, what, hazards, hrp_risks, signals[...], rules[...], tests[...], reference}]}`; ground copy without onboard-only items.
 - `GET /readiness?kind=LANDING` -> per crew `{value, go, go_min, hold_alerts[], hold_actions[], components{...}}`. Snapshot `phase.next_gravity_increase` | null.
-- Limits (`GET /limits`): `{ref, value|min|max, source_ref, verified}`; Block L adds `source_kind` on unverified entries.
+- Limits (`GET /limits`): `{ref, value|min|max, source_ref, verified, source_kind}` (`source_kind` set exactly on unverified entries: published|clinical|design|nasa_reference). Alert evidence adds `limit_source_kind`; readiness components `limit_source_kind`, gates `go_min_source_kind`.
 - Provenance objects: `{provenance, dataset_id, basis, dataset: {...} | null}`; timeseries add `segments[]` and `suspect`.
 - WS `/ws/live?node=onboard|ground`: `{type: "snapshot", ...}` (~5/s), `{type: "alert", node, alert}`, `{type: "recommendation", node: "onboard", recommendation}`.
 

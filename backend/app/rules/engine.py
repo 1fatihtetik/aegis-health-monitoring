@@ -101,6 +101,7 @@ class RuleEngine:
             "limit_ref": limit.ref,
             "limit_verified": limit.verified,
             "limit_source_ref": limit.source_ref,
+            "limit_source_kind": limit.source_kind,
             "window": spec.window,
             "agg": agg,
             **self._source(str(spec.signal), subject),

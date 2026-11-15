@@ -39,7 +39,8 @@ def compute_readiness(
                 if not values:
                     components[name] = {"signal": signal, "value": None, "score": None, "weight": comp["weight"],
                                         "unit": SIGNALS[signal].unit, "limit_ref": limit.ref,
-                                        "limit_verified": limit.verified, "limit_source_ref": limit.source_ref}
+                                        "limit_verified": limit.verified, "limit_source_ref": limit.source_ref,
+                                        "limit_source_kind": limit.source_kind}
                     if "action" in comp:
                         components[name]["action"] = comp["action"]
                     continue
@@ -52,7 +53,7 @@ def compute_readiness(
                     "signal": signal, "value": round(value, 2), "unit": SIGNALS[signal].unit,
                     "good": comp["good"], "limit": limit.value, "limit_ref": limit.ref,
                     "limit_verified": limit.verified, "limit_source_ref": limit.source_ref,
-                    "window": comp["window"], "score": round(score, 1), "weight": comp["weight"],
+                    "limit_source_kind": limit.source_kind, "window": comp["window"], "score": round(score, 1), "weight": comp["weight"],
                 }
                 if "action" in comp:
                     components[name]["action"] = comp["action"]
@@ -74,7 +75,8 @@ def compute_readiness(
                     for a in mine if a.rule_id in spec.get("hold_rules", [])
                 ]
                 entry |= {"go": entry["value"] >= go.value and not hold, "go_min": go.value,
-                          "go_min_verified": go.verified, "go_min_source_ref": go.source_ref}
+                          "go_min_verified": go.verified, "go_min_source_ref": go.source_ref,
+                          "go_min_source_kind": go.source_kind}
                 if "hold_rules" in spec:
                     entry |= {"hold_alerts": hold, "hold_actions": spec.get("hold_actions", [])}
             out[cid][kind] = entry

@@ -198,8 +198,8 @@ export const SpaceWeatherCard: React.FC<SpaceWeatherCardProps> = ({
               {peakLevel && (
                 <>
                   {' '}
-                  (NOAA level <strong className="text-amber-200">{peakLevel.level}</strong>, a NOAA scale, not a NASA
-                  limit <LimitBadge
+                  (NOAA level <strong className="text-amber-200">{peakLevel.level}</strong>, a NOAA scale:{' '}
+                  <LimitBadge
                     limit={{ key: peakLevel.ref, label: `NOAA ${peakLevel.level}`, unit: 'pfu', ...peakLevel }}
                   />)
                 </>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { notNasaLabel, limitKindOf } from '../api/limits';
 import {
   Area,
   ComposedChart,
@@ -116,11 +117,11 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
               </span>
               {limit.verified ? (
                 <span className="rounded bg-emerald-500/15 border border-emerald-500/40 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
-                  ✓ verified ({limit.source_ref})
+                  ✓ NASA limit ({limit.source_ref})
                 </span>
               ) : (
                 <span className="rounded bg-amber-500/20 border border-amber-400/50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-200">
-                  ⚠ unverified limit · {limit.source_ref}
+                  {notNasaLabel(limitKindOf({ kind: limit.source_kind, ref: limit.key, sourceRef: limit.source_ref }))} · {limit.source_ref}
                 </span>
               )}
             </div>
@@ -170,7 +171,7 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `Max ${upperThreshold} ${unit}${limit && !limit.verified ? ' (⚠ unverified)' : ''}`,
+                  value: `Max ${upperThreshold} ${unit}${limit && !limit.verified ? ' (not a NASA limit)' : ''}`,
                   position: 'insideTopRight',
                   fill: '#fcd34d',
                   fontSize: 10,
@@ -185,7 +186,7 @@ export const LimitBandChart: React.FC<LimitBandChartProps> = ({
                 strokeDasharray="4 4"
                 strokeWidth={1.5}
                 label={{
-                  value: `Min ${lowerThreshold} ${unit}${limit && !limit.verified ? ' (⚠ unverified)' : ''}`,
+                  value: `Min ${lowerThreshold} ${unit}${limit && !limit.verified ? ' (not a NASA limit)' : ''}`,
                   position: 'insideBottomRight',
                   fill: '#7dd3fc',
                   fontSize: 10,

@@ -30,7 +30,7 @@ describe('T-0 CREW_ENTERED provenance', () => {
   it('footer names crew entries next to the NASA sources', () => {
     const line = dataSourcesLine({ symptom_headache: entered });
     expect(line).toContain('Self-test entries: crew-entered.');
-    expect(line).not.toMatch(/Radiation: NASA/);
+    expect(line).not.toMatch(/Radiation, space weather/);
   });
 });
 
@@ -99,10 +99,10 @@ describe('T-3 entry helpers', () => {
 });
 
 describe('T-3 MeasurementForm', () => {
-  it('shows the catalog text: why, band with the unverified marker, CMO escalation', () => {
+  it('shows the catalog text: why, band with the not-NASA marker, CMO escalation', () => {
     render(<SelfTestExplainer test={bpTest} limits={BUNDLED_LIMITS} />);
     expect(screen.getByTestId('selftest-why')).toHaveTextContent('heart and lungs');
-    expect(screen.getByTestId('selftest-band')).toHaveTextContent('⚠ unverified');
+    expect(screen.getByTestId('selftest-band')).toHaveTextContent('Not a NASA limit · Clinical guideline');
     expect(screen.getByTestId('selftest-escalation')).toHaveTextContent('CMO');
   });
 
@@ -122,7 +122,7 @@ describe('T-3 MeasurementForm', () => {
     render(<MeasurementForm test={bpTest} connected onSubmit={onSubmit} />);
     fireEvent.change(screen.getByTestId('field-bp_systolic'), { target: { value: '118' } });
     fireEvent.change(screen.getByTestId('field-spo2'), { target: { value: '88' } });
-    expect(screen.getByTestId('band-spo2')).toHaveTextContent('⚠ unverified');
+    expect(screen.getByTestId('band-spo2')).toHaveTextContent('Not a NASA limit · Clinical guideline');
     expect(screen.getByTestId('tripped-spo2')).toHaveTextContent('WARNING alert: below 92 %');
     expect(screen.getByTestId('tripped-spo2')).toHaveTextContent('LOM');
     fireEvent.click(screen.getByTestId('selftest-done'));

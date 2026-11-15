@@ -11,7 +11,7 @@ import {
   STATUS_DISPLAY,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
-import { formatLimit } from '../api/limits';
+import { formatLimit, notNasaLabel, limitKindOf } from '../api/limits';
 import { signalLabel } from '../api/backend';
 import { BodyMap } from '../components/BodyMap';
 import { GravityEffectNote } from '../components/GravityEffectNote';
@@ -377,7 +377,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
       <section aria-label="Crew Health Status Cards">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-            Crew Health Picture (4 Onboard Astronauts · Synthetic Profiles)
+            Crew Health Picture (4 Onboard Astronauts · Simulated Profiles)
           </h2>
           <span className="text-xs text-slate-400">
             Tap any crew card to open full physiological charts & 180-day BMD trends
@@ -592,7 +592,9 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
                 <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800/80">
                   <span>Target: {comp.limitLabel}</span>
                   {!comp.limitVerified && (
-                    <span className="text-amber-300 font-mono">⚠ unverified</span>
+                    <span className="text-amber-300 font-mono">
+                      {notNasaLabel(limitKindOf({ kind: comp.sourceKind, sourceRef: comp.sourceRef }))}
+                    </span>
                   )}
                 </div>
               </div>

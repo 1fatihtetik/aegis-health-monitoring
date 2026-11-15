@@ -7,7 +7,7 @@ import {
   STATUS_DISPLAY,
   severityToStatus,
 } from '../api/types';
-import { clauseId } from '../api/limits';
+import { clauseId, evidenceMarker } from '../api/limits';
 import { signalLabel } from '../api/backend';
 import { AlertChecklist } from './AlertChecklist';
 import { AutonomyNotice } from './AutonomyNotice';
@@ -151,7 +151,7 @@ export const AlertBanner: React.FC<AlertBannerProps> = ({
 
             {!top.evidence.limit_verified && (
               <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-1 text-[11px] font-semibold text-amber-200">
-                ⚠ unverified limit ({top.evidence.source_ref ?? 'config/limits.yaml'})
+                {evidenceMarker(top.evidence)} ({top.evidence.source_ref ?? 'config/limits.yaml'})
               </span>
             )}
           </div>

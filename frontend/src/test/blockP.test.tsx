@@ -59,17 +59,18 @@ describe('P-0 MEASURED_OTHER provenance', () => {
       dataset: { ...RADNET, id: 'msl_rad_cruise_2012', label: 'MSL/RAD cruise 2012', agency: 'NASA' },
     };
     const both = dataSourcesLine({ area_dose_rate_absorbed: other, area_dose_rate_equivalent: nasa });
-    expect(both).toContain('Radiation: NASA data (MSL/RAD cruise 2012).');
-    expect(both).toContain('Non-NASA measurements: EPA RadNet test station.');
+    expect(both).toContain('Radiation, space weather and 14 limits: NASA sources.');
+    expect(both).toContain('Replaying: MSL/RAD cruise 2012.');
+    expect(both).toContain('Ground radiation: EPA RadNet test station (measured, not NASA).');
     expect(both).not.toContain('NASA data (RadNet');
 
     const onlyOther = dataSourcesLine({
       area_dose_rate_absorbed: other,
       heart_rate: { provenance: 'SYNTHETIC', dataset_id: null, basis: '' },
     });
-    expect(onlyOther).toContain('Non-NASA measurements: EPA RadNet test station.');
-    expect(onlyOther).not.toContain('Radiation: NASA data');
-    expect(onlyOther).toContain('Crew physiology and cabin air: synthetic');
+    expect(onlyOther).toContain('Ground radiation: EPA RadNet test station (measured, not NASA).');
+    expect(onlyOther).not.toContain('Radiation, space weather');
+    expect(onlyOther).toContain('Crew physiology: simulated (no public in-flight astronaut data).');
   });
 });
 
@@ -153,10 +154,10 @@ describe('P-5 gravity tile', () => {
     expect(lines).not.toMatch(/you have/i); // decision support, never a diagnosis
   });
 
-  it('shows no loss at 1 g and renders the synthetic label', () => {
+  it('shows no loss at 1 g and renders the simulated label', () => {
     const earth = { ...mars, gravity_g: 1, load_factor: 0, bmd_loss_pct_month: 0, transition: null };
     expect(gravityEffectLines(earth)[0]).toContain('no further bone or fitness loss');
     render(<GravityEffectNote gravity={mars} />);
-    expect(screen.getByTestId('gravity-effect')).toHaveTextContent('Synthetic (linear gravity model');
+    expect(screen.getByTestId('gravity-effect')).toHaveTextContent('Simulated (linear gravity model');
   });
 });

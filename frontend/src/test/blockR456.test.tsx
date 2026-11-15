@@ -87,7 +87,7 @@ describe('R-4 light-time delay', () => {
 });
 
 describe('R-5 space-weather card', () => {
-  it('renders the real event, the NOAA level as unverified, and marks the onboard replay time', () => {
+  it('renders the real event, the NOAA level as not a NASA limit, and marks the onboard replay time', () => {
     render(
       <SpaceWeatherCard event={event} connected replay={speReplay} delaySeconds={657} blackout={false} onForward={async () => true} />
     );
@@ -96,8 +96,9 @@ describe('R-5 space-weather card', () => {
     expect(screen.getByTestId('spaceweather-sep')).toHaveTextContent('2012-03-07T01:44:00-SEP-001');
     const card = screen.getByTestId('spaceweather-card');
     expect(card).toHaveTextContent('4560 pfu');
-    expect(card).toHaveTextContent('not a NASA limit');
-    expect(card).toHaveTextContent('⚠ unverified');
+    expect(card).toHaveTextContent('a NOAA scale');
+    expect(card).toHaveTextContent('Not a NASA limit · Published source');
+    expect(card).not.toHaveTextContent('✓ NASA');
     expect(card).toHaveTextContent('◆NASA · omni2_proton_flux_2012_03');
     expect(screen.getByTestId('spaceweather-replay-marker')).toBeInTheDocument();
   });

@@ -92,16 +92,17 @@ describe('R-2 MSL/RAD replay in the UI', () => {
     expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('replayed ×60');
     expect(screen.getByTestId('rad-replay-held')).toHaveTextContent('holding last good value');
     rerender(<ReplayLine replay={null} />);
-    expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('synthetic background');
+    expect(screen.getByTestId('rad-replay-line')).toHaveTextContent('simulated background');
   });
 
-  it('footer names the NASA dataset and keeps physiology synthetic', () => {
+  it('footer names the NASA dataset and keeps physiology simulated', () => {
     const line = dataSourcesLine({
       area_dose_rate_absorbed: measured,
       area_dose_rate_equivalent: { ...measured, provenance: 'NASA_DERIVED' },
       heart_rate: { provenance: 'SYNTHETIC', dataset_id: null, basis: '' },
     });
-    expect(line).toContain('Radiation: NASA data (MSL/RAD cruise 2012)');
-    expect(line).toContain('Crew physiology and cabin air: synthetic');
+    expect(line).toContain('Radiation, space weather and 14 limits: NASA sources.');
+    expect(line).toContain('Replaying: MSL/RAD cruise 2012.');
+    expect(line).toContain('Crew physiology: simulated (no public in-flight astronaut data).');
   });
 });
