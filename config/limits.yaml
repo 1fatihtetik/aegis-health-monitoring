@@ -5,6 +5,10 @@
 # R-1 (2026-11-14) sources read: OCHMO-TB-004 Rev D (CO2), OCHMO-TB-020 Rev G (radiation), OCHMO-TB-002 Rev B
 # (ECLSS), OCHMO-TB-003 Rev A (habitable atmosphere), OCHMO-TB-035 Rev C (acoustics), OCHMO-MTB-013 Rev D (bone).
 # The briefs quote NASA-STD-3001 Vol 1 Rev C and Vol 2 Rev D. Keep one entry per line (frontend/src/api/limits.ts).
+# 2026-11-15 group-A read: NASA-STD-3001 Vol 2 Rev F (approved 2026-07-14) and Rev D; OCHMO-TB-004 Rev D, TB-013 Rev C,
+# TB-027 Rev B, MTB-003 Rev A, MTB-001, MTB-013 Rev D. [V2 6004] 3 mmHg, [V2 6006], [V2 6012] and [V2 6077] are unchanged
+# in Rev F. None of the six group-A entries below has a NASA number for the quantity this config measures; each
+# source_ref says what the documents do contain.
 radiation:
   career_effective_dose_mSv:  { value: 600, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4030] Career Space Permissible Exposure Limit, via OCHMO-TB-020 Rev G", verified: true }
   spe_event_effective_dose_mSv: { value: 250, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4031] Short-Term Radiation Limits - Solar Particle Events (design event), via OCHMO-TB-020 Rev G", verified: true }
@@ -15,13 +19,13 @@ radiation:
   saa_transit_flag:           { value: 0.5, source_ref: "Flag cut for saa_transit (0 or 1), not a dose limit; SAA box per Berger et al. (2017) J. Space Weather Space Clim. 7:A8", verified: false }
 environment:
   ppco2_mmHg_1h_max:   { value: 3.0, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6004] Nominal Vehicle/Habitat CO2 Levels, via OCHMO-TB-004 Rev D", verified: true }
-  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic (OCHMO-TB-004 lists worsening symptoms above 4.5 mmHg; not a limit)", verified: false }
-  ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic ([V2 6003] Table 6.2-1 values not yet read)", verified: false }
+  ppco2_mmHg_critical: { value: 5.0, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6004] note: off-nominal CO2 values are not in the standard (set per program); OCHMO-TB-004 Rev D lists fatigue, malaise and nausea above 4.5 mmHg (background, not a limit)", verified: false }
+  ppo2_kPa_min:        { value: 19.5, source_ref: "Project heuristic for cabin (ambient) ppO2. NASA-STD-3001 Vol 2 Rev F [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2), not ambient ppO2: target 145-155 mmHg, mild-hypoxia lower limit 127 mmHg (1-h TWA), absolute 122 mmHg; 19.5 kPa ambient at 101 kPa cabin = PIO2 ~137 mmHg", verified: false }
   cabin_pressure_kPa:  { min: 34.5, max: 103, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6006] Total Pressure Tolerance Range for Indefinite Crew Exposure, via OCHMO-TB-003 Rev A", verified: true }
   cabin_temp_C:        { min: 18, max: 27, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   humidity_pct:        { min: 25, max: 75, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6012] Crew Health Environmental Limits (18 C/75% RH to 27 C/25% RH), via OCHMO-TB-002 Rev B", verified: true }
   noise_dBA_hazardous_max: { value: 85, source_ref: "NASA-STD-3001 Vol 2 Rev D [V2 6077] Hazardous Noise Limits, via OCHMO-TB-035 Rev C", verified: true }
-  noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic ([V2 6079] sets the NC-40 octave-band curve for sleep areas, not a dBA value)", verified: false }
+  noise_dBA_sleep_max: { value: 50, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 6079] limits continuous noise in sleep areas (missions > 30 d) to the NC-40 octave-band curve (Table 6.6-3), which has no single dBA value; [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis, ~70 dBA over 24 h)", verified: false }
 physiology:
   spo2_pct_min:        { value: 92, source_ref: "Clinical heuristic", verified: false }
   hr_bpm:              { min: 40, max: 140, source_ref: "Clinical heuristic", verified: false }
@@ -47,8 +51,8 @@ questionnaire:
 metabolic:
   glucose_mg_dL:       { min: 70, max: 180, source_ref: "Clinical heuristic (American Diabetes Association: level 1 hypoglycaemia below 70 mg/dL; 180 mg/dL a common upper target); no NASA-STD-3001 clause read", verified: false }
 nutrition:
-  fluid_intake_mL_day_min:   { value: 2000, source_ref: "Project heuristic (daily drinking target; no NASA-STD-3001 clause read)", verified: false }
-  sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic (lower sodium intake is a spaceflight nutrition goal; no NASA-STD-3001 clause read)", verified: false }
+  fluid_intake_mL_day_min:   { value: 2000, source_ref: "Project heuristic (drinks only). NASA-STD-3001 Vol 2 Rev F [V2 6109] Table 6.3-1 requires the vehicle to supply a minimum 2.5 L per crewmember per day of potable water for hydration (drinking and food rehydration), via OCHMO-TB-027 Rev B; ISS crews averaged ~2.0-2.3 L/day (TB-013 Rev C)", verified: false }
+  sodium_intake_mg_day_max:  { value: 3000, source_ref: "Project heuristic. NASA-STD-3001 Vol 2 Rev F [V2 7100] Food Nutrient Composition defers to the NIH Dietary Reference Intakes (Table 7.1-2 adjusts only vitamin D) and states no sodium number; ISS intake was ~3800-4700 mg/day (OCHMO-TB-013 Rev C, background)", verified: false }
 # Block T, T-5: 10-minute stand test (wall-lean adaptation of Lee et al. 2015). Clinical criteria, not NASA-STD-3001.
 stand_test:
   sbp_drop_mmHg_min:       { value: 20, source_ref: "Clinical orthostatic criterion (Freeman et al. 2011 Clin Auton Res 21:69-72 consensus: systolic fall of 20 mmHg or more within 3 min of standing); protocol after Lee et al. (2015) Aerosp Med Hum Perform 86(12):A54-A67; no NASA-STD-3001 clause read", verified: false }
@@ -70,7 +74,7 @@ symptoms:
 sleep:
   min_sleep_h_24h:     { value: 6, source_ref: "Project heuristic", verified: false }
 bone:
-  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate; no NASA-STD-3001 clause)", verified: false }
+  bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate). No NASA-STD-3001 clause: OCHMO-MTB-013 Rev D lists [V1 4026]-[V1 4028] (pre/post-mission BMD) and gives no in-flight monthly rate", verified: false }
   bmd_pct_of_baseline_min: { value: 95, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4027] Pre-mission Bone Countermeasures (hip and spine >= 95% of pre-mission BMD), via OCHMO-MTB-013 Rev D", verified: true }
 readiness:
   eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false }

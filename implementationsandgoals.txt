@@ -1,7 +1,7 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: D-5 re-freeze done, tag `demo-ready-v3`; Block T complete)
-State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P) and `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: nothing queued. Supervisor: confirm D-5. Stretch items only if the user asks (section 6).
+Last updated: 2026-11-15 (Claude: group-A limit clauses read; source_refs updated, no value or verified flag changed; 3 decisions for the user)
+State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P) and `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
+Next: nothing queued (D-5 confirmed). Stretch items only if the user asks (section 6).
 
 Read order: this file -> ROADMAP.md §0 -> AGENTS.md (§2b for Block T) -> PRD.md (§6 M11, §7.4 severity, §9 limits, then only needed sections). Older detail lives in git history (`git log -p implementationsandgoals.txt`).
 
@@ -40,7 +40,7 @@ User directives:
 - Block T: results are Observations on the existing path; `CREW_ENTERED` only for UI input; scripted results stay SYNTHETIC; new limits `verified: false` unless a clause is read; T-4 signals onboard-only; LOMO/LOM/LOC is a UI sublabel; no gamification, no camera, no downlink packet.
 
 4. SUPERVISOR FINDINGS (Antigravity)
-- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P P-0..P-7 + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T plan; T-0 (`96c5c36`), T-3 (`603b76c`), T-1 (`2704bf2`), T-2 (`81eaef4`), T-4 (`7fa305a`), T-5 (`cacebca`), T-7 (`f1a7f91`), T-8 (`cb16926`), T-9 (`0627e7a`), T-6 (`0c5d4db`), **T-10 (`014ae27`)**, and **Gate T** (2026-11-15: all checks verified — pytest 213 passed, ruff clean, manifest 16/16 match, tsc clean, vitest 106 passed; catalog why/steps/escalation, CREW_ENTERED memory-only, T-4 onboard-only, no gamification, no diagnosis copy, no-network + blackout verified). Full review notes in git history.
+- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P P-0..P-7 + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T plan; T-0 (`96c5c36`), T-3 (`603b76c`), T-1 (`2704bf2`), T-2 (`81eaef4`), T-4 (`7fa305a`), T-5 (`cacebca`), T-7 (`f1a7f91`), T-8 (`cb16926`), T-9 (`0627e7a`), T-6 (`0c5d4db`), **T-10 (`014ae27`)**, **Gate T**, and **D-5 (`b255101`, `demo-ready-v3`)** (2026-11-15: all checks independently verified — pytest 213 passed, ruff clean on backend & scripts, manifest 16/16 match, tsc clean, vitest 106 passed across 16 files; README/AGENTS/ROADMAP/PRD doc sync verified; onboard autonomy, plain non-medical-expert checklists, >= 44 px touch targets, CREW_ENTERED memory-only, T-4 onboard-only, no gamification, and no diagnosis copy confirmed). Full review notes in git history.
 - F-001..F-014: CLOSED (F-014 verified in `frontend/src/index.css`: `bg-space-950/60` and `/70` light-mode overrides).
 - Note for D-5 (non-blocking): README lines 17/40 "planned, not started" -> FIXED in D-5 (README, AGENTS, ROADMAP, PRD now say Block T done, `demo-ready-v3`).
 - Standing supervisor notes for Block T (non-medical-expert crew, extreme/offline environments):
@@ -49,6 +49,26 @@ User directives:
   - T-6 Body map: plain region labels + color + icon, >= 44 px touch/keyboard targets, "Indicators consistent with..." copy only.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 Group-A limit reading (user: "read the NASA clauses for the group A limits"). Read with pdftotext from
+  nasa.gov / standards.nasa.gov: NASA-STD-3001 Vol 2 Rev F (approved 2026-07-14, current) and Rev D; OCHMO-TB-004 Rev D,
+  TB-013 Rev C, TB-027 Rev B, MTB-003 Rev A, MTB-001, MTB-013 Rev D. Result: none of the six can honestly flip to
+  verified: true as configured; source_refs now say what the documents contain (config/limits.yaml):
+  * ppco2_mmHg_critical 5.0: Rev F [V2 6004] note says off-nominal CO2 values are NOT in the standard (per program).
+  * ppo2_kPa_min 19.5: [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2): target 145-155 mmHg, mild-hypoxia lower 127 mmHg
+    1-h TWA, absolute 122 mmHg. Our signal is ambient ppO2 (19.5 kPa at 101 kPa cabin ~ PIO2 137 mmHg).
+  * noise_dBA_sleep_max 50: [V2 6079] = NC-40 octave-band curve for sleep areas (> 30 d), no dBA value. New find:
+    [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis; rationale: ~70 dBA over 24 h).
+  * fluid_intake_mL_day_min 2000: [V2 6109] Table 6.3-1 = vehicle must SUPPLY >= 2.5 L/crewmember/day potable water
+    for hydration (drinking + food rehydration); TB-027 Rev B calls it the water-intake requirement. Supply, not intake.
+  * sodium_intake_mg_day_max 3000: [V2 7100] defers to the NIH DRIs (Table 7.1-2 adjusts only vitamin D); no sodium
+    number in any NASA text read. TB-013: ISS intake ~3800-4700 mg/day.
+  * bmd_loss_pct_per_month_expected_0g 1.0-1.5: MTB-013 Rev D has no in-flight rate (only [V1 4026]-[V1 4028]).
+  Also: the 4 verified Vol 2 limits ([V2 6004] 3 mmHg, [V2 6006] 34.5-103 kPa, [V2 6012], [V2 6077] 85 dBA) are
+  unchanged in Rev F; source_refs still cite Rev D (read in R-1).
+  OPEN USER DECISIONS (nothing built): (1) fluid -> 2500 mL verified [V2 6109] with the form counting water added to
+  food; (2) ppO2 -> add a derived PIO2 signal + verified 127 mmHg [V2 6003] rule; (3) noise -> add a verified 24-h
+  dose rule [V2 6115]. Sodium 2300 mg (DRI) would need the NASEM document read; stays a heuristic.
+  Checks: pytest 213 passed, ruff clean, tsc clean, vitest 106, manifest all match.
 - 2026-11-15 D-5 re-freeze `demo-ready-v3` (user: "work on your next tasks ... commit", after Gate T approval).
   Docs: README (Block T done banner, self-test data row, supervisor's lines 17/40 note), AGENTS (current state, §2b,
   build order, next = nothing planned), ROADMAP (state, §0 header, Block T + D-5 rows), PRD (v1.3 banner and §6
@@ -132,8 +152,7 @@ User directives:
   T-4 (`7fa305a`), T-2 (`81eaef4`), T-1 (`2704bf2`), T-3 (`603b76c`), T-0 (`96c5c36`); details in commit messages.
 
 6. WORK QUEUE
-Done (APPROVED): MVP, Block R, D-3, Block P + Gate P, D-4; Block T T-0..T-10 + Gate T.
-Done by Claude, awaiting supervisor confirmation: D-5 re-freeze (`demo-ready-v3`).
+Done (APPROVED): MVP, Block R, D-3, Block P + Gate P, D-4; Block T T-0..T-10 + Gate T + D-5 (`demo-ready-v3`).
 Queue empty.
 Open question for the user: submission deadline/format.
 Stretch (only if the user asks, after Gate T): `arrhythmia` scenario; a second real SPE; Countermeasures view + private journal.
