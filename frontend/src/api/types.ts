@@ -972,7 +972,7 @@ export interface SubmitOutcome {
   message: string;
 }
 
-/** T-1 routine board item (GET /api/v1/selftests/schedule). OVERDUE is information only, never scored. */
+/** T-1 routine item, shown in the Today list (GET /api/v1/selftests/schedule). OVERDUE is information only, never scored. */
 export type ScheduleStatus = 'DUE' | 'DONE' | 'OVERDUE' | 'UPCOMING';
 
 export interface ScheduleItem {

@@ -4,7 +4,7 @@ import { buildCountermeasureObservations, journalKey, loadJournal } from '../api
 import { BUNDLED_LIMITS } from '../api/limits';
 import { AdherencePerson, CountermeasurePlanItem } from '../api/types';
 import { AdherenceChart } from '../components/AdherenceChart';
-import { CountermeasurePlan } from '../components/CountermeasurePlan';
+import { TodayList, todayRows } from '../components/TodayList';
 
 // The journal reads the mission clock and link state from the live hook; a fixed sim time proves it is not Date().
 const SIM_TS = '2026-11-14T21:30:00Z';
@@ -63,9 +63,15 @@ const fluid: CountermeasurePlanItem = {
   level: 'INFO',
 };
 
-describe('C-1 countermeasures on the routine board', () => {
+const board = (items: CountermeasurePlanItem[], onDone = vi.fn()) =>
+  render(<TodayList routine={[]} countermeasures={items} connected onStart={vi.fn()} onDone={onDone} />);
+
+describe('C-1 / S-2 countermeasures in the Today list', () => {
   it('explains why, shows each prescription marker and why an item was added', () => {
-    render(<CountermeasurePlan items={[exercise, fluid]} connected onDone={vi.fn()} />);
+    board([exercise, fluid]);
+    expect(screen.queryByText(exercise.why)).toBeNull(); // details stay folded until tapped
+    fireEvent.click(screen.getByRole('button', { name: /Resistance exercise/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Fluid loading before landing/ }));
     expect(screen.getByText(exercise.why)).toBeInTheDocument();
     expect(screen.getAllByTestId('not-nasa-limit')[0]).toHaveTextContent('Not a NASA limit · AEGIS design setting');
     expect(screen.getByTestId('cm-fluid_loading')).toHaveTextContent('✓ NASA [V2 6109]');
@@ -73,17 +79,17 @@ describe('C-1 countermeasures on the routine board', () => {
   });
 
   it('not logged is neutral information, never a %, a score or a ranking', () => {
-    render(<CountermeasurePlan items={[exercise, fluid]} connected onDone={vi.fn()} />);
-    const board = screen.getByTestId('countermeasure-plan');
+    board([exercise, fluid]);
+    const list = screen.getByTestId('today-list');
     expect(screen.getByTestId('cm-fluid_loading')).toHaveTextContent('Not logged yet · info only');
-    expect(board.textContent).not.toMatch(/%/);
-    expect(board.textContent).not.toMatch(RANKING);
+    expect(list.textContent).not.toMatch(/%/);
+    expect(list.textContent).not.toMatch(RANKING);
     expect(screen.getByTestId('cm-fluid_loading').innerHTML).not.toMatch(/red-/);
   });
 
   it('Done logs with the prescribed minutes filled in (one tap) and big buttons', async () => {
     const onDone = vi.fn().mockResolvedValue({ ok: true, message: 'Logged on board.' });
-    render(<CountermeasurePlan items={[exercise]} connected onDone={onDone} />);
+    board([exercise], onDone);
     const done = screen.getByTestId('cm-done-exercise_resistance');
     expect(done.className).toContain('min-h-[44px]');
     fireEvent.click(done);
@@ -91,12 +97,26 @@ describe('C-1 countermeasures on the routine board', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Logged on board.');
   });
 
-  it('Start shows the equipment, numbered steps and when to involve the CMO', () => {
-    render(<CountermeasurePlan items={[exercise]} connected onDone={vi.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+  it('tapping the title shows the equipment, numbered steps and when to involve the CMO', () => {
+    board([exercise]);
+    fireEvent.click(screen.getByRole('button', { name: /Resistance exercise/ }));
     expect(screen.getByText(/ARED \(Advanced/)).toBeInTheDocument();
     expect(screen.getByText('Warm up for 5 minutes')).toBeInTheDocument();
     expect(screen.getByText(/When to involve the CMO/)).toBeInTheDocument();
+  });
+
+  it('sorts tests and countermeasures into one list: Now, Later, Done', () => {
+    const later = { ...exercise, countermeasure_id: 'exercise_aerobic', title: 'Aerobic exercise', status: 'UPCOMING' as const, slot_start: '2026-11-14T18:00:00Z' };
+    const rows = todayRows([], [later, { ...fluid, due_until: '2026-11-14T13:00:00Z' }, exercise]);
+    expect(rows.map((r) => [r.key, r.section])).toEqual([
+      ['c-exercise_resistance', 'now'],
+      ['c-fluid_loading', 'now'],
+      ['c-exercise_aerobic', 'later'],
+    ]);
+    board([later, exercise]);
+    expect(screen.getByTestId('today-now')).toHaveTextContent('Resistance exercise');
+    expect(screen.getByTestId('today-later')).toHaveTextContent('Aerobic exercise');
+    expect(screen.getByTestId('today-later')).not.toHaveTextContent('Resistance exercise');
   });
 
   it('a tap is CREW_ENTERED with the entry method and the countermeasure, no dataset', () => {

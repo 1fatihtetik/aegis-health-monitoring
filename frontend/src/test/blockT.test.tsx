@@ -4,7 +4,7 @@ import { BUNDLED_LIMITS } from '../api/limits';
 import { bandText, buildObservations, needsConfirmation, parseEntry, rulesTripped } from '../api/selftests';
 import { ScheduleItem, SignalSource } from '../api/types';
 import { MeasurementForm } from '../components/MeasurementForm';
-import { RoutineBoard } from '../components/RoutineBoard';
+import { TodayList } from '../components/TodayList';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
 import { bpTest, spo2Field, sysField } from './fixtures/selftests';
 import { DataSourceBadge, dataSourcesLine } from '../components/DataSourceBadge';
@@ -157,13 +157,16 @@ const item = (over: Partial<ScheduleItem>): ScheduleItem => ({
   ...over,
 });
 
-describe('T-1 RoutineBoard', () => {
+describe('T-1 routine in the Today list (Block S)', () => {
   it('shows due / done / not done yet in plain, neutral words and starts a test', () => {
     const onStart = vi.fn();
     render(
-      <RoutineBoard
+      <TodayList
         onStart={onStart}
-        items={[
+        countermeasures={[]}
+        connected
+        onDone={vi.fn()}
+        routine={[
           item({}),
           item({ test_id: 'intake', title: 'Daily fluid and salt log', status: 'OVERDUE', level: 'INFO' }),
           item({ test_id: 'body_mass', title: 'Body mass', status: 'DONE', done_ts: '2026-11-15T08:05:00Z' }),
@@ -182,7 +185,7 @@ describe('T-1 RoutineBoard', () => {
   });
 
   it('never shows points, streaks, scores or counts of tests done', () => {
-    render(<RoutineBoard onStart={vi.fn()} items={[item({ status: 'DONE', done_ts: '2026-11-15T07:30:00Z' })]} />);
-    expect(screen.getByTestId('routine-board').textContent).not.toMatch(/point|streak|badge|level|score|\d+\s*\/\s*\d+/i);
+    render(<TodayList onStart={vi.fn()} countermeasures={[]} connected onDone={vi.fn()} routine={[item({ status: 'DONE', done_ts: '2026-11-15T07:30:00Z' })]} />);
+    expect(screen.getByTestId('today-list').textContent).not.toMatch(/point|streak|badge|level|score|\d+\s*\/\s*\d+/i);
   });
 });

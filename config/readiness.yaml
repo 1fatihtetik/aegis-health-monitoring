@@ -47,7 +47,7 @@ kinds:
     hold_rules: [cardio.orthostatic, cardio.stand.positive, cardio.stand.early_stop, physio.spo2.low, cog.pvt.lapses]
     components:
       pvt:      { signal: pvt_mean_rt, window: 24h, agg: last, limit_ref: cognition.pvt_lapse_ms, good: 250.0, weight: 0.25,
-                  action: "Take the PVT-B reaction test (Self-Tests tab) when rested." }
+                  action: "Take the PVT-B reaction test (Today, or Other tests) when rested." }
       stand:    { signal: stand_hr_rise, window: 24h, agg: last, limit_ref: stand_test.hr_rise_bpm_min, good: 10.0, weight: 0.25,
                   action: "Do the stand test once gravity allows it (0.1 g or more), with a teammate nearby." }
       fluid:    { signal: fluid_intake, window: 36h, agg: last, limit_ref: nutrition.fluid_intake_mL_day_min, good: 3000.0, weight: 0.15,

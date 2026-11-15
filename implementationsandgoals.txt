@@ -1,11 +1,14 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: Block C C-0..C-5 built after Antigravity approved the plan; READY FOR REVIEW)
+Last updated: 2026-11-15 (Claude: Block S (simpler UI) built on the user's decision; Block C and Block S READY FOR REVIEW)
 State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5), group-A clause limits, and Block L (L-1..L-3) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: Antigravity reviews Block C (Gate C, section 6). The demo is unchanged at `demo-ready-v3` (C-5 demo hook cut); no re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
+Next: Antigravity reviews Block C (Gate C) and Block S (section 6). The demo is unchanged at `demo-ready-v3` (C-5 demo hook cut); no re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
 
 Read order: this file -> ROADMAP.md §0b (Block C) -> AGENTS.md §1, §2c, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
 
 User directives (standing):
+- 2026-11-15 Block S (simpler UI, ROADMAP §0c): build items 1 (roles Crew / CMO / Ground + Demo controls drawer),
+  2 (one Today list), 3 (alerts in one place) and 5 (collapse by default). NOT 4 (short labels), 6 (calmer header),
+  7 (wording pass). "We will think about the demo later": no demo changes or re-freeze for now.
 - 2026-11-15 Block C (countermeasures + private journal, ROADMAP §0b): journal saved locally on the tablet; journal shareable only with the onboard CMO; weekly adherence / completion charts per person are wanted for the CMO and the ground (early warning), but no crew member may see a rank in the crew (no sorting, no averages, no best/worst).
 - 2026-11-15 Block L: judges may read "Synthetic" and "unverified" as "fake". Fix the WORDING without lying or spending much time: say what a value IS (simulated, cited source, design setting), explain once why, and say it first in the demo. Data, rules and verified flags do not change. Details: section 6 and ROADMAP §0a.
 - 2026-11-15 LANDING gate in `demo_5min`: keep as is (all crew on Hold before touchdown because the SPE `rad.dose.24h` WARNING penalty applies to everyone; C3 lowest, with the fluid action). Do not exclude radiation alerts from the LANDING penalty.
@@ -22,15 +25,17 @@ User directives (standing):
 - Data review checklist: every data file has a MANIFEST.yaml entry (source URL, retrieval date, sha256); no runtime network call; provenance in the UI; every `verified: true` limit names a document + revision + clause id; no identifiable person's health data (Inspiration4: aggregate only).
 
 2. WHAT IS BUILT
-- Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 9 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND; alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
-- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts` (bundled limits.yaml; Block L `notNasaLabel` / `limitKindOf` / `evidenceMarker` / `limitCounts`); `DataSourcesPanel` (footer, Block L); views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`, `BodyMap`, `ReadinessGate`.
+- Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 10 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`, `exercise_lapse`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND; alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
+- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts` (bundled limits.yaml; Block L `notNasaLabel` / `limitKindOf` / `evidenceMarker` / `limitCounts`); `DataSourcesPanel` (footer, Block L); Block S role switch Crew (Today, My health = CrewDetail mode crew, Journal) / CMO (CrewOverview, CrewDetail, Radiation) / Ground (GroundConsole); AlertCenter in the alert panel; ScenarioDock in the Demo controls drawer; `TodayList`, `Fold`; EmergencyTakeover, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`, `BodyMap`, `ReadinessGate`.
 - Data: replays with manifest + sha256 check and synthetic fallback; `data/nasa/MANIFEST.yaml` (16 files). Radiation per phase: MSL/RAD cruise, Gale, March 2012 SPE, ISS DOSTEL-1 (LEO, SAA stand-down), LRO CRaTER (lunar), EPA RadNet (POST_LANDING, MEASURED_OTHER). JPL Horizons light time; DONKI + OMNI2 space-weather card; Inspiration4 aggregate CBC/CMP panel.
-- Limits: 14 `verified: true` entries (43 `verified: false`, each with `source_kind`: 13 published, 8 clinical, 21 design, 1 nasa_reference). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
+- Limits: 14 `verified: true` entries (49 `verified: false`, each with `source_kind`: 13 published, 8 clinical, 26 design, 2 nasa_reference; Block C added 6). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
 - Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` (15 tests + 6 body-map regions); routine board; PVT-B; guided measurements; onboard-only questionnaires; stand test; SANS watch; LANDING gate; Amsler grid; body map.
 - `demo_5min` (seed 42, ~4 min 50 s): timings and walkthrough in README.md "Demo walkthrough".
 - Block C (built, awaiting Gate C): `config/countermeasures.yaml` (6 items), `backend/app/countermeasures/`, 10 scenarios
   (+ `exercise_lapse`), rule `cm.exercise.low_7d` (INFO), 6 new `countermeasures.*` limits (all `verified: false`);
-  frontend `CountermeasurePlan`, `AdherenceChart`/`WeeklyAdherence`, `SharedJournal`, view `Journal` (new tab).
+  frontend countermeasure rows in `TodayList` (first `CountermeasurePlan`, replaced in Block S), `AdherenceChart`/`WeeklyAdherence`,
+  `SharedJournal`, view `Journal`.
+- Block S (built, awaiting review): roles, one Today list, alerts panel, folds (log in section 5, plan ROADMAP §0c).
 
 3. KEY DECISIONS (DO NOT REOPEN WITHOUT USER)
 - One FastAPI process, two stores; ground is written only by delivered `link/` messages.
@@ -46,6 +51,11 @@ User directives (standing):
 - Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T T-0..T-10 (last: T-10 `014ae27`), Gate T, D-5 (`b255101`, `demo-ready-v3`); group-A clause limits (`2272b8f`, `f51b448`); Block L L-1..L-3 (`18f018e`, 2026-11-15, independently verified: pytest 227 passed, ruff clean, manifest 16/16, tsc clean, vitest 17 files / 122 passed). Full review notes in git history.
 - F-001..F-014: CLOSED.
 - Block L (`18f018e`): APPROVED. All 4 implementation notes satisfied: `RawLimit`/parser in `frontend/src/api/limits.ts` syncs `source_kind` for offline fallback; footer renders clean `Radiation, space weather and 14 limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data).`; all 43 unverified limits carry `source_kind` and render `Not a NASA limit · <kind>` (verified count unchanged at 14); `DataSourcesPanel` opens inline in the footer with >= 44 px controls and never obscures `EmergencyTakeover` or `AlertBanner`; L-3 demo opening line present in `README.md` and `PRD.md`. No re-freeze unless the user asks (`demo-ready-v4`).
+- Block C (`5171753`, C-0..C-5, Gate C): APPROVED (2026-11-15; independently verified: pytest 262 passed, ruff clean, manifest 16/16, tsc clean, vitest 18 files / 133 passed). All 5 implementation notes and Gate C criteria satisfied:
+  - Non-medical crew autonomy & clarity: `config/countermeasures.yaml` (6 items) uses plain operational language, self-contained onboard steps (no waiting for ground), equipment guidance, and explicit CMO escalation; `CountermeasurePlan` and `Journal` use `>= 44 px` touch targets and `<= 3` taps to log.
+  - No ranking or gamification: crew view shows neutral `DONE` / `DUE` / `NOT_LOGGED` (`INFO` at most) / `UPCOMING` without `%` or scores; CMO & ground weekly adherence (`AdherenceChart`, `WeeklyAdherence`) renders one person per chart in fixed `C1..C4` order with no sorting, crew average, or comparison copy.
+  - Link & privacy isolation: ground adherence updates only via `link/` rollups (priority 3, `Data as of T−Xm Ys`); journal uses per-crew `localStorage` (`aegis.journal.v1.<crew_id>`), simulation `sim_ts` context, hidden-until-tapped entries with `Hide`, preview + confirm (`confirmed: true`), honest notice `"Saved on this tablet, never sent to Earth."` (no encryption claim), no sentiment analysis, no disk writes, and `403` on `?node=ground`.
+  - Rule & limit honesty: 6 new `countermeasures.*` limits in `config/limits.yaml` are `verified: false` with `source_kind` (`nasa_reference` / `design`) synced in `frontend/src/api/limits.ts`; `cm.exercise.low_7d` (`INFO`, `GRAVITY_FIELDS`, `HRP-09`/`HRP-11`, `clear_margin: 0.1`) keeps `nominal` alert-free and trips deterministically for `C3` in `exercise_lapse`. No re-freeze (`demo-ready-v3` unchanged per C-5).
 - Block C plan (`ROADMAP.md` §0b, `d3035fa`): APPROVED to build C-0..C-5, with 5 implementation notes for non-medical crew autonomy and regression safety:
   1. `cm.exercise.low_7d` vs `test_nominal_day_has_no_alerts` / `test_only_expected_crew_are_flagged` (C-3): `crew.yaml` currently sets C3 `exercise_adherence: 0.6` and `Sim.history()` pre-populates 142 days of `exercise_adherence_pct`. Do NOT trip `cm.exercise.low_7d` at T0 in `nominal` or `insomnia_streak` (keep `nominal` alert-free). Set the `limits.yaml` design threshold (or C3's baseline vs a dedicated low-adherence scenario/segment) so `nominal` stays clean and a 7-day low-adherence run/scenario trips it deterministically.
   2. `Observation` & `limits.ts` sync (C-0): add `countermeasure_id: str | None = None` on `Observation` (`entry_method: "tap"` for UI "Done"), keep `SYNTHETIC` for scripted sessions, and sync any new `config/limits.yaml` entries into `frontend/src/api/limits.ts` (preserving `source_kind` for offline fallback).
@@ -55,6 +65,24 @@ User directives (standing):
 - Standing note: escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; "Indicators consistent with..." copy only, never a diagnosis.
 
 5. RECENT LOG (Claude)
+- 2026-11-15 Block S built (S-1, S-2, S-3, S-5; frontend only, no data/rule/limit/API change).
+  S-1: `App.tsx` role switch Crew / CMO / Ground (localStorage `aegis.role`, crew identity `aegis.me`; a view filter,
+  not access control). Crew tabs Today / My health / Journal; CMO tabs Crew / Crew member / Radiation; Ground = console
+  only (no onboard banner or takeover there). ScenarioDock in a closed "Demo controls" drawer. A Start on the body map
+  or landing gate switches to that crew member's Today with the test open. CrewDetail `mode="crew"`: no crew picker,
+  no CMO weekly chart or shared journal, no exercise-adherence % line (Block C rule), charts folded.
+  S-2: `views/Today.tsx` (replaces SelfTests) + `components/TodayList.tsx` (replaces RoutineBoard and
+  CountermeasurePlan): one list Now / Later / Done; test row = status + Start; countermeasure row = status + Done
+  (exercise logs the prescribed minutes) with why/steps/markers/minutes on tapping the title; "Added because" stays
+  visible; RIDGE + countermeasure filter folded behind "Filter".
+  S-3: Alert Center tab removed; the banner's details and a header "Alerts (n)" chip open the alert panel (AlertCenter)
+  above the view, with "Close alerts". Emergency takeover unchanged (Crew and CMO roles).
+  S-5: `Fold` (≥ 44 px, closed by default): landing gate summary first (full ReadinessGate on tap, in Today and the
+  CMO overview), "Other tests (any time)", "Recent results", crew charts.
+  Tests: new `blockS.test.tsx` (7); RoutineBoard/CountermeasurePlan tests ported to TodayList; App shell test opens
+  the drawer and uses the Ground role; backend no-ranking grep now covers TodayList + Today. Rule sans.watch checklist
+  now says "from Today, Other tests". Checked in the browser (1024x768, DOM checks; pane hidden for screenshots).
+  Open: README demo walkthrough still names old tabs (user: demo later).
 - 2026-11-15 Block C built (C-0..C-5; plan ROADMAP §0b; supervisor notes 1-5 in section 4).
   C-0: `config/countermeasures.yaml`: exercise_resistance (ARED, session 0), exercise_aerobic (cycle/treadmill,
   session 1), fluid_daily (21:00, done by the intake self-test), thigh_cuff (triggered_by sans.watch), light_schedule
@@ -159,6 +187,10 @@ link/; the journal never leaves the tablet except a confirmed copy to the onboar
 (source_kind); every new rule has hazards + HRP risks; works with the link blacked out and networking blocked.
 Choices Claude made inside the user's decisions: crew sees only their own today list (no weekly %); supplements left
 out; the early-warning rule is INFO.
+
+Block S: simpler UI. READY FOR REVIEW, built 2026-11-15 (user decision; plan ROADMAP §0c; log in section 5).
+Review: each role shows only its tabs; crew view has no CMO %/journal; demo drawer closed by default; no Alert Center
+tab and every alert action still <= 3 taps; folds closed by default and >= 44 px; all honesty markers still present.
 
 Open question for the user: submission deadline/format.
 Stretch (only if the user asks): see ROADMAP §5.

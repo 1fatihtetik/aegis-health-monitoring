@@ -1,5 +1,6 @@
 # Countermeasure catalog (Block C, PRD section 6 M5, ROADMAP section 0b). What to do today to stay healthy, and why.
-# No third to-do list: these items are a filter on the T-1 routine board. No text lives in a component.
+# No third to-do list: these items are rows in the crew's one Today list next to the T-1 self-tests (Block S).
+# No text lives in a component.
 # Per item: type, why (RIDGE hazard + HRP risk), numbered onboard steps (no step waits for the ground), the
 # equipment, the prescription (limit refs into limits.yaml, so every number carries source_ref, verified and
 # source_kind), when it is on the plan (a daily slot, an open alert in `triggered_by`, or a Hold on a readiness gate

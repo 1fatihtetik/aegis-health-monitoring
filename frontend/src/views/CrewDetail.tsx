@@ -29,6 +29,7 @@ import { WeeklyAdherence } from '../components/AdherenceChart';
 import { BodyMap } from '../components/BodyMap';
 import { Inspiration4ReferencePanel } from '../components/Inspiration4Panel';
 import { SharedJournal } from '../components/SharedJournal';
+import { Fold } from './Today';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
@@ -55,6 +56,8 @@ export interface CrewDetailProps {
   onBackOverview: () => void;
   /** T-6: open a self-test from the body map. */
   onStartTest?: (crewId: CrewId, testId: string) => void;
+  /** Block S: 'crew' = the crew member's own page (no crew picker, no CMO sections, charts folded). */
+  mode?: 'crew' | 'cmo';
 }
 
 export const CrewDetail: React.FC<CrewDetailProps> = ({
@@ -62,6 +65,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
   onSelectCrew,
   onBackOverview,
   onStartTest,
+  mode = 'cmo',
 }) => {
   const { state, acknowledgeAlert, resolveAlert } = useAegis();
   const { crew, alerts, limits } = state;
@@ -88,7 +92,8 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
 
   return (
     <div className="space-y-6" data-testid="crew-detail-view">
-      {/* Top Crew Selector & Back Button */}
+      {/* Top Crew Selector & Back Button (CMO role; the crew role shows the crew member's own page) */}
+      {mode === 'cmo' && (
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-800 bg-space-900/90 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -122,6 +127,7 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
           Mission Dose: <strong className="text-cyan-300">{member.mission_dose_mSv} mSv</strong>
         </div>
       </div>
+      )}
 
       {/* Crew Profile & Personal Baseline Z-Score Card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -337,205 +343,211 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
       <HeadacheReport crewId={member.id} />
 
       {/* Block C: CMO view of this crew member's week and the journal entries they chose to share */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <WeeklyAdherence node="onboard" crewId={member.id} connected={state.sim.backend_connected} />
-        <SharedJournal crewId={member.id} connected={state.sim.backend_connected} />
-      </div>
+      {mode === 'cmo' && (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <WeeklyAdherence node="onboard" crewId={member.id} connected={state.sim.backend_connected} />
+          <SharedJournal crewId={member.id} connected={state.sim.backend_connected} />
+        </div>
+      )}
 
       {/* T-6: body map for this crew member */}
       <BodyMap crewId={selectedCrewId} onStartTest={onStartTest} />
 
-      {/* Limit-Band Physiological Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <LimitBandChart
-          title="Heart Rate (Biomonitor ECG)"
-          subtitle={`Personal 48 h baseline: ${num(member.baseline.hr_rest)} bpm`}
-          data={member.timeseries.heart_rate}
-          unit="bpm"
-          limit={limits['physiology.hr_bpm']}
-          hrpRisks={['HRP-03', 'HRP-09', 'HRP-12']}
-          color="#38bdf8"
-          source={state.provenance.heart_rate}
-        />
+      <Fold title="Charts and trends" testId="crew-charts" defaultOpen={mode !== 'crew'}>
+        <div className="space-y-6">
+        {/* Limit-Band Physiological Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <LimitBandChart
+            title="Heart Rate (Biomonitor ECG)"
+            subtitle={`Personal 48 h baseline: ${num(member.baseline.hr_rest)} bpm`}
+            data={member.timeseries.heart_rate}
+            unit="bpm"
+            limit={limits['physiology.hr_bpm']}
+            hrpRisks={['HRP-03', 'HRP-09', 'HRP-12']}
+            color="#38bdf8"
+            source={state.provenance.heart_rate}
+          />
 
-        <LimitBandChart
-          title="Arterial Blood Pressure (Systolic / Diastolic)"
-          subtitle="Cardiovascular & post-landing orthostatic stability watch (SANS / BP Reg)"
-          data={member.timeseries.bp}
-          unit="mmHg"
-          limit={limits['physiology.bp_systolic_mmHg']}
-          secondaryLabel="Diastolic (mmHg)"
-          hrpRisks={['HRP-03', 'HRP-02', 'HRP-10']}
-          source={state.provenance.bp_systolic}
-          color="#f97316"
-          secondaryColor="#38bdf8"
-        />
+          <LimitBandChart
+            title="Arterial Blood Pressure (Systolic / Diastolic)"
+            subtitle="Cardiovascular & post-landing orthostatic stability watch (SANS / BP Reg)"
+            data={member.timeseries.bp}
+            unit="mmHg"
+            limit={limits['physiology.bp_systolic_mmHg']}
+            secondaryLabel="Diastolic (mmHg)"
+            hrpRisks={['HRP-03', 'HRP-02', 'HRP-10']}
+            source={state.provenance.bp_systolic}
+            color="#f97316"
+            secondaryColor="#38bdf8"
+          />
 
-        <LimitBandChart
-          title="Heart Rate Variability (RMSSD, recovery)"
-          subtitle={`${HRV_HINT} Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
-          data={member.timeseries.hrv_rmssd}
-          unit="ms"
-          hrpRisks={['HRP-03', 'HRP-12', 'HRP-14']}
-          color="#a855f7"
-          source={state.provenance.hrv_rmssd}
-        />
+          <LimitBandChart
+            title="Heart Rate Variability (RMSSD, recovery)"
+            subtitle={`${HRV_HINT} Personal 48 h baseline: ${num(member.baseline.hrv_rmssd)} ms`}
+            data={member.timeseries.hrv_rmssd}
+            unit="ms"
+            hrpRisks={['HRP-03', 'HRP-12', 'HRP-14']}
+            color="#a855f7"
+            source={state.provenance.hrv_rmssd}
+          />
 
-        <LimitBandChart
-          title="Arterial Oxygen Saturation (SpO₂)"
-          subtitle="Continuous pulse oximetry · Hypoxia & EVA prebreathe margin"
-          data={member.timeseries.spo2}
-          unit="%"
-          limit={limits['physiology.spo2_pct_min']}
-          hrpRisks={['HRP-06', 'HRP-08']}
-          color="#10b981"
-          source={state.provenance.spo2}
-        />
-      </div>
+          <LimitBandChart
+            title="Arterial Oxygen Saturation (SpO₂)"
+            subtitle="Continuous pulse oximetry · Hypoxia & EVA prebreathe margin"
+            data={member.timeseries.spo2}
+            unit="%"
+            limit={limits['physiology.spo2_pct_min']}
+            hrpRisks={['HRP-06', 'HRP-08']}
+            color="#10b981"
+            source={state.provenance.spo2}
+          />
+        </div>
 
-      {/* Sleep 7-Night Actigraphy & 180-Day Bone Mineral Density / Fitness Trends (US-6) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* 7-Night Sleep Actigraphy */}
-        <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-100">
-                  7-Night Sleep Duration (Wrist Actigraphy)
-                </h3>
-                <DataSourceBadge compact source={state.provenance.sleep_night_h} />
-                <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-                  HRP-14
-                </span>
+        {/* Sleep 7-Night Actigraphy & 180-Day Bone Mineral Density / Fitness Trends (US-6) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* 7-Night Sleep Actigraphy */}
+          <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-100">
+                    7-Night Sleep Duration (Wrist Actigraphy)
+                  </h3>
+                  <DataSourceBadge compact source={state.provenance.sleep_night_h} />
+                  <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
+                    HRP-14
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Artemis II ARCHeR / Actigraphy modality · Tracks cumulative circadian sleep debt
+                </p>
               </div>
-              <p className="text-xs text-slate-400">
-                Artemis II ARCHeR / Actigraphy modality · Tracks cumulative circadian sleep debt
-              </p>
+              {sleepLimit && (
+                <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+                  {sleepLimit.verified ? '✓ NASA' : notNasaLabel(limitKindOf({ kind: sleepLimit.source_kind, ref: sleepLimit.key }))}: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
+                </span>
+              )}
             </div>
-            {sleepLimit && (
-              <span className="rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
-                {sleepLimit.verified ? '✓ NASA' : notNasaLabel(limitKindOf({ kind: sleepLimit.source_kind, ref: sleepLimit.key }))}: ≥ {sleepLimit.value} h ({sleepLimit.source_ref})
-              </span>
-            )}
+
+            <div style={{ width: '100%', height: 210 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={member.sleep_7d} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                  <XAxis dataKey="dayLabel" stroke="#64748b" fontSize={11} />
+                  <YAxis domain={[0, 10]} stroke="#64748b" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0b101d',
+                      borderColor: '#334155',
+                      borderRadius: '0.5rem',
+                      fontSize: '12px',
+                    }}
+                  />
+                  {sleepLimit?.value !== undefined && (
+                  <ReferenceLine
+                    y={sleepLimit.value}
+                    stroke="#f59e0b"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: `Min ${sleepLimit.value} h${sleepLimit.verified ? '' : ' (not a NASA limit)'}`,
+                      position: 'insideTopRight',
+                      fill: '#fcd34d',
+                      fontSize: 10,
+                    }}
+                  />
+                  )}
+                  <Bar
+                    dataKey="hours"
+                    name="Sleep Hours"
+                    fill="#38bdf8"
+                    radius={[4, 4, 0, 0]}
+                    isAnimationActive={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
-          <div style={{ width: '100%', height: 210 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={member.sleep_7d} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-                <XAxis dataKey="dayLabel" stroke="#64748b" fontSize={11} />
-                <YAxis domain={[0, 10]} stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0b101d',
-                    borderColor: '#334155',
-                    borderRadius: '0.5rem',
-                    fontSize: '12px',
-                  }}
-                />
-                {sleepLimit?.value !== undefined && (
-                <ReferenceLine
-                  y={sleepLimit.value}
-                  stroke="#f59e0b"
-                  strokeDasharray="4 4"
-                  label={{
-                    value: `Min ${sleepLimit.value} h${sleepLimit.verified ? '' : ' (not a NASA limit)'}`,
-                    position: 'insideTopRight',
-                    fill: '#fcd34d',
-                    fontSize: 10,
-                  }}
-                />
+          {/* 180-Day Bone Mineral Density (BMD) & Exercise Adherence Trend (US-6) */}
+          <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-100">
+                    180-Day Bone Mineral Density (BMD) & Exercise Adherence (US-6)
+                  </h3>
+                  <DataSourceBadge compact source={state.provenance.bmd_estimate} />
+                  <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
+                    HRP-11 · HRP-09
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  0 g bone density loss, slowed by regular resistance exercise
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                {bmdFloor && (
+                  <span
+                    className={`rounded border px-2 py-0.5 text-[10px] font-semibold ${
+                      bmdFloor.verified
+                        ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                        : 'bg-amber-500/20 border-amber-400/50 text-amber-200'
+                    }`}
+                    title={bmdFloor.source_ref}
+                  >
+                    {bmdFloor.verified ? '✓ NASA limit' : notNasaLabel(limitKindOf({ kind: bmdFloor.source_kind, ref: bmdFloor.key }))}: keep ≥ {bmdFloor.value} {bmdFloor.unit}
+                  </span>
                 )}
-                <Bar
-                  dataKey="hours"
-                  name="Sleep Hours"
-                  fill="#38bdf8"
-                  radius={[4, 4, 0, 0]}
-                  isAnimationActive={false}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 180-Day Bone Mineral Density (BMD) & Exercise Adherence Trend (US-6) */}
-        <div className="rounded-xl border border-slate-800 bg-space-900/90 p-4 space-y-3">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-100">
-                  180-Day Bone Mineral Density (BMD) & Exercise Adherence (US-6)
-                </h3>
-                <DataSourceBadge compact source={state.provenance.bmd_estimate} />
-                <span className="rounded bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-                  HRP-11 · HRP-09
-                </span>
+                {bmdLimit && (
+                  <span
+                    className="rounded bg-slate-800/80 border border-slate-600 px-2 py-0.5 text-[10px] font-semibold text-slate-200"
+                    title={bmdLimit.source_ref}
+                  >
+                    Expected 0 g loss: {bmdLimit.min}–{bmdLimit.max} {bmdLimit.unit} (NASA HRP reference, not a limit)
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400">
-                0 g bone density loss, slowed by regular resistance exercise
-              </p>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              {bmdFloor && (
-                <span
-                  className={`rounded border px-2 py-0.5 text-[10px] font-semibold ${
-                    bmdFloor.verified
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-amber-500/20 border-amber-400/50 text-amber-200'
-                  }`}
-                  title={bmdFloor.source_ref}
-                >
-                  {bmdFloor.verified ? '✓ NASA limit' : notNasaLabel(limitKindOf({ kind: bmdFloor.source_kind, ref: bmdFloor.key }))}: keep ≥ {bmdFloor.value} {bmdFloor.unit}
-                </span>
-              )}
-              {bmdLimit && (
-                <span
-                  className="rounded bg-slate-800/80 border border-slate-600 px-2 py-0.5 text-[10px] font-semibold text-slate-200"
-                  title={bmdLimit.source_ref}
-                >
-                  Expected 0 g loss: {bmdLimit.min}–{bmdLimit.max} {bmdLimit.unit} (NASA HRP reference, not a limit)
-                </span>
-              )}
-            </div>
-          </div>
 
-          <div style={{ width: '100%', height: 210 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={member.trends_180d}
-                margin={{ top: 8, right: 12, left: -12, bottom: 0 }}
-              >
-                <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
-                <YAxis domain={[85, 102]} stroke="#64748b" fontSize={11} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0b101d',
-                    borderColor: '#334155',
-                    borderRadius: '0.5rem',
-                    fontSize: '12px',
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="bmdPct"
-                  name="BMD (% of Baseline)"
-                  stroke="#10b981"
-                  strokeWidth={2.5}
-                  isAnimationActive={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="exerciseAdherencePct"
-                  name="Exercise Adherence (%)"
-                  stroke="#38bdf8"
-                  strokeDasharray="3 3"
-                  strokeWidth={1.5}
-                  isAnimationActive={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: 210 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={member.trends_180d}
+                  margin={{ top: 8, right: 12, left: -12, bottom: 0 }}
+                >
+                  <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
+                  <YAxis domain={[85, 102]} stroke="#64748b" fontSize={11} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0b101d',
+                      borderColor: '#334155',
+                      borderRadius: '0.5rem',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="bmdPct"
+                    name="BMD (% of Baseline)"
+                    stroke="#10b981"
+                    strokeWidth={2.5}
+                    isAnimationActive={false}
+                  />
+                  {mode !== 'crew' && <Line
+                    type="monotone"
+                    dataKey="exerciseAdherencePct"
+                    name="Exercise Adherence (%)"
+                    stroke="#38bdf8"
+                    strokeDasharray="3 3"
+                    strokeWidth={1.5}
+                    isAnimationActive={false}
+                  />}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-      </div>
+        </div>
+      </Fold>
 
       {/* P-6: Inspiration4 aggregate CBC/CMP reference (NASA OSDR), reference only */}
       <Inspiration4ReferencePanel />

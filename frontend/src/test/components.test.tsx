@@ -140,14 +140,16 @@ describe('AEGIS Frontend Component & Autonomy Suite', () => {
     // Browser-only fallback (no backend): the data line says the live values are simulated.
     expect(screen.getByTestId('data-sources-line')).toHaveTextContent('browser-only fallback, simulated');
 
-    // Trigger CO2 scrubber fault from ScenarioDock
+    // Block S: the scenario dock lives in the closed Demo controls drawer
+    expect(screen.queryByTestId('scenario-dock')).toBeNull();
+    fireEvent.click(screen.getByTestId('demo-controls-toggle'));
     fireEvent.click(screen.getByRole('button', { name: /CO₂ Scrubber Fault/i }));
     expect(screen.getByTestId('alert-banner')).toHaveTextContent(
       'Elevated Cabin ppCO₂ — CDRA Scrubber Bed A Saturation'
     );
 
-    // Switch to Ground Console and verify Data as of T-Xm Ys header
-    fireEvent.click(screen.getByRole('button', { name: /Ground Console/i }));
+    // Switch to the Ground role and verify Data as of T-Xm Ys header
+    fireEvent.click(screen.getByTestId('role-ground'));
     expect(screen.getByTestId('ground-delay-banner')).toHaveTextContent(/Data as of T−/i);
   });
 });

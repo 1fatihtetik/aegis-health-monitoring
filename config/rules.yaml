@@ -487,7 +487,7 @@ rules:
     rationale: "Long stays in low gravity can cause changes at the back of the eye and in vision (SANS, spaceflight associated neuro-ocular syndrome). Higher cabin CO2, salty food and drinking too little are suspected contributors, but the evidence linking them to SANS is limited. This is a watch: indicators worth an eye self-check, not a finding."
     action: "Do an eye self-check today and recommend CMO review; lower the possible contributors (CO2, salt, too little fluid). The evidence for these links is limited, so treat this as a precaution."
     checklist:
-      - "Eye self-check: take the Amsler grid test on the Self-tests tab (one eye at a time; mark wavy, blurred or missing areas)"
+      - "Eye self-check: take the Amsler grid test from Today, Other tests (one eye at a time; mark wavy, blurred or missing areas)"
       - "Tell the CMO about any change in vision, even small, and show them this watch"
       - "Lower what you can: drink to your daily target and pick lower-salt food"
       - "If cabin CO2 is high, follow the CO2 checklist"

@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current state (2026-11-15): Block C, countermeasures and private journal: BUILT, awaiting supervisor review (Gate C)** (`ROADMAP.md` §0b, §2c below): countermeasure catalog + Done logging, a Countermeasures filter on the routine board, per-person weekly adherence for the CMO and the ground (link rollups), the `cm.exercise.low_7d` INFO rule, a private journal on the tablet with CMO-only sharing. Block L, data-honesty labels: DONE, approved (`ROADMAP.md` §0a, `18f018e`): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line. Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current state (2026-11-15): Block S, simpler UI: BUILT, awaiting supervisor review** (`ROADMAP.md` §0c): roles Crew / CMO / Ground with their own tabs, a Demo controls drawer, one Today list (tests + countermeasures), alerts in one panel, sections folded by default. **Block C, countermeasures and private journal: BUILT, awaiting supervisor review (Gate C)** (`ROADMAP.md` §0b, §2c below): countermeasure catalog + Done logging, countermeasure rows in the crew's Today list (was a filter on the routine board until Block S), per-person weekly adherence for the CMO and the ground (link rollups), the `cm.exercise.low_7d` INFO rule, a private journal on the tablet with CMO-only sharing. Block L, data-honesty labels: DONE, approved (`ROADMAP.md` §0a, `18f018e`): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line. Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
@@ -53,12 +53,13 @@ scripts/
 frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Recharts (implemented by Claude)
   src/
     views/          CrewOverview (includes RIDGE tiles; Environment is the Hostile-Env
-                    drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole;
-                    Block T adds SelfTests (due/done/overdue board + test screens); Block C adds Journal
+                    drill-down), CrewDetail (mode crew|cmo), Radiation, AlertCenter (shown in the alert
+                    panel, Block S), GroundConsole; Today (Block S: the crew's list + test screens, was
+                    SelfTests); Block C adds Journal
     components/     StatusRing, Sparkline, LimitBandChart, AlertBanner, EmergencyTakeover,
                     ScenarioDock, AlertChecklist, EvidenceDetails, HeadacheReport, LimitBadge;
                     Block T adds MeasurementForm, PvtTest, Questionnaire, StandTest, AmslerGrid,
-                    BodyMap, ReadinessGate, SeveritySublabel; Block C adds CountermeasurePlan,
+                    BodyMap, ReadinessGate, SeveritySublabel; Block S TodayList (tests + countermeasures); Block C adds
                     AdherenceChart (+ WeeklyAdherence), SharedJournal
     api/            hand-written typed client + WebSocket hook; limits.ts bundles config/limits.yaml
                     for the offline fallback (GET /api/v1/limits replaces it when connected)
@@ -140,7 +141,7 @@ Decided by the user on 2026-11-15; plan in `ROADMAP.md` §0b; built 2026-11-15, 
 
 - **Built as:** `countermeasure_done` (1) and `exercise_minutes` signals (entry-only) with `Observation.countermeasure_id`; `GET /countermeasures`, `/countermeasures/plan?crew_id=`, `/countermeasures/adherence?node=`, `/countermeasures/log`; `GET|POST /journal/shared`, `DELETE /journal/shared/{crew}/{entry}` (all refuse `?node=ground`). The simulator's own exercise sessions count as done (its seeded session model) and a logged session also counts in the daily `exercise_adherence_pct`. Non-exercise items count from the scenario start. Ground adherence is the last `adherence` link message (rollup priority, every `rollup_every`). Scenario event `countermeasure {crew, item, minutes?}` (SYNTHETIC) and effect `exercise_drop {crew, adherence}` (also shapes the history when it starts before it).
 
-- **No third to-do list.** Countermeasures are a filter on the T-1 routine board, from `config/countermeasures.yaml` (why, steps, prescription refs into `limits.yaml`, hazards, HRP risks, `triggered_by` rules). Logged sessions are `Observation`s on the usual path (`CREW_ENTERED` from the UI, `SYNTHETIC` when scripted).
+- **No third to-do list.** Countermeasures are rows in the crew's one Today list next to the T-1 self-tests (Block S, S-2; first built as a filter on the routine board), from `config/countermeasures.yaml` (why, steps, prescription refs into `limits.yaml`, hazards, HRP risks, `triggered_by` rules). Logged sessions are `Observation`s on the usual path (`CREW_ENTERED` from the UI, `SYNTHETIC` when scripted).
 - **Adherence: CMO and ground yes, ranking never.** Per-person weekly prescribed vs done (charts and %) in the onboard CMO view and the ground console (ground only through `link/` rollups). Fixed C1..C4 order, one person per chart, no sorting by adherence, no crew average, no best/worst. The crew member's own view stays neutral (today: done / not logged, `INFO` at most, no %).
 - **Journal: on the tablet, CMO-only sharing.** Stored in the browser's local storage on the crew tablet; never written to disk by the backend, never in `data/` or git, never in a `link/` message. "Share with CMO" is per entry, off by default, preview + confirm; the shared copy lives in onboard memory only and can be withdrawn. No sentiment analysis, no rule reads journal text. Copy says "Saved on this tablet, never sent to Earth" and does not claim encryption.
 
@@ -270,6 +271,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Every chart, tile and alert evidence block shows a `DataSourceBadge`: "NASA · MSL/RAD 2012" (measured), "NASA-derived", "Measured · EPA RadNet" (Block P, `MEASURED_OTHER`), "Simulated · NASA-calibrated" or "Simulated" (Block L; was "Synthetic"), "Crew-entered". Tapping it shows the manifest entry (source, retrieved date, transform).
 - Block L wording rule: labels say what a value **is**, never only what it is not. Allowed: "Simulated", "Published source", "Clinical guideline", "AEGIS design setting". Not allowed: calling a non-NASA number "verified", hiding a simulation badge, or calling simulated data "measured".
 - Block T: show the severity sublabel (LOMO / LOM / LOC) next to CAUTION / WARNING / EMERGENCY. Self-test screens: one task per screen, numbered steps, big Start / Done buttons, the normal band and the "Not a NASA limit · <kind>" marker visible while entering. No gamification.
+- Block S (`ROADMAP.md` §0c): the app is organised by role (Crew: Today, My health, Journal; CMO: Crew, Crew member, Radiation; Ground: console). Demo controls live in a closed drawer. Alerts open in one panel from the banner or the header chip (no Alert Center tab). Detail starts folded; one tap opens it. A role switch is a view filter, not access control.
 - Journal entries are private by default (Block C): saved on the tablet, never synced to ground; a crew member may share one entry with the onboard CMO after a preview and confirm.
 
 ## 9. Definition of done (per task)
@@ -288,6 +290,6 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`) → Block T (T-0..T-10, Gate T) → D-5 re-freeze (tag `demo-ready-v3`).
 
-→ Block L (L-1..L-3, approved 2026-11-15) → Block C (C-0..C-5, built 2026-11-15).
+→ Block L (L-1..L-3, approved 2026-11-15) → Block C (C-0..C-5, built 2026-11-15) → Block S (S-1, S-2, S-3, S-5, built 2026-11-15).
 
-**Next:** Gate C (supervisor review of Block C); no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
+**Next:** supervisor review of Block C (Gate C) and Block S; the demo is decided later by the user (the walkthrough still names the pre-Block-S tabs); no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.

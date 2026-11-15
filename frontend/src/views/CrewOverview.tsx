@@ -20,10 +20,11 @@ import { LimitBadge } from '../components/LimitBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { Sparkline } from '../components/Sparkline';
 import { StatusRing } from '../components/StatusRing';
+import { ReadinessGate } from '../components/ReadinessGate';
 
 export interface CrewOverviewProps {
   onSelectCrew: (crewId: CrewId) => void;
-  onNavigateView: (view: 'radiation' | 'alerts' | 'ground' | 'selftests') => void;
+  onNavigateView: (view: 'radiation' | 'alerts' | 'ground') => void;
   /** T-6: open a self-test from the body map for that crew member. */
   onStartTest?: (crewId: CrewId, testId: string) => void;
 }
@@ -39,6 +40,7 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
   const [envDrilldownOpen, setEnvDrilldownOpen] = useState<boolean>(false);
   const [selectedEvaCrew, setSelectedEvaCrew] = useState<CrewId>('C1');
   const [bodyMapCrew, setBodyMapCrew] = useState<CrewId>('C1');
+  const [gateOpen, setGateOpen] = useState<boolean>(false); // Block S, S-5: summary first, full card on tap
 
   const activeAlerts = alerts.filter(
     (a) => a.state === 'RAISED' || a.state === 'ACKNOWLEDGED' || a.state === 'IN_TREATMENT'
@@ -124,12 +126,26 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
         </div>
       )}
 
-      {/* T-8: landing gate summary while a gravity increase is ahead (full card on the Self-tests tab) */}
-      <LandingGateSummary
-        gates={state.landing}
-        next={sim.next_gravity_increase}
-        onOpen={() => onNavigateView('selftests')}
-      />
+      {/* T-8: landing gate summary while a gravity increase is ahead (full card on tap, Block S) */}
+      {gateOpen ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setGateOpen(false)}
+            className="min-h-[44px] rounded-lg border border-slate-600 px-3 text-xs font-bold text-slate-200"
+          >
+            ▾ Hide landing gate
+          </button>
+          <ReadinessGate
+            gates={state.landing}
+            next={sim.next_gravity_increase}
+            connected={sim.backend_connected}
+            onStartTest={onStartTest}
+          />
+        </div>
+      ) : (
+        <LandingGateSummary gates={state.landing} next={sim.next_gravity_increase} onOpen={() => setGateOpen(true)} />
+      )}
 
       {/* 1. NASA HRP 5 Hazards (RIDGE) Tiles */}
       <section aria-label="NASA HRP 5 Spaceflight Hazards (RIDGE)">

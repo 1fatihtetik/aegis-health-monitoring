@@ -2,8 +2,9 @@
 
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
-**Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
+**Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity), Block T (crew self-tests) and Block L (labels) are built and approved; Block C (countermeasures, journal) and Block S (simpler UI) are built and await supervisor review. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
 **Block L, data-honesty labels (§0a). Status: DONE.** L-1..L-3 approved 2026-11-15 (`18f018e`). Wording only.
+**Block S, simpler UI (§0c). Status: BUILT 2026-11-15 (S-1, S-2, S-3, S-5; user decision), awaiting supervisor review.**
 **Block C, countermeasures and private journal (§0b). Status: BUILT (C-0..C-4, C-5 docs), awaiting supervisor review (Gate C).** The C-5 demo hook was cut (cut list item 1); the `exercise_lapse` scenario shows the early warning instead. No re-freeze.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
@@ -11,9 +12,25 @@ Why Block T: the hackathon challenge asks for a tool that helps astronauts **ass
 
 ---
 
+## 0c. Block S: simpler UI (user decision 2026-11-15)
+
+Why: one screen served four people at once (astronaut, CMO, ground team, demo operator): 8 tabs, the scenario dock on
+top, long pages with every section open. Block S organises the app by who is looking. Frontend only: no data, rule,
+limit, label or API change. The user picked items 1, 2, 3 and 5 of the proposal; 4 (short labels), 6 (calmer header)
+and 7 (wording pass) are not part of it. The demo is decided later (the walkthrough may name old tab names).
+
+| Item | What | Done when |
+|---|---|---|
+| S-1 Roles | Header switch **Crew / CMO / Ground**. Crew: "I am C1..C4" picker; tabs **Today**, **My health**, **Journal**. CMO: **Crew** (overview), **Crew member** (detail with the weekly chart and shared journal), **Radiation**. Ground: the ground console only. Scenario dock, speed and seed move into a collapsed **Demo controls** drawer. Role and identity are remembered in this browser (a view filter, not access control). | Each role shows only its tabs; the crew role never shows the CMO weekly % or shared journal; the demo drawer is closed by default |
+| S-2 Today | Routine tests and countermeasures in **one** time-ordered list with sections **Now / Later / Done**. A row = title, status, one big button (Start for a test, Done for a countermeasure; exercise logs the prescribed minutes). Why, steps, prescription markers and "Added because" open on tap. The RIDGE / countermeasure filter stays, folded behind "Filter". | One list; overdue / not logged stay neutral `INFO`; no %, rank or score; ≤ 3 taps to log |
+| S-3 Alerts | The banner stays; the Alert Center tab goes. The banner's details and a header **Alerts (n)** chip open the alert panel above the current view, with Close. Emergency takeover unchanged. | No Alert Center tab; every alert action still ≤ 3 taps |
+| S-5 Collapse | Landing gate shows the one-line summary ("✓ All GO" / "▲ HOLD for C3"), full card on tap. On the crew's own screens the charts start folded. "Other tests" and "Recent results" start folded. | Folded by default, one tap to open, ≥ 44 px |
+
+Rules: every honesty element stays (markers, badges, footer, "Data as of T−…"); crew view stays neutral (Block C); EMERGENCY takeover still takes the full screen in the Crew and CMO roles.
+
 ## 0b. Block C: countermeasures and private journal (built, awaiting Gate C)
 
-Why: PRD M5 lists a Countermeasures view and a private journal; both were deferred. Countermeasures show the crew **what to do today to stay healthy and why**, and give the onboard CMO and the ground team a **per-person weekly trend** so they can act before a problem shows up (for example falling exercise before bone or orthostatic trouble). The journal gives each crew member a private place to write. Design rule: **no third to-do list.** Countermeasures live on the existing routine board (T-1); the journal is a quiet, separate screen.
+Why: PRD M5 lists a Countermeasures view and a private journal; both were deferred. Countermeasures show the crew **what to do today to stay healthy and why**, and give the onboard CMO and the ground team a **per-person weekly trend** so they can act before a problem shows up (for example falling exercise before bone or orthostatic trouble). The journal gives each crew member a private place to write. Design rule: **no third to-do list.** Countermeasures live on the existing routine board (T-1); since Block S (§0c, S-2) they are rows in the crew's one Today list. The journal is a quiet, separate screen.
 
 ### 0b.1 Decisions (user, 2026-11-15)
 
@@ -131,6 +148,8 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 7. **Block P (2026-11-14, user):** order radiation → gravity → Inspiration4 panel → extended demo; `MEASURED_OTHER` for non-NASA measured data; partial-gravity model A, LINEAR; demo re-frozen as `demo-ready-v2`.
 8. **Block T (2026-11-14, user):** see §0.2.
 9. **Block L (2026-11-15, user):** fix how labels read, not the data: "Simulated" and "Not a NASA limit · <kind>" instead of "Synthetic" and "unverified", one data-sources panel, one demo opening line. No lying, little time (§0a).
+10. **Block C (2026-11-15, user):** see §0b.1 (journal on the tablet, CMO-only sharing, adherence for CMO and ground, never a ranking).
+11. **Block S (2026-11-15, user):** simplify the UI with items 1, 2, 3 and 5 only (roles, one Today list, alerts in one place, collapse by default); not short labels, header pass or wording pass; the demo is decided later. See §0c.
 
 ## 2. Architecture
 
@@ -143,7 +162,7 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 | Rules | THRESHOLD, BASELINE, CUMULATIVE, COMPOUND (+ `unless:`) | unchanged types; new rules (intake, PVT-B, stand test, SANS, Amsler) |
 | Readiness | OVERALL, EVA, COGNITIVE, PHYSICAL | + `LANDING`; COGNITIVE gains a PVT-B component |
 | Link | Priority, delay, blackout | onboard-only signals (T-4) never sent |
-| UI | 5 views, offline fallback, `DataSourceBadge`, space-weather card, Inspiration4 panel, Gravity tile | + schedule board, test screens, body map, severity sublabel |
+| UI | 5 views, offline fallback, `DataSourceBadge`, space-weather card, Inspiration4 panel, Gravity tile | + schedule board, test screens, body map, severity sublabel (Block S later regroups the views by role: Crew / CMO / Ground) |
 
 ## 3. Done
 
@@ -156,6 +175,9 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 | Re-freeze | D-4, tag `demo-ready-v2` | approved |
 | Block T: crew self-tests | T-0 `CREW_ENTERED` + catalog + LOMO/LOM/LOC sublabel; T-1 routine board; T-2 PVT-B; T-3 guided measurements; T-4 onboard-only questionnaires; T-5 stand test; T-6 body map; T-7 SANS watch; T-8 landing gate; T-9 Amsler grid; T-10 extended demo; **Gate T** | approved |
 | Re-freeze | D-5, tag `demo-ready-v3` (Block T) | done |
+| Block L: data-honesty labels | L-1 labels by `source_kind`, L-2 data-sources panel, L-3 demo opening line | approved |
+| Block C: countermeasures + journal | C-0 catalog + logging, C-1 plan, C-2 weekly adherence (CMO + ground via link), C-3 `cm.exercise.low_7d`, C-4 private journal, C-5 docs (demo hook cut) | built, awaiting Gate C |
+| Block S: simpler UI | S-1 roles + demo drawer, S-2 one Today list, S-3 alerts in one panel, S-5 folded by default | built, awaiting review |
 
 Details of each item are in `implementationsandgoals.txt` (section 2) and `README.md`. The full Block P plan is in git history (`ROADMAP.md` before 2026-11-14 Block T planning).
 
@@ -165,9 +187,9 @@ If something already built breaks late, drop in this order: landing orthostatic 
 
 ## 5. Stretch (only if the user asks, after Gate T)
 
-1. S-3: `arrhythmia` scenario
+1. `arrhythmia` scenario
 2. A second real SPE (a larger event) as an extra scenario
-3. ~~Countermeasures view and private journal (PRD M5)~~ → planned as Block C (§0b)
+3. ~~Countermeasures view and private journal (PRD M5)~~ → built as Block C (§0b)
 
 ## 6. Open items
 
@@ -176,4 +198,5 @@ If something already built breaks late, drop in this order: landing orthostatic 
 - T-5: protocol confirmed by the supervisor 2026-11-15 (wall-lean adaptation of Lee et al. 2015, 5 min supine, readings at 1/3/5/10 min, STOP control, Freeman 2011 criteria); built.
 - T-7: the SANS evidence for CO₂ and sodium is limited; the rule's copy must say so. Revisit if the HRP SANS evidence report gives a usable measure.
 - T-10: demo test moments agreed with the user 2026-11-15; built.
-- Block L: the exact words in §0a were proposed by Claude inside the user's decision; the user or the supervisor may adjust them before L-1 is built.
+- Block L: built and approved with the words in §0a.
+- Block S: the demo walkthrough (README, PRD §14) still names the pre-Block-S tabs (Self-tests, Alert Center, Scenario Dock); the user decides the demo later.

@@ -1,11 +1,13 @@
 # PRD — AEGIS: Autonomous Exploration Guardian for Integrated crew health & Safety
 
 > Working title. Rename freely.
-> Status: Draft v1.4 · 2026-11-15 · Audience: product team + coding agents (see `AGENTS.md`)
+> Status: Draft v1.6 · 2026-11-15 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
 > **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo. *Done: Gate P, tag `demo-ready-v2`.*
 > **v1.3 change (Block T, `ROADMAP.md` §0, built: T-0..T-10):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11. *Done: Gate T, tag `demo-ready-v3`.*
 > **v1.4 change (Block L, `ROADMAP.md` §0a, built 2026-11-15):** data-honesty wording. Labels say what a value **is**: "Simulated" / "Simulated · NASA-calibrated" instead of "Synthetic", and "Not a NASA limit · <kind>" (published source, clinical guideline, AEGIS design setting, NASA reference that is not a standard) instead of "⚠ unverified". One "Where our data comes from" panel and one demo opening line explain it. No data, rule, limit value or `verified` flag changes.
+> **v1.5 change (Block C, `ROADMAP.md` §0b, built 2026-11-15):** countermeasures (exercise, water target, thigh cuffs, light schedule, fluid loading) with why / steps / prescriptions from `config/countermeasures.yaml`; per-person weekly adherence for the onboard CMO and the ground, never ranked; an `INFO` early warning on falling exercise; a private journal saved on the tablet, shareable one entry at a time with the onboard CMO only. No sentiment analysis.
+> **v1.6 change (Block S, `ROADMAP.md` §0c, built 2026-11-15):** simpler UI organised by who is looking: **Crew** (Today, My health, Journal), **CMO** (Crew, Crew member, Radiation), **Ground** (console); one Today list of self-tests and countermeasures; alerts in one panel (no Alert Center tab); demo controls in a closed drawer; details folded by default. Frontend only.
 
 ---
 
@@ -140,7 +142,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - ★ US-4: As the commander, I see an EVA go/no-go readiness score for each crew member (sleep, fatigue, CO₂ exposure, DCS prebreathe status).
 - ★ US-5: As a flight surgeon, I see the same data delayed by the configured comm delay and can send a recommendation that reaches the crew after that delay.
 - ★ US-6: As the CMO, I see 30/90/180-day trends: bone density estimate, body mass, VO₂max proxy, sleep efficiency, cumulative dose.
-- US-7: As a crew member, I can fill in a short mood/workload survey and a private journal, analyzed on the device only. *(v1.3: the survey part is T-4; answers never leave the spacecraft.)*
+- US-7: As a crew member, I can fill in a short mood/workload survey and a private journal, analyzed on the device only. *(v1.3: the survey part is T-4; answers never leave the spacecraft. v1.5: the journal is saved on the tablet and not analysed at all; one entry at a time can be shared with the onboard CMO.)*
 - US-8: As the CMO, I see a SANS watch panel: OCT/fundoscope exam log, headaches/vision complaints, Thigh Cuff use. *(v1.3: partly covered by the T-7 SANS rule, T-9 Amsler grid and the body map eye region.)*
 - US-9: As a researcher, I export a mission's Standard Measures as CSV/Parquet with a data dictionary.
 - US-10: As the CMO, I see a VTE risk score and kidney-stone risk indicators (hydration, urine calcium proxy).
@@ -222,8 +224,9 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - **Individual view**: live vitals (sparklines), sleep last 7 nights, exercise adherence, cumulative dose, trends.
 - **Radiation view** (M6).
 - **Environment view**: cabin CO₂/O₂/pressure/temperature/humidity/noise with limit bands.
-- **Countermeasures**: today's exercise prescription vs. done, light-therapy schedule, supplements, Thigh Cuff sessions. *v1.5 (Block C, built, `ROADMAP.md` §0b):* a Countermeasures filter on the routine board (crew sees today: done / not logged, no %); per-person weekly adherence for the onboard CMO and the ground (no ranking, no comparison); alert-triggered items; an `INFO` early-warning rule on falling exercise. Supplements left out.
+- **Countermeasures**: today's exercise prescription vs. done, light-therapy schedule, supplements, Thigh Cuff sessions. *v1.5 (Block C, built, `ROADMAP.md` §0b):* countermeasure rows in the crew's Today list (v1.6; first built as a filter on the routine board; crew sees today: done / not logged, no %); per-person weekly adherence for the onboard CMO and the ground (no ranking, no comparison); alert-triggered items; an `INFO` early-warning rule on falling exercise. Supplements left out.
 - **Wellbeing**: survey, private journal (stays local, sentiment analyzed on the device only, opt-in sharing). *v1.5 (Block C, built):* the journal is saved on the tablet, never sent to the ground, shareable one entry at a time with the onboard CMO only; no sentiment analysis.
+- *v1.6 (Block S, built, `ROADMAP.md` §0c):* the dashboard is organised by role. **Crew:** Today (one list of due self-tests and countermeasures: Now / Later / Done), My health (own page, charts folded, no CMO sections), Journal. **CMO:** Crew (overview with RIDGE tiles), Crew member (detail with the weekly chart and shared journal entries), Radiation. **Ground:** the ground console. Alerts open in one panel from the banner or the header "Alerts (n)" chip. Scenario, speed and seed sit in a closed "Demo controls" drawer. The landing gate, other tests, recent results and crew charts start folded (one tap, ≥ 44 px). A role is a view filter, not access control.
 - Design: works offline, dark-mode friendly, large touch targets, readable at a glance, no more than 3 taps to any critical action.
 
 ### M6. Radiation module ★
@@ -253,7 +256,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 ### M10. Admin/config (P1)
 - Limits & rules editor (YAML), crew profiles & baselines, mission phase timeline, device registry.
 
-### M11. Crew self-tests & body map ★ (v1.3, planned; `ROADMAP.md` §0)
+### M11. Crew self-tests & body map ★ (v1.3, built; `ROADMAP.md` §0)
 - **Catalog** (`config/selftests.yaml`): per test its signals, why it exists (RIDGE hazard + HRP risk), numbered steps, normal band (`limits.yaml` ref, "Not a NASA limit · <kind>" marker shown), schedule and when to involve the CMO or ground. No test text in components.
 - **Routine (T-1):** due / done / overdue list from the simulation clock (morning BP + SpO₂, post-sleep PVT-B, weekly body mass, daily intake, extra checks after a gravity increase). RIDGE filter. Overdue is a neutral `INFO` item with no readiness penalty.
 - **Tests:** T-2 PVT-B (3 min, random 1–4 s gaps, lapse > 355 ms; Basner et al. 2011), T-3 guided measurements (BP, SpO₂, temperature, body mass, glucose mg/dL, fluid mL, sodium mg), T-4 questionnaires (Karolinska Sleepiness Scale, NASA-TLX, motion sickness, mood; onboard only, never sent by the link), T-5 10-minute stand test (supine, then 1/3/5/10 min HR + BP), T-9 Amsler grid (click input, one eye at a time).
@@ -452,7 +455,17 @@ WS     /ws/live?node=                  # messages: snapshot (full state, ~5/s), 
 Not built: PUT /rules/{id}, GET /export/standard-measures, sim "jump"
 ```
 
-Planned in Block T (v1.3; results still go through `POST /observations`):
+Built in Block C (v1.5; logged sessions go through `POST /observations` with `countermeasure_id`):
+
+```text
+GET    /api/v1/countermeasures                 # catalog with prescriptions resolved from limits.yaml
+GET    /api/v1/countermeasures/plan?crew_id=   # onboard: today's items, DONE | DUE | NOT_LOGGED | UPCOMING, no %
+GET    /api/v1/countermeasures/adherence?node= # 7 days prescribed vs done per person (ground: last link rollup)
+GET    /api/v1/countermeasures/log?crew_id=
+GET|POST /api/v1/journal/shared, DELETE /api/v1/journal/shared/{crew}/{entry}   # onboard CMO copy; ?node=ground -> 403
+```
+
+Built in Block T (v1.3; results still go through `POST /observations`):
 
 ```text
 GET    /api/v1/selftests               # catalog: tests + body-map regions
@@ -546,7 +559,7 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 | M5 | Ground link | Configurable delay, ground console, recommendation round-trip |
 | M6 | Readiness + trends + compound | EVA readiness, 30/90-day trends, the cognitive-risk compound rule |
 | M7 | Demo polish | Scripted 5-minute demo: LEO → Mars transit → SPE → CO₂ fault → landing fainting |
-| P1+ | Stretch | Research export, journal sentiment on the device, VTE/kidney-stone scores, rules editor |
+| P1+ | Stretch | Research export, VTE/kidney-stone scores, rules editor (journal sentiment dropped: user decision, Block C) |
 
 ## 14. Demo script (5 minutes)
 

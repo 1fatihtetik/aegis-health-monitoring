@@ -21,15 +21,21 @@ Horizons, about 11 min one way on the demo date).
 > Results show on a clickable body map. Values typed by a person are labelled `CREW_ENTERED`. No gamification.
 > The demo adds three scripted self-test moments (see the walkthrough below). Plan: `ROADMAP.md` §0.
 
-> **Block C (countermeasures and private journal), built; awaiting supervisor review.** The Self-tests routine board
-> gets a "Countermeasures" filter: today's exercise sessions (ARED, cycle/treadmill), the daily water target, and
-> items an open alert or a landing Hold adds (thigh cuffs for the SANS watch, a light schedule after short sleep,
-> fluid loading before landing), each with why, numbered steps and its prescription marker. The crew sees only
-> done / not logged (no %). The onboard CMO (Crew Detail) and the ground (Ground Console, through delayed link
-> rollups) see per-person weekly prescribed vs done; never ranked, sorted or averaged. `cm.exercise.low_7d` is an
-> INFO early warning (scenario `exercise_lapse`). The Journal tab is a private journal saved on the tablet
+> **Block C (countermeasures and private journal), built; awaiting supervisor review.** The crew's Today list
+> (Block S) holds today's exercise sessions (ARED, cycle/treadmill), the daily water target, and items an open alert
+> or a landing Hold adds (thigh cuffs for the SANS watch, a light schedule after short sleep, fluid loading before
+> landing), each with why, numbered steps and its prescription marker. The crew sees only done / not logged (no %).
+> The onboard CMO (CMO role, Crew member) and the ground (Ground role, through delayed link rollups) see per-person
+> weekly prescribed vs done; never ranked, sorted or averaged. `cm.exercise.low_7d` is an INFO early warning
+> (scenario `exercise_lapse`). The crew's Journal tab is a private journal saved on the tablet
 > ("Saved on this tablet, never sent to Earth."); one entry at a time can be shared with the onboard CMO after a
 > preview and a confirm. Plan: `ROADMAP.md` §0b. No demo change (`demo-ready-v3` unchanged).
+
+> **Block S (simpler UI), built; awaiting supervisor review.** The header asks who is looking: **Crew** (Today,
+> My health, Journal), **CMO** (Crew, Crew member, Radiation) or **Ground** (the console). Today is one list of the
+> day's self-tests and countermeasures (Now / Later / Done). Alerts open in one panel from the banner or the
+> "Alerts (n)" chip; scenario, speed and seed sit in a closed "Demo controls" drawer; details start folded.
+> Plan: `ROADMAP.md` §0c. The demo walkthrough below still names the old tabs (the demo is decided later).
 
 Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block T is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
@@ -100,7 +106,7 @@ cd frontend && npx tsc --noEmit && npx vitest run
 
 ## Scenarios
 
-Start one from the Scenario Dock, or with `POST /api/v1/sim/scenario {"name": "...", "seed": 42}`.
+Start one from the Demo controls drawer (header), or with `POST /api/v1/sim/scenario {"name": "...", "seed": 42}`.
 The same scenario and seed always produce the same alerts.
 
 | Scenario | What happens | Expected alerts |

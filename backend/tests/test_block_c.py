@@ -390,8 +390,8 @@ RANKING = re.compile(r"\b(rank(ed|ing)?|top|best|worst|ahead of|behind|leaderboa
 def test_no_ranking_or_comparison_wording_in_block_c_copy():
     files = [ROOT / "config" / "countermeasures.yaml",
              *[p for p in (ROOT / "frontend" / "src" / "components").glob("*.tsx")
-               if p.stem in ("CountermeasurePlan", "AdherenceChart", "Journal", "SharedJournal")],
-             ROOT / "frontend" / "src" / "views" / "Journal.tsx"]
+               if p.stem in ("TodayList", "AdherenceChart", "Journal", "SharedJournal")],
+             ROOT / "frontend" / "src" / "views" / "Journal.tsx", ROOT / "frontend" / "src" / "views" / "Today.tsx"]
     for path in files:
         if not path.exists():
             continue
