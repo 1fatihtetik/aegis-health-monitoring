@@ -3,7 +3,8 @@
 Each event has `at` (offset from scenario start, may be negative to act during the prewarm history),
 `type`, optional `duration`, and `params`.
 Control events: speed {speed}, pause, phase {name}, blackout {active} (comm link), selftest {crew, test,
-values: {signal: value}} (Block T scripted result, SYNTHETIC). Effect events: see sim.core.EFFECT_TYPES.
+values: {signal: value}} (Block T scripted result, SYNTHETIC), countermeasure {crew, item, minutes?}
+(Block C scripted session, SYNTHETIC). Effect events: see sim.core.EFFECT_TYPES.
 """
 
 from pathlib import Path
@@ -14,7 +15,7 @@ import yaml
 from app.sim.core import EFFECT_TYPES
 
 SCENARIO_DIR = Path(__file__).resolve().parent / "scenarios"
-CONTROL_TYPES = {"speed", "pause", "phase", "blackout", "selftest"}  # selftest: Block T scripted result
+CONTROL_TYPES = {"speed", "pause", "phase", "blackout", "selftest", "countermeasure"}  # scripted results
 
 
 def list_scenarios() -> list[dict[str, str]]:

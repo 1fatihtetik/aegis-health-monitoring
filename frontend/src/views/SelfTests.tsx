@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { backendApi, signalLabel } from '../api/backend';
 import {
+  CountermeasurePlanItem,
   CrewId,
   HAZARD_CATALOG,
   Hazard,
@@ -10,6 +11,8 @@ import {
   SubmitOutcome,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { buildCountermeasureObservations, countermeasureApi } from '../api/countermeasures';
+import { CountermeasurePlan } from '../components/CountermeasurePlan';
 import { AmslerGrid } from '../components/AmslerGrid';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
@@ -51,15 +54,18 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: strin
   const connected = state.sim.backend_connected;
   const tests = useSelfTestCatalog(connected);
   const [crewId, setCrewId] = useState<CrewId>(initialCrewId);
-  const [hazard, setHazard] = useState<Hazard | 'ALL'>('ALL');
+  // Block C: 'COUNTERMEASURES' is a filter on the same routine board (no third to-do list)
+  const [hazard, setHazard] = useState<Hazard | 'ALL' | 'COUNTERMEASURES'>('ALL');
   const [openId, setOpenId] = useState<string | null>(initialTestId);
   const [results, setResults] = useState<SelfTestResult[]>([]);
   const [routine, setRoutine] = useState<ScheduleItem[]>([]);
+  const [plan, setPlan] = useState<CountermeasurePlanItem[]>([]);
 
   const refresh = useCallback(() => {
     if (!connected) return;
     void backendApi.selftestResults(crewId).then(setResults);
     void backendApi.selftestSchedule(crewId).then((items) => setRoutine(items ?? []));
+    void countermeasureApi.plan(crewId).then((items) => setPlan(items ?? []));
   }, [connected, crewId]);
   useEffect(refresh, [refresh]);
   // The routine follows the simulation clock, so refresh it every few seconds while the view is open.
@@ -76,7 +82,20 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: strin
     refresh();
     return res;
   };
-  const shown = (tests ?? []).filter((t) => hazard === 'ALL' || t.hazards.includes(hazard));
+  const byHazard = <T extends { hazards: Hazard[] }>(items: T[]): T[] =>
+    items.filter((i) => hazard === 'ALL' || hazard === 'COUNTERMEASURES' || i.hazards.includes(hazard));
+  const shown = hazard === 'COUNTERMEASURES' ? [] : byHazard(tests ?? []);
+  const onCountermeasureDone = async (
+    item: CountermeasurePlanItem,
+    minutes: number | null
+  ): Promise<{ ok: boolean; message: string }> => {
+    if (!connected) return { ok: false, message: 'Not logged: the onboard server is not reachable.' };
+    const res = await countermeasureApi.log(
+      buildCountermeasureObservations({ crewId, item, minutes, ts: state.sim.sim_ts, phase: state.sim.phase })
+    );
+    refresh();
+    return res;
+  };
 
   return (
     <section className="space-y-4" data-testid="selftests-view">
@@ -156,7 +175,7 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: strin
       ) : (
         <>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by RIDGE hazard">
-            {(['ALL', ...HAZARDS] as const).map((hz) => (
+            {(['ALL', 'COUNTERMEASURES', ...HAZARDS] as const).map((hz) => (
               <button
                 key={hz}
                 type="button"
@@ -166,7 +185,11 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: strin
                   hazard === hz ? 'bg-slate-100 text-slate-950' : 'border border-slate-700 bg-space-900 text-slate-300'
                 }`}
               >
-                {hz === 'ALL' ? 'All hazards' : `[${HAZARD_CATALOG[hz].letter}] ${HAZARD_CATALOG[hz].shortName}`}
+                {hz === 'ALL'
+                  ? 'All hazards'
+                  : hz === 'COUNTERMEASURES'
+                  ? 'Countermeasures'
+                  : `[${HAZARD_CATALOG[hz].letter}] ${HAZARD_CATALOG[hz].shortName}`}
               </button>
             ))}
           </div>
@@ -179,11 +202,9 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId; initialTestId?: strin
               setOpenId(testId);
             }}
           />
-          <RoutineBoard
-            items={routine.filter((i) => hazard === 'ALL' || i.hazards.includes(hazard))}
-            onStart={setOpenId}
-          />
-          <h3 className="text-sm font-bold text-slate-100">All tests</h3>
+          {hazard !== 'COUNTERMEASURES' && <RoutineBoard items={byHazard(routine)} onStart={setOpenId} />}
+          <CountermeasurePlan items={byHazard(plan)} connected={connected} onDone={onCountermeasureDone} />
+          {hazard !== 'COUNTERMEASURES' && <h3 className="text-sm font-bold text-slate-100">All tests</h3>}
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {shown.map((t) => (
               <article key={t.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-800 bg-space-900/90 p-4" data-testid={`selftest-card-${t.id}`}>

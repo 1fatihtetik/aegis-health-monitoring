@@ -26,6 +26,7 @@ class Observation(BaseModel):
     dataset_id: str | None = None
     entry_method: EntryMethod | None = None  # Block T: required for CREW_ENTERED
     test_id: str | None = None  # Block T: the self-test (config/selftests.yaml) this value is a result of
+    countermeasure_id: str | None = None  # Block C: the countermeasure (config/countermeasures.yaml) logged as done
 
     @model_validator(mode="after")
     def _nasa_needs_dataset(self) -> "Observation":

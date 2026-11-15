@@ -21,6 +21,16 @@ Horizons, about 11 min one way on the demo date).
 > Results show on a clickable body map. Values typed by a person are labelled `CREW_ENTERED`. No gamification.
 > The demo adds three scripted self-test moments (see the walkthrough below). Plan: `ROADMAP.md` §0.
 
+> **Block C (countermeasures and private journal), built; awaiting supervisor review.** The Self-tests routine board
+> gets a "Countermeasures" filter: today's exercise sessions (ARED, cycle/treadmill), the daily water target, and
+> items an open alert or a landing Hold adds (thigh cuffs for the SANS watch, a light schedule after short sleep,
+> fluid loading before landing), each with why, numbered steps and its prescription marker. The crew sees only
+> done / not logged (no %). The onboard CMO (Crew Detail) and the ground (Ground Console, through delayed link
+> rollups) see per-person weekly prescribed vs done; never ranked, sorted or averaged. `cm.exercise.low_7d` is an
+> INFO early warning (scenario `exercise_lapse`). The Journal tab is a private journal saved on the tablet
+> ("Saved on this tablet, never sent to Earth."); one entry at a time can be shared with the onboard CMO after a
+> preview and a confirm. Plan: `ROADMAP.md` §0b. No demo change (`demo-ready-v3` unchanged).
+
 Specs: `PRD.md` (product), `ROADMAP.md` (scope; Block T is §0), `AGENTS.md` (how to build).
 Agent handoff and the API contract: `implementationsandgoals.txt`.
 
@@ -104,6 +114,7 @@ The same scenario and seed always produce the same alerts.
 | `headache_branching` | Same symptoms, different cause | `ctx.headache_tachy.hydration` (C2, CO2 normal), then `ctx.headache_tachy.co2` (C4, CO2 high) |
 | `leo_baseline` | ISS day (LEO, 0 g), measured DOSTEL-1 radiation | `rad.saa.transit` INFO per South Atlantic Anomaly pass; no SPE alarm |
 | `lunar_surface` | Lunar landing (0 -> 0.16 g), CRaTER surface dose | none (radiation switches to LRO CRaTER, bone loss slows to 84 % of the 0 g rate) |
+| `exercise_lapse` | Block C: C3 skipped most exercise sessions for a week; a scripted session at 30 min | `cm.exercise.low_7d` INFO (C3) |
 
 ## Demo walkthrough (`demo_5min`, about 4 min 50 s, plays untouched)
 
@@ -163,7 +174,8 @@ from published parameters, and every number shows which." Then point at the foot
 backend/app/   FastAPI app, simulator, rules engine, alerts, scores, link, in-memory stores
 backend/tests/ pytest: rule types, scenarios, link delay/blackout, API
 config/        limits, rules, mission, crew, readiness, datasets (every limit has source_ref + verified);
-               Block T adds selftests (test catalog + schedule + body-map regions)
+               Block T adds selftests (test catalog + schedule + body-map regions);
+               Block C adds countermeasures (catalog: why, steps, prescriptions, triggers)
 frontend/      React + TS + Vite + Tailwind UI
 data/nasa/     (Block R) bundled NASA snapshots + MANIFEST.yaml
 scripts/       (Block R) fetch_nasa_data.py, build time only

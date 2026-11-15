@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from app.countermeasures.catalog import CountermeasureCatalog
 from app.datasets.registry import DATA_DIR, DatasetRegistry
 from app.rules.models import Rule
 from app.selftests.catalog import Catalog
@@ -52,6 +53,7 @@ class Config:
         self.rules: list[Rule] = [Rule(**r) for r in _load(config_dir / "rules.yaml")["rules"]]
         self.datasets = DatasetRegistry(config_dir / "datasets.yaml", data_dir)
         self.selftests = Catalog(**_load(config_dir / "selftests.yaml"))  # Block T
+        self.countermeasures = CountermeasureCatalog(**_load(config_dir / "countermeasures.yaml"))  # Block C
         self._validate()
 
     def limit(self, ref: str) -> Limit:
@@ -99,6 +101,7 @@ class Config:
             unknown = [r for r in region.rules if r not in ids]
             if unknown:
                 raise ValueError(f"selftests.yaml body map region {region.id}: unknown rule(s) {unknown}")
+        self._validate_countermeasures(ids)
         parse_duration(self.selftests.setting("manual_override"))
         parse_duration(self.selftests.setting("after_gravity_window"))
         for kind, spec in self.readiness["kinds"].items():
@@ -111,3 +114,28 @@ class Config:
             for rule_id in spec.get("hold_rules", []):
                 if rule_id not in ids:
                     raise ValueError(f"readiness.yaml {kind}: unknown hold rule '{rule_id}'")
+
+    def _validate_countermeasures(self, rule_ids: set[str]) -> None:
+        """Block C: every prescription, trigger, test and gate an item names must exist."""
+        test_ids = {t.id for t in self.selftests.tests}
+        gates = {k for k, spec in self.readiness["kinds"].items() if "go_min_ref" in spec}
+        for item in self.countermeasures.items:
+            where = f"countermeasures.yaml {item.id}"
+            for p in item.prescription:
+                try:
+                    self.limit(p.limit_ref)
+                except KeyError as exc:
+                    raise ValueError(f"{where}: {exc.args[0]}") from exc
+            unknown = [r for r in item.triggered_by if r not in rule_ids]
+            if unknown:
+                raise ValueError(f"{where}: unknown rule(s) {unknown}")
+            if item.done_by_test and item.done_by_test not in test_ids:
+                raise ValueError(f"{where}: unknown self-test '{item.done_by_test}'")
+            bad = [g for g in item.triggered_by_gate if g not in gates]
+            if bad:
+                raise ValueError(f"{where}: readiness kind(s) {bad} have no Go/Hold gate")
+            if item.session is not None and any(item.session >= len(c["exercise_hours"]) for c in self.crew):
+                raise ValueError(f"{where}: session {item.session} is not in every crew member's exercise_hours")
+            parse_duration(item.due_window)
+        parse_duration(self.countermeasures.setting("rollup_every"))
+        int(self.countermeasures.setting("adherence_days"))

@@ -410,7 +410,7 @@ body_map:
     hazards: [GRAVITY_FIELDS]
     hrp_risks: [HRP-09, HRP-11, HRP-16]
     signals: [bmd_estimate, body_mass, vo2max_proxy, exercise_adherence_pct]
-    rules: []
+    rules: [cm.exercise.low_7d]
     tests: [body_mass]
   - id: kidneys
     label: "Kidneys & fluids"

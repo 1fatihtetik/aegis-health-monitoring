@@ -77,6 +77,13 @@ const LIMIT_META: Record<string, { label: string; unit: string; op?: LimitOp }> 
   // T-8 landing gate.
   'readiness.landing_go_min': { label: 'Landing GO minimum readiness', unit: 'score', op: '>=' },
   'landing.low_g_days_long': { label: 'Landing readiness: half score after this long below 1 g', unit: 'days' },
+  // Block C countermeasure prescriptions and the early-warning cut.
+  'countermeasures.exercise_min_day': { label: 'Exercise per day (ISS practice)', unit: 'min', op: '>=' },
+  'countermeasures.exercise_session_min': { label: 'Exercise session length', unit: 'min', op: '>=' },
+  'countermeasures.exercise_adherence_7d_min': { label: 'Exercise sessions done, 7-day mean, note below', unit: '% of planned', op: '<' },
+  'countermeasures.thigh_cuff_session_min': { label: 'Thigh cuff session length', unit: 'min' },
+  'countermeasures.light_dim_before_sleep_min': { label: 'Dim light before sleep', unit: 'min', op: '>=' },
+  'countermeasures.fluid_loading_mL': { label: 'Extra water before landing', unit: 'mL' },
 };
 
 /** Pulls the NASA-STD-3001 clause id ("[V2 6004]") out of a source_ref, if there is one. */

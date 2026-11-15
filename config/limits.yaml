@@ -83,8 +83,16 @@ sleep:
 bone:
   bmd_loss_pct_per_month_expected_0g: { min: 1.0, max: 1.5, source_ref: "NASA HRP Gravity Fields hazard page (published reference rate). No NASA-STD-3001 clause: OCHMO-MTB-013 Rev D lists [V1 4026]-[V1 4028] (pre/post-mission BMD) and gives no in-flight monthly rate", verified: false, source_kind: nasa_reference }
   bmd_pct_of_baseline_min: { value: 95, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4027] Pre-mission Bone Countermeasures (hip and spine >= 95% of pre-mission BMD), via OCHMO-MTB-013 Rev D", verified: true }
+# Block C: countermeasure prescriptions and the early-warning cut. No NASA-STD-3001 clause read for any of them.
+countermeasures:
+  exercise_min_day:        { value: 120, source_ref: "NASA ISS public pages: ISS crew exercise about 2 hours a day to protect bone, muscle and heart (published reference, not a NASA-STD-3001 clause; no clause read)", verified: false, source_kind: nasa_reference }
+  exercise_session_min:    { value: 60, source_ref: "Project heuristic: the 2 hours a day split into two daily sessions (config/crew.yaml exercise_hours)", verified: false, source_kind: design }
+  exercise_adherence_7d_min: { value: 40, source_ref: "Project heuristic (C-3 early warning, INFO): 7-day mean of exercise sessions done below 40 % of those planned; set below the synthetic crew's normal range so a normal week stays quiet; no NASA-STD-3001 clause read", verified: false, source_kind: design }
+  thigh_cuff_session_min:  { value: 30, source_ref: "Project heuristic: session length for venous thigh cuffs (Russian 'Braslet' cuffs are used in flight against the head-ward fluid shift); no NASA-STD-3001 clause read", verified: false, source_kind: design }
+  light_dim_before_sleep_min: { value: 60, source_ref: "Project heuristic: dim light for the hour before sleep (same as the sleep.short_24h checklist); no NASA-STD-3001 clause read", verified: false, source_kind: design }
+  fluid_loading_mL:        { value: 1000, source_ref: "Project heuristic for the amount. Pre-landing fluid loading with salt and about 1 L of water is a published Shuttle-era countermeasure (Bungo et al. 1985 Aviat Space Environ Med 56:985-990); no NASA-STD-3001 clause read", verified: false, source_kind: design }
 readiness:
-  eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false, source_kind: design }
+  eva_go_min:         { value: 70, source_ref: "Project heuristic", verified: false, source_kind: design }
   landing_go_min:      { value: 70, source_ref: "Project heuristic (T-8 landing gate Go minimum; no NASA-STD-3001 clause read)", verified: false, source_kind: design }
 # Block T, T-8: landing readiness anchor for time spent below 1 g. Not a medical limit.
 landing:

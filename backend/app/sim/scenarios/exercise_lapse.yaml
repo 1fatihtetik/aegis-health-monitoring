@@ -1,0 +1,10 @@
+description: "C3 has skipped most exercise sessions for a week (Block C early warning): the CMO and the ground see it in the weekly chart and an INFO asks the CMO to review the plan. Then C3 logs a session again."
+phase: MARS_TRANSIT
+speed: 1800
+events:
+  # Starts before the history ends, so the daily exercise_adherence_pct of the last week already shows it (heuristic).
+  - { at: -8d, type: exercise_drop, duration: 8d, params: { crew: C3, adherence: 0.1 } }
+  # Scripted session for the synthetic crew (SYNTHETIC, never CREW_ENTERED).
+  - { at: 30m, type: countermeasure, params: { crew: C3, item: exercise_aerobic, minutes: 45 } }
+expected:
+  - { rule_id: cm.exercise.low_7d, crew_id: C3, severity: INFO, within: 1h }

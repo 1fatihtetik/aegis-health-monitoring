@@ -14,6 +14,7 @@ import { backendApi, signalLabel } from '../api/backend';
 import { StatusRing } from '../components/StatusRing';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { SpaceWeatherCard } from '../components/SpaceWeatherCard';
+import { WeeklyAdherence } from '../components/AdherenceChart';
 
 export const GroundConsole: React.FC = () => {
   const { state, sendGroundRecommendation, toggleLinkBlackout, forwardSpaceWeather } = useAegis();
@@ -160,6 +161,9 @@ export const GroundConsole: React.FC = () => {
         blackout={link.blackout}
         onForward={forwardSpaceWeather}
       />
+
+      {/* Block C: weekly countermeasures per person, only as delivered through the link (rollups) */}
+      <WeeklyAdherence node="ground" connected={sim.backend_connected} />
 
       {/* Delayed Ground Crew Cards & Delayed Radiation/Environment Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

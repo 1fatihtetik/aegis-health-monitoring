@@ -4,7 +4,7 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current state (2026-11-15): Block L, data-honesty labels: DONE, approved** (`ROADMAP.md` §0a, `18f018e`): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line; no data or limit changes. **Next: Block C, countermeasures and private journal (planned, `ROADMAP.md` §0b, §2c below).** Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current state (2026-11-15): Block C, countermeasures and private journal: BUILT, awaiting supervisor review (Gate C)** (`ROADMAP.md` §0b, §2c below): countermeasure catalog + Done logging, a Countermeasures filter on the routine board, per-person weekly adherence for the CMO and the ground (link rollups), the `cm.exercise.low_7d` INFO rule, a private journal on the tablet with CMO-only sharing. Block L, data-honesty labels: DONE, approved (`ROADMAP.md` §0a, `18f018e`): badges say "Simulated" / "Simulated · NASA-calibrated", unverified limits say "Not a NASA limit · <kind>" (`source_kind` in `limits.yaml`), a "Where our data comes from" panel, and the demo opening line. Block T (crew self-tests and body map) DONE: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
@@ -35,6 +35,7 @@ backend/            Python 3.11+, FastAPI, Pydantic v2, in-memory store
     rules/          rule models, engine (threshold/baseline/cumulative/compound)
     alerts/         lifecycle state machine, dedup (hysteresis is in the engine)
     scores/         readiness scores, radiation summary + SPE state
+    countermeasures/ (Block C) catalog models; session log, today's plan, weekly adherence (pure functions)
     link/           store-and-forward delay queue, priority, blackout; the ground store
     db/             in-memory ring buffers per signal (1-min resolution)
     datasets/       (Block R) manifest + sha256 check, replay adapters: rad.py (MSL/RAD),
@@ -53,11 +54,12 @@ frontend/           React + TS + Vite + Tailwind + TanStack Query + uPlot/Rechar
   src/
     views/          CrewOverview (includes RIDGE tiles; Environment is the Hostile-Env
                     drill-down), CrewDetail, Radiation, AlertCenter, GroundConsole;
-                    Block T adds SelfTests (due/done/overdue board + test screens)
+                    Block T adds SelfTests (due/done/overdue board + test screens); Block C adds Journal
     components/     StatusRing, Sparkline, LimitBandChart, AlertBanner, EmergencyTakeover,
                     ScenarioDock, AlertChecklist, EvidenceDetails, HeadacheReport, LimitBadge;
                     Block T adds MeasurementForm, PvtTest, Questionnaire, StandTest, AmslerGrid,
-                    BodyMap, ReadinessGate, SeveritySublabel
+                    BodyMap, ReadinessGate, SeveritySublabel; Block C adds CountermeasurePlan,
+                    AdherenceChart (+ WeeklyAdherence), SharedJournal
     api/            hand-written typed client + WebSocket hook; limits.ts bundles config/limits.yaml
                     for the offline fallback (GET /api/v1/limits replaces it when connected)
 config/
@@ -69,6 +71,8 @@ config/
   datasets.yaml     (Block R) which dataset feeds which signal/phase/scenario, time windows, compression
   selftests.yaml    (Block T) self-test catalog: why / steps / limit refs / hazards / HRP risks /
                     schedule / escalation, plus body-map regions -> signals, rules, tests
+  countermeasures.yaml (Block C) countermeasure catalog: type / why / steps / equipment / prescription refs /
+                    session or schedule / triggered_by rules / triggered_by_gate / escalation
 Makefile            dev, test, lint, demo
 implementationsandgoals.txt   handoff: Claude implements, Antigravity supervises; work queue, review findings, API contract
 ```
@@ -130,9 +134,11 @@ Rules:
 - **Short modes are labelled** ("Demo length, not the 3-minute protocol"). Real-time stand tests keep the protocol length; scenarios run them on the sim clock.
 - **Body map regions and their links live in config**, colour = highest open severity + icon + text, never a diagnosis.
 
-## 2c. Countermeasures and private journal (Block C, planned)
+## 2c. Countermeasures and private journal (Block C, built)
 
-Decided by the user on 2026-11-15; plan in `ROADMAP.md` §0b. Do not start before the supervisor approves the plan.
+Decided by the user on 2026-11-15; plan in `ROADMAP.md` §0b; built 2026-11-15, awaiting Gate C.
+
+- **Built as:** `countermeasure_done` (1) and `exercise_minutes` signals (entry-only) with `Observation.countermeasure_id`; `GET /countermeasures`, `/countermeasures/plan?crew_id=`, `/countermeasures/adherence?node=`, `/countermeasures/log`; `GET|POST /journal/shared`, `DELETE /journal/shared/{crew}/{entry}` (all refuse `?node=ground`). The simulator's own exercise sessions count as done (its seeded session model) and a logged session also counts in the daily `exercise_adherence_pct`. Non-exercise items count from the scenario start. Ground adherence is the last `adherence` link message (rollup priority, every `rollup_every`). Scenario event `countermeasure {crew, item, minutes?}` (SYNTHETIC) and effect `exercise_drop {crew, adherence}` (also shapes the history when it starts before it).
 
 - **No third to-do list.** Countermeasures are a filter on the T-1 routine board, from `config/countermeasures.yaml` (why, steps, prescription refs into `limits.yaml`, hazards, HRP risks, `triggered_by` rules). Logged sessions are `Observation`s on the usual path (`CREW_ENTERED` from the UI, `SYNTHETIC` when scripted).
 - **Adherence: CMO and ground yes, ranking never.** Per-person weekly prescribed vs done (charts and %) in the onboard CMO view and the ground console (ground only through `link/` rollups). Fixed C1..C4 order, one person per chart, no sorting by adherence, no crew average, no best/worst. The crew member's own view stays neutral (today: done / not logged, `INFO` at most, no %).
@@ -204,7 +210,7 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Block P (P-5, built): gravity drives physiology with the user's LINEAR model (bone and fitness drift at (1 - g) x the 0 g rate, BP rises g x 8/9 mmHg, orthostatic risk recorded after a gravity increase).
 - Radiation stream split into total and **neutron** components (neutrons ≈ 30% in LEO per CSA).
 - The simulator feeds the engine in-process on each simulated tick. `POST /api/v1/observations` exists and uses the same code path, but the simulator does not go through HTTP.
-- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Block T adds scripted self-test results to scenarios (seeded, `SYNTHETIC`) and extends `demo_5min` again (T-10). Deferred: `arrhythmia`, `eva`, `infection`.
+- Scenarios in `backend/app/sim/scenarios/*.yaml`: `nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`; Block C adds `exercise_lapse`. Block P adds `leo_baseline` and `lunar_surface` and extends `demo_5min` (P-7). Block T adds scripted self-test results to scenarios (seeded, `SYNTHETIC`) and extends `demo_5min` again (T-10). Deferred: `arrhythmia`, `eva`, `infection`.
 - `demo_5min` sets the simulation speed per segment, so a 12-minute comm delay passes in about 10 real seconds.
 - Speed control 1×–10,000×. Simulated clock is injectable everywhere (never call `datetime.now()` in domain code; use `Clock`).
 
@@ -245,6 +251,15 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
   - **Body map:** region colour follows open alerts; every region links at least one signal or test.
   - **Extended demo:** plays twice with identical alerts and passes the no-network test.
 
+- Block C (`backend/tests/test_block_c.py`, `frontend/src/test/blockC.test.tsx`):
+  - **Catalog:** every item has why / steps / equipment / hazards / HRP risks / prescription; the loader refuses missing hazards/HRP, unknown limit refs and unknown trigger rules; steps never wait for the ground.
+  - **Logging:** a tap is `CREW_ENTERED` (`entry_method: tap`), a scripted session stays `SYNTHETIC`; works with the link blacked out.
+  - **Plan:** same scenario + seed gives the same plan; an alert adds its item and the item leaves when it resolves; "not logged" never above `INFO`; no %, score or rank in the plan.
+  - **Adherence:** fixed C1..C4 order, no average; the ground sees a new session only after the link delay; a blackout holds it.
+  - **Rule:** `cm.exercise.low_7d` fires, does not fire, hysteresis; `exercise_lapse` trips only C3; `nominal` stays alert-free.
+  - **Journal:** share needs the confirm step; `?node=ground` is refused; nothing journal-related in any link message or the ground store (also after a blackout); no disk writes; no sentiment code; per-crew local storage key; entries hidden until tapped; mission time, not the wall clock.
+  - **No ranking:** Block C copy has no rank / top / best / worst / ahead of / behind (plus the gamification words).
+
 ## 8. UI guidelines
 
 - Tablet first (1024×768 minimum), dark theme by default, high contrast.
@@ -273,6 +288,6 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`) → Block T (T-0..T-10, Gate T) → D-5 re-freeze (tag `demo-ready-v3`).
 
-→ Block L (L-1..L-3, approved 2026-11-15).
+→ Block L (L-1..L-3, approved 2026-11-15) → Block C (C-0..C-5, built 2026-11-15).
 
-**Next:** Block C (`ROADMAP.md` §0b): supervisor plan review, then C-0..C-5; no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
+**Next:** Gate C (supervisor review of Block C); no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.

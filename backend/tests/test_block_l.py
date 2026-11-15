@@ -29,9 +29,10 @@ def test_verified_count_unchanged_by_block_l(cfg):
     assert verified == 14
 
 
-def test_nasa_reference_kind_only_for_the_hrp_bone_rate(cfg):
+def test_nasa_reference_kind_only_for_nasa_pages_that_are_not_standards(cfg):
+    """The HRP bone-loss rate and (Block C) the ISS daily exercise time come from NASA pages, not NASA-STD clauses."""
     refs = [f"{s}.{n}" for s, es in cfg.limits.items() for n, e in es.items() if e.get("source_kind") == "nasa_reference"]
-    assert refs == ["bone.bmd_loss_pct_per_month_expected_0g"]
+    assert refs == ["bone.bmd_loss_pct_per_month_expected_0g", "countermeasures.exercise_min_day"]
 
 
 def test_unverified_limit_without_source_kind_fails_to_load(tmp_path):

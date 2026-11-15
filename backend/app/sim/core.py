@@ -8,8 +8,9 @@ else is synthetic.
 import math
 import random
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from app.clock import SimClock
@@ -19,7 +20,8 @@ from app.datasets.rad import RadiationReplays, RadSample
 Sample = tuple[str | None, str, float]  # (crew_id or None for cabin, signal, value)
 DatedSample = tuple[datetime, str | None, str, float]
 
-EFFECT_TYPES = {"spe", "co2_ramp", "insomnia", "orthostatic", "symptom"}
+# exercise_drop (Block C): {crew, adherence} replaces the crew member's exercise adherence while active
+EFFECT_TYPES = {"spe", "co2_ramp", "insomnia", "orthostatic", "symptom", "exercise_drop"}
 
 KPA_TO_MMHG = 7.50062
 WATER_VAPOUR_MMHG = 47.0  # saturated water vapour at 37 C in the airways
@@ -68,6 +70,8 @@ class Simulator:
         self.tick_h = mission["tick_s"] / 3600
         self.params = mission["sim"]
         self.effects: list[Effect] = []
+        # Block C: World sets this to the countermeasure log (crew_id, day, session index) -> logged as done
+        self.logged_session: Callable[[str, date, int], bool] = lambda _c, _d, _i: False
         self.radiation = radiation
         self.rad_sample: RadSample | None = None  # last replayed RAD value (None = synthetic radiation)
         self.spe_active = False
@@ -206,13 +210,28 @@ class Simulator:
         return 1.0 + (peak - 1.0) * shape
 
     def _does_session(self, c: CrewState, ts: datetime, session: int) -> bool:
-        """Whether a planned exercise session happens. Separate seeded RNG, so other streams don't shift."""
+        """Whether a planned exercise session happens. Separate seeded RNG, so other streams don't shift.
+        Block C: an `exercise_drop` effect active at the session time replaces the adherence (no RNG draw added)."""
         key = f"{self.seed}:ex:{c.id}:{ts.date().isoformat()}:{session}"
-        return random.Random(key).random() < c.cfg["exercise_adherence"]
+        adherence = c.cfg["exercise_adherence"]
+        if self.effects:
+            at = ts.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(hours=c.cfg["exercise_hours"][session])
+            drop = self._effect("exercise_drop", at, c.id)
+            if drop is not None:
+                adherence = float(drop.params.get("adherence", 0.0))
+        return random.Random(key).random() < adherence
+
+    def session_done(self, crew_id: str, day: date, session: int) -> bool:
+        """Block C: the simulator's own record of a planned exercise session on `day` (no RNG stream shifts)."""
+        c = next(x for x in self.crew if x.id == crew_id)
+        return self._does_session(c, datetime(day.year, day.month, day.day, tzinfo=self.start_ts.tzinfo), session)
 
     def _adherence_pct(self, c: CrewState, day_start: datetime) -> float:
+        """Share of planned sessions done that day: the simulator's sessions plus sessions logged as done (Block C:
+        a tap on the tablet or a scripted event, through `logged_session`)."""
         planned = len(c.cfg["exercise_hours"])
-        done = sum(self._does_session(c, day_start, i) for i in range(planned))
+        done = sum(self._does_session(c, day_start, i) or self.logged_session(c.id, day_start.date(), i)
+                   for i in range(planned))
         return 100.0 * done / planned if planned else 100.0
 
     def _night_sleep(self, c: CrewState, ts: datetime) -> float:

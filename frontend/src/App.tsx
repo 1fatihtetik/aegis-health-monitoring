@@ -13,8 +13,9 @@ import { CrewOverview } from './views/CrewOverview';
 import { GroundConsole } from './views/GroundConsole';
 import { Radiation } from './views/Radiation';
 import { SelfTests } from './views/SelfTests';
+import { Journal } from './views/Journal';
 
-type ActiveTab = 'overview' | 'detail' | 'selftests' | 'radiation' | 'alerts' | 'ground';
+type ActiveTab = 'overview' | 'detail' | 'selftests' | 'journal' | 'radiation' | 'alerts' | 'ground';
 
 const AegisShell: React.FC = () => {
   const {
@@ -208,6 +209,19 @@ const AegisShell: React.FC = () => {
 
             <button
               type="button"
+              data-testid="tab-journal"
+              onClick={() => setActiveTab('journal')}
+              className={`min-h-[44px] rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                activeTab === 'journal'
+                  ? 'bg-cyan-500 text-slate-950 shadow'
+                  : 'bg-space-900 text-slate-300 hover:bg-space-800 border border-slate-800'
+              }`}
+            >
+              Journal
+            </button>
+
+            <button
+              type="button"
               onClick={() => setActiveTab('radiation')}
               className={`min-h-[44px] rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
                 activeTab === 'radiation'
@@ -287,6 +301,8 @@ const AegisShell: React.FC = () => {
             initialTestId={startTest?.testId ?? null}
           />
         )}
+
+        {activeTab === 'journal' && <Journal initialCrewId={selectedCrewId} />}
 
         {activeTab === 'radiation' && (
           <Radiation onOpenEmergencyModal={() => setEmergencyModalDismissed(false)} />

@@ -5,12 +5,13 @@ Ground: written only by delivered link messages. Ground code never reads onboard
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from app.alerts.manager import AlertManager
 from app.clock import SimClock
 from app.config import Config
+from app.countermeasures.plan import SessionLog, Triggers, today_plan, triggers_for, weekly
 from app.datasets.horizons import CommDelay, LightTime
 from app.datasets.inspiration4 import load_inspiration4
 from app.datasets.provenance import ProvenanceTracker
@@ -103,6 +104,19 @@ class World:
         self._seen_ids: set[str] = set()
         # Block T: crew-entered values and scripted self-test results (in memory only)
         self.entries = EntryLog(parse_duration(cfg.selftests.setting("manual_override")))
+        # Block C: countermeasures logged as done (in memory only); triggered items added per (crew, item, day);
+        # journal entries a crew member chose to share with the onboard CMO (in memory only, never on the link)
+        self.countermeasure_log = SessionLog()
+        self.sim.logged_session = self._logged_session
+        self.cm_added: set[tuple[str, str, date]] = set()
+        self.journal_shared: dict[tuple[str, str], dict[str, Any]] = {}
+        self._rollup_every = parse_duration(cfg.countermeasures.setting("rollup_every"))
+        # Effects that start before the history ends act on it too (Block C: exercise_drop shapes the daily
+        # exercise_adherence_pct history). They are registered once, here, and not again during the prewarm.
+        early = [e for e in self._events if e[2]["type"] in EFFECT_TYPES and e[0] <= self.clock.now()]
+        for ts, _, event in early:
+            self.sim.add_effect(event["type"], ts, ts + parse_duration(event.get("duration", "100d")), event["params"])
+        self._events = [e for e in self._events if e not in early]
 
         # History + prewarm: fills the buffers and baselines before the scenario starts. No rules run here.
         for ts, crew_id, signal, value in self.sim.history():
@@ -122,6 +136,9 @@ class World:
         # Data before T0 counts as already synced, except questionnaire answers (T-4: never leave the spacecraft).
         self.ground = GroundNode(self.store.copy(exclude=ONBOARD_ONLY))
         self.ground.snapshot, self.ground.as_of = strip_onboard_only(self.snapshot), self.start_ts
+        # C-2: the weekly adherence before T0 counts as synced too; later only delivered rollups change it.
+        self.ground.adherence, self.ground.adherence_as_of = self._adherence_rollup(), self.start_ts
+        self._last_rollup = self.start_ts
 
     # ---- time ----------------------------------------------------------------------------
     @property
@@ -245,6 +262,8 @@ class World:
                 result.pause = True
             elif kind == "selftest":
                 self._scripted_selftest(ts, params)
+            elif kind == "countermeasure":
+                self._scripted_countermeasure(ts, params)
 
     def tick(self) -> TickResult:
         result = TickResult(self.clock.now())
@@ -254,9 +273,13 @@ class World:
 
         result.alerts = self.alerts.process(self.engine.evaluate(now), now)
         self.snapshot = self._build_snapshot()
+        self._note_triggered(now)
         for alert in result.alerts:
             self._send_alert(alert)
         self.link.send(DOWN, "snapshot", PRIORITY_SNAPSHOT, self._downlink_snapshot(), now, self.delay_s)
+        if now - self._last_rollup >= self._rollup_every:  # C-2: weekly adherence rollup at rollup priority
+            self._last_rollup = now
+            self.link.send(DOWN, "adherence", PRIORITY_SNAPSHOT, self._adherence_rollup(), now, self.delay_s)
 
         for msg in self.link.deliver(now):
             if msg.direction == DOWN:
@@ -318,6 +341,7 @@ class World:
                 continue
             self._seen_ids.add(obs.id)
             self.store.add(obs.crew_id, obs.signal.value, obs.ts, obs.value)
+            self.countermeasure_log.record(obs, self.scenario["name"])  # Block C: no-op without countermeasure_id
             if self.entries.record(obs, self.scenario["name"]) is None:
                 self.provenance.set(obs.signal.value, obs.provenance, obs.dataset_id, obs.ts)
             accepted += 1
@@ -343,6 +367,80 @@ class World:
             for signal, value in params["values"].items()
         ]
         self.ingest_observations(obs)
+
+    # ---- Block C: countermeasures and the CMO-only journal copy ----------------------------
+    def _logged_session(self, crew_id: str, day: date, index: int) -> bool:
+        item = self.cfg.countermeasures.for_session(index)
+        return item is not None and bool(self.countermeasure_log.on(crew_id, item.id, day))
+
+    def _triggers(self, crew_id: str) -> Triggers:
+        return triggers_for(self.cfg, crew_id, self.alerts.open_alerts(), self.snapshot["readiness"][crew_id],
+                            self.snapshot["phase"]["next_gravity_increase"] is not None, self.clock.now())
+
+    def _note_triggered(self, now: datetime) -> None:
+        """Remembers on which days a triggered item was on a crew member's plan (it then counts as prescribed)."""
+        for cid in self.crew_ids:
+            for cm_id in self._triggers(cid).reasons:
+                self.cm_added.add((cid, cm_id, now.date()))
+
+    def countermeasure_plan(self, crew_id: str) -> list[dict[str, Any]]:
+        """C-1: one crew member's countermeasures today (neutral statuses, INFO at most, no %)."""
+        crew_cfg = next(c for c in self.cfg.crew if c["id"] == crew_id)
+        return today_plan(self.cfg, crew_cfg, self.clock.now(), self.countermeasure_log, self.entries.results,
+                          self.sim.session_done, self._triggers(crew_id))
+
+    def bone_model(self, exercise_fraction: float | None) -> dict[str, Any]:
+        """C-3: the simulator's bone-loss rate at the current gravity with the observed exercise share vs none."""
+        g = float(self.sim.phase_cfg["gravity_g"])
+        return {
+            "exercise_fraction": None if exercise_fraction is None else round(exercise_fraction, 3),
+            "pct_month_with_exercise": (None if exercise_fraction is None
+                                        else round(self.sim.bmd_rate_pct_month(exercise_fraction, g), 2)),
+            "pct_month_without_exercise": round(self.sim.bmd_rate_pct_month(0.0, g), 2), "gravity_g": g,
+            "provenance": Provenance.SYNTHETIC.value,
+            "basis": ("Simulator bone model: NASA HRP reference rate (1-1.5 %/month at 0 g, mid value) x (1 - g) x "
+                      "(1 - exercise protection x share of planned sessions done in the last 7 days); the exercise "
+                      "protection factor is a heuristic (mission.yaml). Simulated, not a measurement."),
+        }
+
+    def _adherence_rollup(self) -> dict[str, Any]:
+        """C-2: weekly prescribed vs done per crew member, fixed C1..C4 order (never sorted by a value)."""
+        now = self.clock.now()
+        crew = [weekly(self.cfg, c, now, self.start_ts, self.countermeasure_log, self.entries.results,
+                       self.sim.session_done, self.cm_added, self.bone_model) for c in self.cfg.crew]
+        return {"ts": iso(now), "crew": crew}
+
+    def adherence(self) -> dict[str, Any]:
+        """Onboard: the weekly adherence now (the CMO view)."""
+        return self._adherence_rollup()
+
+    def _scripted_countermeasure(self, ts: datetime, params: dict[str, Any]) -> None:
+        """Scenario event `countermeasure` {crew, item, minutes?}: a scripted session for the synthetic crew,
+        labelled SYNTHETIC, never CREW_ENTERED."""
+        item = self.cfg.countermeasures.item(params["item"])
+        crew_id = str(params["crew"])
+        values = {"countermeasure_done": 1.0}
+        if item.log_minutes:
+            default = self.cfg.limit(item.prescription[0].limit_ref).value
+            values["exercise_minutes"] = float(params.get("minutes", default))
+        self.ingest_observations([
+            Observation(id=f"scripted:{self.scenario['name']}:{self.seed}:{crew_id}:{item.id}:{signal}:{iso(ts)}",
+                        ts=ts, crew_id=crew_id, device_id=f"scripted-{crew_id}", signal=signal, value=value,
+                        unit=SIGNALS[signal].unit, phase=self.sim.phase, provenance=Provenance.SYNTHETIC,
+                        countermeasure_id=item.id)
+            for signal, value in values.items()
+        ])
+
+    def share_journal(self, crew_id: str, entry_id: str, text: str, tags: list[str], written_ts: str,
+                      context: dict[str, Any]) -> dict[str, Any]:
+        """C-4: a copy the crew member confirmed for the onboard CMO. Memory only; never on the link or on disk."""
+        entry = {"crew_id": crew_id, "entry_id": entry_id, "text": text, "tags": tags, "written_ts": written_ts,
+                 "context": context, "shared_ts": iso(self.clock.now())}
+        self.journal_shared[(crew_id, entry_id)] = entry
+        return entry
+
+    def unshare_journal(self, crew_id: str, entry_id: str) -> bool:
+        return self.journal_shared.pop((crew_id, entry_id), None) is not None
 
     # ---- ground actions (only through the link) ------------------------------------------
     def send_recommendation(self, text: str, checklist: list[str], crew_id: str | None) -> dict[str, Any]:

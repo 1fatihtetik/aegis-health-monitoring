@@ -222,8 +222,8 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - **Individual view**: live vitals (sparklines), sleep last 7 nights, exercise adherence, cumulative dose, trends.
 - **Radiation view** (M6).
 - **Environment view**: cabin CO₂/O₂/pressure/temperature/humidity/noise with limit bands.
-- **Countermeasures**: today's exercise prescription vs. done, light-therapy schedule, supplements, Thigh Cuff sessions. *v1.5 (Block C, planned, `ROADMAP.md` §0b):* a Countermeasures filter on the routine board (crew sees today: done / not logged, no %); per-person weekly adherence for the onboard CMO and the ground (no ranking, no comparison); alert-triggered items; an `INFO` early-warning rule on falling exercise. Supplements left out.
-- **Wellbeing**: survey, private journal (stays local, sentiment analyzed on the device only, opt-in sharing). *v1.5 (Block C):* the journal is saved on the tablet, never sent to the ground, shareable one entry at a time with the onboard CMO only; no sentiment analysis.
+- **Countermeasures**: today's exercise prescription vs. done, light-therapy schedule, supplements, Thigh Cuff sessions. *v1.5 (Block C, built, `ROADMAP.md` §0b):* a Countermeasures filter on the routine board (crew sees today: done / not logged, no %); per-person weekly adherence for the onboard CMO and the ground (no ranking, no comparison); alert-triggered items; an `INFO` early-warning rule on falling exercise. Supplements left out.
+- **Wellbeing**: survey, private journal (stays local, sentiment analyzed on the device only, opt-in sharing). *v1.5 (Block C, built):* the journal is saved on the tablet, never sent to the ground, shareable one entry at a time with the onboard CMO only; no sentiment analysis.
 - Design: works offline, dark-mode friendly, large touch targets, readable at a glance, no more than 3 taps to any critical action.
 
 ### M6. Radiation module ★

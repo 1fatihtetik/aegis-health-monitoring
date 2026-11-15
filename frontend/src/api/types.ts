@@ -1012,3 +1012,101 @@ export interface BodyRegion {
   tests: Array<{ id: string; title: string; onboard_only: boolean }>;
   reference: 'inspiration4' | null;
 }
+
+// ---- Block C: countermeasures, weekly adherence, private journal ---------------------------------------------------
+
+export type CountermeasureType = 'EXERCISE' | 'NUTRITION' | 'THIGH_CUFF' | 'LIGHT' | 'FLUID_LOADING';
+
+/** A prescription with its limit resolved from config/limits.yaml (so the not-NASA marker comes along). */
+export interface CountermeasurePrescription {
+  label: string;
+  ref: string;
+  value: number;
+  source_ref: string;
+  verified: boolean;
+  source_kind?: LimitSourceKind | null;
+}
+
+/** Neutral statuses only: done / due now / not logged (information) / later today. No %, no score. */
+export type CountermeasureStatus = 'DONE' | 'DUE' | 'NOT_LOGGED' | 'UPCOMING';
+
+/** GET /api/v1/countermeasures/plan?crew_id= : one item of a crew member's plan for today (catalog text included). */
+export interface CountermeasurePlanItem {
+  countermeasure_id: string;
+  title: string;
+  type: CountermeasureType;
+  equipment: string;
+  why: string;
+  hazards: Hazard[];
+  hrp_risks: HrpRiskId[];
+  steps: string[];
+  prescription: CountermeasurePrescription[];
+  escalation: string;
+  log_minutes: boolean;
+  minutes_max: number;
+  status: CountermeasureStatus;
+  reason: 'routine' | 'added';
+  added_because: string[];
+  level: 'INFO' | null;
+  slot_start: string | null;
+  due_until: string | null;
+  done_ts: string | null;
+  done_provenance: Provenance | null;
+  done_basis: string | null;
+  done_minutes: number | null;
+}
+
+export interface AdherenceCount {
+  prescribed: number;
+  done: number;
+}
+
+/** GET /api/v1/countermeasures/adherence: one person (fixed C1..C4 order; never sorted, never averaged). */
+export interface AdherencePerson {
+  crew_id: CrewId;
+  callsign: string;
+  days: Array<{ date: string; types: Record<CountermeasureType, AdherenceCount> }>;
+  totals: Record<CountermeasureType, AdherenceCount & { pct: number | null }>;
+  /** Types with anything prescribed in the window, in the fixed catalog order. */
+  types: CountermeasureType[];
+  tracked_from: string;
+  bone_model: {
+    exercise_fraction: number | null;
+    pct_month_with_exercise: number | null;
+    pct_month_without_exercise: number;
+    gravity_g: number;
+    provenance: Provenance;
+    basis: string;
+  };
+}
+
+export interface AdherenceResponse {
+  node: 'onboard' | 'ground';
+  now: string;
+  as_of: string;
+  age_s: number;
+  crew: AdherencePerson[];
+}
+
+/** A private journal entry. Lives only in this tablet's local storage (never synced to the ground). */
+export interface JournalEntry {
+  id: string;
+  /** Mission (simulation) time the entry was written, not the wall clock. */
+  written_ts: string;
+  text: string;
+  tags: string[];
+  prompt: string | null;
+  context: { phase: string; mission_day: number; blackout: boolean };
+  shared: boolean;
+}
+
+/** The copy a crew member confirmed for the onboard CMO (GET /api/v1/journal/shared). Memory only on board. */
+export interface SharedJournalEntry {
+  crew_id: CrewId;
+  entry_id: string;
+  text: string;
+  tags: string[];
+  written_ts: string;
+  context: Record<string, unknown>;
+  shared_ts: string;
+}

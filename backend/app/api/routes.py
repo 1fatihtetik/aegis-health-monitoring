@@ -11,6 +11,7 @@ from typing import Any, Literal
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
+from app.countermeasures.plan import resolved_item
 from app.datasets.provenance import check_agency
 from app.domain.enums import SIGNALS, Signal
 from app.domain.models import Observation
@@ -522,6 +523,108 @@ async def body_map(request: Request, crew_id: str, node: Node = "onboard") -> di
     return _envelope(rt, node, crew_id=crew_id, regions=_body_map(rt, node, crew_id))
 
 
+# ---- countermeasures (Block C, PRD section 6 M5) ---------------------------------------------
+def _crew_or_404(rt: Runtime, crew_id: str) -> None:
+    if crew_id not in rt.world.crew_ids:
+        raise HTTPException(404, f"Unknown crew member '{crew_id}'")
+
+
+@router.get("/countermeasures")
+async def countermeasures(request: Request, node: Node = "onboard") -> dict[str, Any]:
+    """Countermeasure catalog: why / steps / equipment / prescription (resolved limits) per item."""
+    rt = _rt(request)
+    settings = {k: v.model_dump() for k, v in rt.cfg.countermeasures.settings.items()}
+    return _envelope(rt, node, items=[resolved_item(rt.cfg, i) for i in rt.cfg.countermeasures.items],
+                     settings=settings)
+
+
+@router.get("/countermeasures/plan")
+async def countermeasure_plan(request: Request, crew_id: str) -> dict[str, Any]:
+    """Onboard: one crew member's countermeasures today. Neutral statuses (done / not logged), INFO at most, no %."""
+    rt = _rt(request)
+    _crew_or_404(rt, crew_id)
+    return _envelope(rt, "onboard", crew_id=crew_id, plan=rt.world.countermeasure_plan(crew_id))
+
+
+@router.get("/countermeasures/adherence")
+async def countermeasure_adherence(request: Request, node: Node = "onboard",
+                                   crew_id: str | None = None) -> dict[str, Any]:
+    """C-2: last 7 days prescribed vs done per crew member, for the onboard CMO and the ground. Crew in the fixed
+    C1..C4 order, one entry per person: no sorting by adherence, no crew average. The ground copy is the last rollup
+    delivered through the link, and as_of / age_s say how old it is."""
+    rt = _rt(request)
+    w = rt.world
+    if crew_id is not None:
+        _crew_or_404(rt, crew_id)
+    if node == "ground":
+        data, as_of = w.ground.adherence, w.ground.adherence_as_of or w.start_ts
+    else:
+        data, as_of = w.adherence(), w.clock.now()
+    crew = [c for c in data.get("crew", []) if crew_id in (None, c["crew_id"])]
+    now = w.clock.now()
+    return {"node": node, "now": iso(now), "as_of": iso(as_of), "age_s": (now - as_of).total_seconds(), "crew": crew}
+
+
+@router.get("/countermeasures/log")
+async def countermeasure_log(request: Request, crew_id: str | None = None) -> dict[str, Any]:
+    """Onboard only: countermeasures logged as done (tablet taps and scripted sessions), oldest first. In memory."""
+    rt = _rt(request)
+    if crew_id is not None:
+        _crew_or_404(rt, crew_id)
+    return _envelope(rt, "onboard", sessions=rt.world.countermeasure_log.as_list(crew_id))
+
+
+# ---- private journal: the copy shared with the onboard CMO (Block C, C-4) ------------------------
+# Entries live in the crew tablet's local storage. Only an entry the crew member chose to share, after a preview and
+# a confirm step, comes here: in memory only, never on disk, never in a link message, never on the ground.
+JOURNAL_GROUND = "Journal entries stay on board: the ground never sees them."
+
+
+class JournalShareBody(BaseModel):
+    crew_id: str
+    entry_id: str = Field(min_length=1, max_length=100)
+    text: str = Field(min_length=1, max_length=10000)
+    tags: list[str] = Field(default_factory=list, max_length=10)
+    written_ts: str = Field(min_length=1, max_length=40)
+    context: dict[str, Any] = Field(default_factory=dict)
+    confirmed: bool = False  # the tablet sends true only after the preview and the confirm tap
+
+
+def _no_ground(node: str) -> None:
+    if node == "ground":
+        raise HTTPException(403, JOURNAL_GROUND)
+
+
+@router.get("/journal/shared")
+async def journal_shared(request: Request, crew_id: str | None = None, node: Node = "onboard") -> dict[str, Any]:
+    """Onboard CMO view: entries crew members chose to share. `?node=ground` is refused."""
+    _no_ground(node)
+    rt = _rt(request)
+    if crew_id is not None:
+        _crew_or_404(rt, crew_id)
+    entries = [e for (cid, _), e in rt.world.journal_shared.items() if crew_id in (None, cid)]
+    return _envelope(rt, "onboard", entries=sorted(entries, key=lambda e: (e["crew_id"], e["written_ts"])))
+
+
+@router.post("/journal/shared")
+async def journal_share(body: JournalShareBody, request: Request, node: Node = "onboard") -> dict[str, Any]:
+    _no_ground(node)
+    rt = _rt(request)
+    _crew_or_404(rt, body.crew_id)
+    if not body.confirmed:
+        raise HTTPException(422, "Sharing needs the confirm step: preview the entry, then confirm.")
+    return rt.world.share_journal(body.crew_id, body.entry_id, body.text, body.tags, body.written_ts, body.context)
+
+
+@router.delete("/journal/shared/{crew_id}/{entry_id}")
+async def journal_unshare(crew_id: str, entry_id: str, request: Request, node: Node = "onboard") -> dict[str, Any]:
+    """Withdraws a shared copy; the entry stays on the tablet."""
+    _no_ground(node)
+    rt = _rt(request)
+    _crew_or_404(rt, crew_id)
+    return {"removed": rt.world.unshare_journal(crew_id, entry_id)}
+
+
 # ---- ingest ----------------------------------------------------------------------------------
 @router.post("/observations")
 async def observations(items: list[Observation], request: Request) -> dict[str, int]:
@@ -547,6 +650,25 @@ async def observations(items: list[Observation], request: Request) -> dict[str, 
             if not field.input_min <= obs.value <= field.input_max:
                 raise HTTPException(422, f"{field.label}: {obs.value:g} is outside {field.input_min:g}-"
                                          f"{field.input_max:g} {SIGNALS[field.signal].unit}; check the reading")
+    for obs in items:  # Block C: a logged countermeasure names a catalog item and only its log signals
+        if obs.countermeasure_id is None:
+            if obs.signal.value in ("countermeasure_done", "exercise_minutes"):
+                raise HTTPException(422, f"{obs.signal.value} needs a countermeasure_id")
+            continue
+        try:
+            item = world.cfg.countermeasures.item(obs.countermeasure_id)
+        except KeyError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        if obs.test_id is not None or obs.crew_id is None:
+            raise HTTPException(422, "A countermeasure entry names a crew member and no self-test")
+        allowed = {"countermeasure_done": (1.0, 1.0)}
+        if item.log_minutes:
+            allowed["exercise_minutes"] = (1.0, item.minutes_max)
+        if obs.signal.value not in allowed:
+            raise HTTPException(422, f"{obs.signal.value} is not logged for countermeasure '{item.id}'")
+        lo, hi = allowed[obs.signal.value]
+        if not lo <= obs.value <= hi:
+            raise HTTPException(422, f"{item.title}: {obs.value:g} is outside {lo:g}-{hi:g} {obs.unit}")
     for obs in items:  # P-0: the label must match who measured the dataset
         meta = world.provenance.registry.dataset_meta(obs.dataset_id)
         if meta:

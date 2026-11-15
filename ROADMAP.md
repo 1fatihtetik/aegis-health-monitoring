@@ -4,14 +4,14 @@ Assumes one person plus coding agents. Hours are offsets from the start of each 
 
 **Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
 **Block L, data-honesty labels (§0a). Status: DONE.** L-1..L-3 approved 2026-11-15 (`18f018e`). Wording only.
-**Next: Block C, countermeasures and private journal (§0b). Status: PLANNED (user decisions 2026-11-15).** About 13 h; starts after the supervisor approves the plan.
+**Block C, countermeasures and private journal (§0b). Status: BUILT (C-0..C-4, C-5 docs), awaiting supervisor review (Gate C).** The C-5 demo hook was cut (cut list item 1); the `exercise_lapse` scenario shows the early warning instead. No re-freeze.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
 ---
 
-## 0b. Block C: countermeasures and private journal (planned)
+## 0b. Block C: countermeasures and private journal (built, awaiting Gate C)
 
 Why: PRD M5 lists a Countermeasures view and a private journal; both were deferred. Countermeasures show the crew **what to do today to stay healthy and why**, and give the onboard CMO and the ground team a **per-person weekly trend** so they can act before a problem shows up (for example falling exercise before bone or orthostatic trouble). The journal gives each crew member a private place to write. Design rule: **no third to-do list.** Countermeasures live on the existing routine board (T-1); the journal is a quiet, separate screen.
 

@@ -25,8 +25,10 @@ import { AutonomyNotice } from '../components/AutonomyNotice';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { ContextBadge } from '../components/EvidenceDetails';
 import { HeadacheReport } from '../components/HeadacheReport';
+import { WeeklyAdherence } from '../components/AdherenceChart';
 import { BodyMap } from '../components/BodyMap';
 import { Inspiration4ReferencePanel } from '../components/Inspiration4Panel';
+import { SharedJournal } from '../components/SharedJournal';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { StatusRing } from '../components/StatusRing';
 
@@ -333,6 +335,12 @@ export const CrewDetail: React.FC<CrewDetailProps> = ({
       )}
 
       <HeadacheReport crewId={member.id} />
+
+      {/* Block C: CMO view of this crew member's week and the journal entries they chose to share */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <WeeklyAdherence node="onboard" crewId={member.id} connected={state.sim.backend_connected} />
+        <SharedJournal crewId={member.id} connected={state.sim.backend_connected} />
+      </div>
 
       {/* T-6: body map for this crew member */}
       <BodyMap crewId={selectedCrewId} onStartTest={onStartTest} />

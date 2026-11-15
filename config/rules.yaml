@@ -650,3 +650,26 @@ rules:
       - "Drink fluids once you feel better"
       - "No standing tasks, ladders, EVA or driving until the CMO has reviewed"
       - "Tell the CMO now; stand up slowly, with someone nearby"
+
+  # ---- Block C, C-3: early warning on exercise (attention, not alarm). The 7-day mean of the daily share of planned
+  # exercise sessions done (exercise_adherence_pct, derived from the session log, never typed). INFO only: it asks the
+  # CMO to talk with the crew member before bone or orthostatic trouble shows up. Never a ranking.
+  - id: cm.exercise.low_7d
+    type: THRESHOLD
+    title: "Exercise below plan for a week"
+    signal: exercise_adherence_pct
+    op: "<"
+    limit_ref: countermeasures.exercise_adherence_7d_min
+    window: 7d
+    agg: mean
+    severity: INFO
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-09, HRP-11]
+    clear_margin: 0.1
+    rationale: "Over the last 7 days fewer exercise sessions were done than planned. Less exercise in low gravity means faster bone and fitness loss and a harder return to gravity."
+    action: "CMO: review the exercise plan with the crew member."
+    checklist:
+      - "CMO: talk with the crew member about what got in the way (time, equipment, pain, workload)"
+      - "Adjust the exercise times or the plan so the sessions fit the day"
+      - "Check for pain or an injury that makes exercise hard"
+      - "Look at the weekly chart again in a few days"

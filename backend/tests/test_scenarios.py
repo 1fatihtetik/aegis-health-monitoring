@@ -15,6 +15,7 @@ HOURS = {
     "headache_branching": 13,
     "leo_baseline": 8,
     "lunar_surface": 6,
+    "exercise_lapse": 2,
 }
 
 

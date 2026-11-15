@@ -2,7 +2,8 @@
 
 Every message is delivered at deliver_ts = sent_ts + delay, never earlier. Nothing is delivered
 during a blackout. Per tick, due messages go out in priority order up to the bandwidth cap:
-0 EMERGENCY alerts, 1 other alerts, 2 recommendations, 3 one-minute snapshots. Raw data is not sent.
+0 EMERGENCY alerts, 1 other alerts, 2 recommendations, 3 one-minute snapshots and rollups (Block C: the
+weekly adherence). Raw data is not sent. Journal entries are never sent.
 """
 
 from dataclasses import dataclass
@@ -82,10 +83,16 @@ class GroundNode:
         self.as_of: datetime | None = None
         self.alerts: dict[str, dict[str, Any]] = {}
         self.sent_recommendations: list[dict[str, Any]] = []
+        self.adherence: dict[str, Any] = {}  # C-2: last delivered weekly adherence rollup
+        self.adherence_as_of: datetime | None = None
 
     def receive(self, msg: Message) -> None:
         if msg.kind == "alert":
             self.alerts[msg.payload["id"]] = msg.payload
+        elif msg.kind == "adherence":
+            ts = parse_ts(msg.payload["ts"])
+            if self.adherence_as_of is None or ts > self.adherence_as_of:
+                self.adherence, self.adherence_as_of = msg.payload, ts
         elif msg.kind == "snapshot":
             ts = parse_ts(msg.payload["ts"])
             if self.as_of is not None and ts <= self.as_of:

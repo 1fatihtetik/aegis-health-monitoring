@@ -147,6 +147,11 @@ SIGNALS: dict[str, SignalMeta] = {
     "amsler_flag": SignalMeta("0=none,1=areas marked", "crew", "self_test", entry_only=True),
     "amsler_cells_right": SignalMeta("cells", "crew", "self_test", entry_only=True),
     "amsler_cells_left": SignalMeta("cells", "crew", "self_test", entry_only=True),
+    # Block C, C-0: a countermeasure logged as done (value 1) and the minutes of an exercise session. Produced only by a
+    # tap on the tablet (CREW_ENTERED) or a scripted scenario event (SYNTHETIC); the simulator's own exercise sessions
+    # are counted from its session model (sim.core) into exercise_adherence_pct.
+    "countermeasure_done": SignalMeta("1=done", "crew", "countermeasure_log", entry_only=True),
+    "exercise_minutes": SignalMeta("min", "crew", "countermeasure_log", entry_only=True),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]

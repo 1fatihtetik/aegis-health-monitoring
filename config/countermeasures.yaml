@@ -1,0 +1,132 @@
+# Countermeasure catalog (Block C, PRD section 6 M5, ROADMAP section 0b). What to do today to stay healthy, and why.
+# No third to-do list: these items are a filter on the T-1 routine board. No text lives in a component.
+# Per item: type, why (RIDGE hazard + HRP risk), numbered onboard steps (no step waits for the ground), the
+# equipment, the prescription (limit refs into limits.yaml, so every number carries source_ref, verified and
+# source_kind), when it is on the plan (a daily slot, an open alert in `triggered_by`, or a Hold on a readiness gate
+# in `triggered_by_gate`) and when to involve the crew medical officer (CMO).
+# Logging: "Done" on the tablet is a CREW_ENTERED Observation (countermeasure_done = 1, plus exercise_minutes for
+# exercise) through POST /api/v1/observations. Scripted sessions for the synthetic crew stay SYNTHETIC.
+# The crew member sees only their own today list (done / not logged); the weekly per-person charts are for the CMO
+# and the ground. No points, streaks, ranking or comparison between crew members (user decision 2026-11-15).
+settings:
+  rollup_every:
+    value: 1h
+    source_ref: "Project setting (C-2): a rollup of the per-day prescribed and done counts goes to the ground this often, at rollup priority through the delayed link"
+  adherence_days:
+    value: "7"
+    source_ref: "Project setting (C-2): the CMO and ground charts show the last 7 days (today included)"
+
+items:
+  - id: exercise_resistance
+    title: "Resistance exercise"
+    type: EXERCISE
+    equipment: "ARED (Advanced Resistive Exercise Device)"
+    why: "Without gravity, bones and muscles are not loaded and they weaken: about 1 to 1.5 % of hip bone density a month without exercise. Lifting against the ARED is what loads them in flight."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-11, HRP-09]
+    steps:
+      - "Check the ARED: cylinders pressurised, bar locked, no fault light"
+      - "Warm up for 5 minutes (light squats, arm circles)"
+      - "Do today's plan from the exercise card: squats, deadlifts, heel raises; keep the back straight"
+      - "Drink 500 mL of water during or after the session"
+      - "Tap Done and check the minutes"
+    prescription:
+      - { label: "Session length", limit_ref: countermeasures.exercise_session_min }
+      - { label: "Exercise per day (both sessions)", limit_ref: countermeasures.exercise_min_day }
+    session: 0  # the first daily exercise slot of each crew member (config/crew.yaml exercise_hours)
+    due_window: 2h
+    log_minutes: true
+    escalation: "Pain in a joint or the back, dizziness, or chest pain during exercise: stop, rest, and tell the CMO before the next session."
+
+  - id: exercise_aerobic
+    title: "Aerobic exercise"
+    type: EXERCISE
+    equipment: "Cycle ergometer or treadmill with harness"
+    why: "Heart and lung fitness drops in weightlessness. Steady cycling or treadmill running keeps the heart used to working hard, which helps when gravity returns at landing."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-09, HRP-03]
+    steps:
+      - "Strap in: feet in the cycle cleats, or harness and bungees on the treadmill"
+      - "Start easy for 5 minutes"
+      - "Keep a pace where you can still speak in short sentences for the main part"
+      - "Cool down for 5 minutes and drink 500 mL of water"
+      - "Tap Done and check the minutes"
+    prescription:
+      - { label: "Session length", limit_ref: countermeasures.exercise_session_min }
+      - { label: "Exercise per day (both sessions)", limit_ref: countermeasures.exercise_min_day }
+    session: 1
+    due_window: 2h
+    log_minutes: true
+    escalation: "Chest pain, an irregular or racing heartbeat that does not settle within 5 minutes, or fainting: stop, lie down, and tell the CMO now."
+
+  - id: fluid_daily
+    title: "Drink to the daily water target"
+    type: NUTRITION
+    equipment: "Drink bags (usually 500 mL); rehydratable food"
+    why: "Low fluid intake makes fainting on standing (after a gravity increase) and kidney stones more likely. Salty food is a suspected contributor to eye changes (the evidence is limited)."
+    hazards: [GRAVITY_FIELDS, DISTANCE_FROM_EARTH]
+    hrp_risks: [HRP-07, HRP-03]
+    steps:
+      - "Keep a drink bag at your workstation and drink through the day"
+      - "Count the water you add to rehydrate food"
+      - "Pick lower-salt menu items when you can"
+      - "In the evening, log the total on the Fluid and sodium self-test (that counts as Done)"
+    prescription:
+      - { label: "Water per day", limit_ref: nutrition.fluid_intake_mL_day_min }
+      - { label: "Sodium per day, at most", limit_ref: nutrition.sodium_intake_mg_day_max }
+    schedule: { every: 1d, at: "21:00", due_window: 3h }
+    done_by_test: intake  # a logged Fluid and sodium self-test that day counts as Done
+    escalation: "Dark urine, flank or back pain, or feeling faint when you move: tell the CMO today."
+
+  - id: thigh_cuff
+    title: "Thigh cuff session"
+    type: THIGH_CUFF
+    equipment: "Venous thigh cuffs (one per thigh)"
+    why: "In weightlessness fluid moves toward the head. Snug cuffs high on the thighs hold some of it in the legs for a while; they are used in flight to ease the head-ward fluid shift, one of the suspected contributors to eye changes (SANS). The evidence is limited, so this is a precaution."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-10, HRP-03]
+    steps:
+      - "Put one cuff high on each thigh, over thin clothing"
+      - "Tighten until snug: you can slide two fingers under the cuff"
+      - "Wear them for the session time while you work quietly"
+      - "Take them off at once if your legs tingle, go numb or turn pale or blue"
+      - "Tap Done"
+    prescription:
+      - { label: "Session length", limit_ref: countermeasures.thigh_cuff_session_min }
+    triggered_by: [sans.watch]
+    escalation: "Leg pain, numbness or swelling that stays after the cuffs come off, or any change in vision: tell the CMO now."
+
+  - id: light_schedule
+    title: "Light schedule before sleep"
+    type: LIGHT
+    equipment: "Cabin lights (dim / sleep setting); sleep station"
+    why: "Bright light late in the day tells the body clock it is still daytime and pushes sleep later. Dimming the light before the sleep period helps you fall asleep and protects the next night."
+    hazards: [ISOLATION_CONFINEMENT]
+    hrp_risks: [HRP-14]
+    steps:
+      - "Set the cabin lights near you to the dim (pre-sleep) setting before your sleep period"
+      - "Screens off or to night mode for the same time"
+      - "Keep the sleep station dark and quiet; use the eye mask and ear plugs"
+      - "Tap Done when the lights are dimmed"
+    prescription:
+      - { label: "Dim light before sleep", limit_ref: countermeasures.light_dim_before_sleep_min }
+    triggered_by: [sleep.short_24h]
+    escalation: "Short sleep on three nights in a row, or feeling too tired to work safely: tell the CMO; critical tasks can move to a rested crew member."
+
+  - id: fluid_loading
+    title: "Fluid loading before landing"
+    type: FLUID_LOADING
+    equipment: "Drink bags; salt tablets or broth from the medical kit"
+    why: "After a long time in low gravity the body holds less fluid. Drinking extra water with salt in the hours before landing helps keep blood pressure up when gravity pulls blood to the legs, so fainting on standing is less likely."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-03, HRP-07]
+    steps:
+      - "Start in the last few hours before landing (the landing gate shows the time left)"
+      - "Take the salt tablets or broth from the medical kit as the kit card says"
+      - "Drink the water amount below in small portions, not all at once"
+      - "Tap Done when you have finished"
+    prescription:
+      - { label: "Extra water before landing", limit_ref: countermeasures.fluid_loading_mL }
+    triggered_by: [intake.fluid.low]
+    triggered_by_gate: [LANDING]  # a Hold on the landing gate while a gravity increase is ahead
+    escalation: "Nausea or vomiting so you cannot drink, or swelling of the legs or face: tell the CMO before landing."
