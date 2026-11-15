@@ -199,4 +199,4 @@ If something already built breaks late, drop in this order: landing orthostatic 
 - T-7: the SANS evidence for CO₂ and sodium is limited; the rule's copy must say so. Revisit if the HRP SANS evidence report gives a usable measure.
 - T-10: demo test moments agreed with the user 2026-11-15; built.
 - Block L: built and approved with the words in §0a.
-- Block S: the demo walkthrough (README, PRD §14) still names the pre-Block-S tabs (Self-tests, Alert Center, Scenario Dock); the user decides the demo later.
+- Block S: the demo walkthrough (README, PRD §14) was updated for the new screens on 2026-11-15 (CMO view, one switch to Ground); the scenario and its timings did not change, so no re-freeze is needed unless the user asks (D-6).

@@ -292,4 +292,4 @@ Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate
 
 → Block L (L-1..L-3, approved 2026-11-15) → Block C (C-0..C-5, built 2026-11-15) → Block S (S-1, S-2, S-3, S-5, built 2026-11-15).
 
-**Next:** supervisor review of Block C (Gate C) and Block S; the demo is decided later by the user (the walkthrough still names the pre-Block-S tabs); no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
+**Next:** supervisor review of Block C (Gate C) and Block S; the demo walkthrough uses the Block S screens (CMO view, one switch to Ground; `demo_5min` itself unchanged); no re-freeze unless the user asks (D-6, `demo-ready-v4`). Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.

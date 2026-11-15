@@ -583,6 +583,8 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 - **After the landing** (23h45m): C3's stand test is positive → `cardio.stand.positive` CAUTION beside `cardio.orthostatic` WARNING on the body map's Heart & vessels region.
 An optional live `pvt_b_short` (labelled demo length) or Amsler grid may be shown; the script does not wait for it. About 4 min 50 s real time; `README.md` keeps the timings.
 
+*v1.6 (Block S):* the presenter starts the demo from the closed **Demo controls** drawer and runs it from the **CMO** view: the Crew page for the RIDGE tiles, Gravity tile, landing gate summary and body map; the header **Alerts (n)** chip for the alert evidence; Crew member for the long-term trends and the weekly countermeasure chart. During the SPE the presenter switches to **Ground** once (delay, space-weather card, recommendation, blackout) and back to **CMO**. Optional live tests run in the **Crew** view (Today → Other tests). Same script, same timings; `README.md` names each screen per step.
+
 ## 15. Success metrics
 
 - Demo: every scenario fires the expected alert within its configured window, with **0 missed EMERGENCY** events and ≤ 1 false WARNING per simulated day.
