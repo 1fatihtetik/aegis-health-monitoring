@@ -2,6 +2,8 @@
 
 Component score: 100 at `good`, 50 at the configured limit, linear, clamped to 0-100.
 Score = weighted mean of components - penalty for each open alert on the crew member.
+A kind with `go_min_ref` is a Go / Hold gate (EVA, T-8 LANDING); `hold_rules` force Hold while one of those alerts is
+open on the crew member, whatever the score.
 """
 
 from datetime import datetime
@@ -35,7 +37,11 @@ def compute_readiness(
                 values = store.window(subject, signal, now - parse_duration(comp["window"]))
                 limit = cfg.limit(comp["limit_ref"])
                 if not values:
-                    components[name] = {"signal": signal, "value": None, "score": None, "weight": comp["weight"]}
+                    components[name] = {"signal": signal, "value": None, "score": None, "weight": comp["weight"],
+                                        "unit": SIGNALS[signal].unit, "limit_ref": limit.ref,
+                                        "limit_verified": limit.verified, "limit_source_ref": limit.source_ref}
+                    if "action" in comp:
+                        components[name]["action"] = comp["action"]
                     continue
                 value = AGGS[comp["agg"]](values)
                 span = limit.value - comp["good"]
@@ -48,6 +54,8 @@ def compute_readiness(
                     "limit_verified": limit.verified, "limit_source_ref": limit.source_ref,
                     "window": comp["window"], "score": round(score, 1), "weight": comp["weight"],
                 }
+                if "action" in comp:
+                    components[name]["action"] = comp["action"]
             base = total / weight_sum if weight_sum else 0.0
             entry: dict[str, Any] = {
                 "value": round(max(0.0, min(100.0, base - penalty)), 1),
@@ -61,6 +69,13 @@ def compute_readiness(
             }
             if "go_min_ref" in spec:
                 go = cfg.limit(spec["go_min_ref"])
-                entry |= {"go": entry["value"] >= go.value, "go_min": go.value, "go_min_verified": go.verified}
+                hold = [
+                    {"id": a.id, "rule_id": a.rule_id, "severity": a.severity.value, "title": a.title}
+                    for a in mine if a.rule_id in spec.get("hold_rules", [])
+                ]
+                entry |= {"go": entry["value"] >= go.value and not hold, "go_min": go.value,
+                          "go_min_verified": go.verified, "go_min_source_ref": go.source_ref}
+                if "hold_rules" in spec:
+                    entry |= {"hold_alerts": hold, "hold_actions": spec.get("hold_actions", [])}
             out[cid][kind] = entry
     return out

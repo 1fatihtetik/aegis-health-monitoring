@@ -5,6 +5,8 @@ import {
   HAZARD_CATALOG,
   HRP_RISK_CATALOG,
   Hazard,
+  LandingGate,
+  NextGravityIncrease,
   OperationalStatus,
   STATUS_DISPLAY,
 } from '../api/types';
@@ -12,6 +14,7 @@ import { useAegis } from '../api/useLiveSocket';
 import { formatLimit } from '../api/limits';
 import { signalLabel } from '../api/backend';
 import { GravityEffectNote } from '../components/GravityEffectNote';
+import { landingLine } from '../components/ReadinessGate';
 import { LimitBadge } from '../components/LimitBadge';
 import { LimitBandChart } from '../components/LimitBandChart';
 import { Sparkline } from '../components/Sparkline';
@@ -19,7 +22,7 @@ import { StatusRing } from '../components/StatusRing';
 
 export interface CrewOverviewProps {
   onSelectCrew: (crewId: CrewId) => void;
-  onNavigateView: (view: 'radiation' | 'alerts' | 'ground') => void;
+  onNavigateView: (view: 'radiation' | 'alerts' | 'ground' | 'selftests') => void;
 }
 
 export const CrewOverview: React.FC<CrewOverviewProps> = ({
@@ -115,6 +118,13 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
           </div>
         </div>
       )}
+
+      {/* T-8: landing gate summary while a gravity increase is ahead (full card on the Self-tests tab) */}
+      <LandingGateSummary
+        gates={state.landing}
+        next={sim.next_gravity_increase}
+        onOpen={() => onNavigateView('selftests')}
+      />
 
       {/* 1. NASA HRP 5 Hazards (RIDGE) Tiles */}
       <section aria-label="NASA HRP 5 Spaceflight Hazards (RIDGE)">
@@ -575,6 +585,43 @@ export const CrewOverview: React.FC<CrewOverviewProps> = ({
           })}
         </div>
       </section>
+    </div>
+  );
+};
+
+/** T-8: one line on the overview before a landing: who is Go, who is on Hold. Nothing when no landing is ahead. */
+export const LandingGateSummary: React.FC<{
+  gates: Partial<Record<CrewId, LandingGate>> | undefined;
+  next: NextGravityIncrease | null | undefined;
+  onOpen: () => void;
+}> = ({ gates, next, onOpen }) => {
+  if (!next || !gates) return null;
+  const entries = (Object.entries(gates) as Array<[CrewId, LandingGate | undefined]>).filter(
+    (e): e is [CrewId, LandingGate] => e[1] !== undefined
+  );
+  if (entries.length === 0) return null;
+  const hold = entries.filter(([, g]) => !g.go).map(([id]) => id);
+  return (
+    <div
+      className={`flex flex-col gap-2 rounded-xl border p-3 md:flex-row md:items-center md:justify-between ${
+        hold.length ? 'border-amber-500/70 bg-amber-950/25' : 'border-emerald-600/60 bg-emerald-950/20'
+      }`}
+      data-testid="landing-gate-summary"
+    >
+      <div className="text-xs text-slate-200">
+        <p className="font-bold text-white">{landingLine(next)}</p>
+        <p>
+          {hold.length ? `▲ HOLD for ${hold.join(', ')}` : '✓ GO for all crew'} on the landing readiness gate. Decision
+          support only; the CMO decides.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="min-h-[44px] shrink-0 rounded-lg bg-cyan-500 px-4 text-xs font-black text-slate-950 hover:bg-cyan-400"
+      >
+        Open landing gate
+      </button>
     </div>
   );
 };

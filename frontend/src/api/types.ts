@@ -732,6 +732,51 @@ export interface GravityEffect {
   basis: string;
 }
 
+/** T-8: the next scheduled gravity increase (a landing) from the scenario events still ahead. */
+export interface NextGravityIncrease {
+  ts: string;
+  /** Simulation seconds until the change. */
+  in_s: number;
+  to_phase: string;
+  from_g: number;
+  to_g: number;
+}
+
+/** T-8: one component of the landing readiness gate. `value` is null when no result exists yet (left out). */
+export interface LandingComponent {
+  signal: string;
+  value: number | null;
+  unit: string;
+  score: number | null;
+  weight: number;
+  good?: number;
+  limit?: number;
+  limit_ref: string;
+  limit_verified: boolean;
+  limit_source_ref: string;
+  window?: string;
+  /** Plain step for the crew when this part is low or missing (from config/readiness.yaml). */
+  action?: string;
+  /** Where the judged value came from, for this crew member. */
+  source?: SignalSource;
+}
+
+/** T-8: LANDING readiness gate for one crew member (GET /readiness?kind=LANDING, snapshot readiness). */
+export interface LandingGate {
+  value: number;
+  base: number;
+  alert_penalty: number;
+  go: boolean;
+  go_min: number;
+  go_min_verified: boolean;
+  go_min_source_ref?: string;
+  components: Record<string, LandingComponent>;
+  hold_alerts: Array<{ id: string; rule_id: string; severity: Severity; title: string }>;
+  hold_actions: string[];
+  hazards: Hazard[];
+  hrp_risks: HrpRiskId[];
+}
+
 export interface SimState {
   running: boolean;
   speed: number;
@@ -742,6 +787,8 @@ export interface SimState {
   gravity_g: number;
   /** P-5 gravity effect from the backend; absent offline. */
   gravity?: GravityEffect | null;
+  /** T-8: next landing (gravity increase) in this scenario; null when none is ahead, absent offline. */
+  next_gravity_increase?: NextGravityIncrease | null;
   comm_delay_s: number;
   /** Backend scenarios include some the dock has no button for (nominal, headache_branching). */
   active_scenario: ScenarioName | string | null;
@@ -760,6 +807,8 @@ export interface AegisSystemState {
   recommendations: RecommendationMessage[];
   /** Source of every signal. Empty while the browser-only fallback runs (all synthetic). */
   provenance: Record<string, SignalSource>;
+  /** T-8: landing readiness gate per crew member from the onboard server; absent in the browser-only fallback. */
+  landing?: Partial<Record<CrewId, LandingGate>>;
   groundSnapshot: {
     as_of_ts: string;
     lag_s: number;

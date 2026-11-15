@@ -71,6 +71,10 @@ bone:
   bmd_pct_of_baseline_min: { value: 95, source_ref: "NASA-STD-3001 Vol 1 Rev C [V1 4027] Pre-mission Bone Countermeasures (hip and spine >= 95% of pre-mission BMD), via OCHMO-MTB-013 Rev D", verified: true }
 readiness:
   eva_go_min:          { value: 70, source_ref: "Project heuristic", verified: false }
+  landing_go_min:      { value: 70, source_ref: "Project heuristic (T-8 landing gate Go minimum; no NASA-STD-3001 clause read)", verified: false }
+# Block T, T-8: landing readiness anchor for time spent below 1 g. Not a medical limit.
+landing:
+  low_g_days_long: { value: 129, source_ref: "Meck et al. (2001) Psychosom Med 63:865-873: 83 % of astronauts near fainting on a tilt test after flights of 129 days or more vs 17 % after short flights (16 d, also the readiness `good` anchor); used as a readiness anchor (project heuristic), no NASA-STD-3001 clause read", verified: false }
 # R-5 space-weather card only (no rule uses these). NOAA scale levels for the near-Earth >10 MeV proton flux.
 space_weather:
   proton_flux_s1_pfu: { value: 10, source_ref: "NOAA SWPC Space Weather Scales, S1 Minor radiation storm (>10 MeV flux 10 pfu); a NOAA scale, not a NASA-STD-3001 limit", verified: false }

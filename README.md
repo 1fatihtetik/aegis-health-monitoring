@@ -93,7 +93,7 @@ The same scenario and seed always produce the same alerts.
 | `spe_event` | Solar particle event (MSL/RAD March 2012 replay) | `rad.spe.dose_rate` EMERGENCY, `rad.dose.24h` WARNING |
 | `co2_scrubber_degradation` | Cabin CO2 rises from 2.0 to ~3.8 mmHg over hours (TB-004 headache band) | `env.co2.high_1h` CAUTION |
 | `insomnia_streak` | C1 sleeps under half of each sleep period for three nights | `sleep.short_24h` CAUTION |
-| `orthostatic_intolerance` | Gravity transition, C3 | `cardio.orthostatic` WARNING |
+| `orthostatic_intolerance` | Gravity transition, C3 (scripted low fluid log before the landing: landing gate Hold) | `intake.fluid.low` + `sans.watch` CAUTION, `cardio.orthostatic` WARNING |
 | `headache_branching` | Same symptoms, different cause | `ctx.headache_tachy.hydration` (C2, CO2 normal), then `ctx.headache_tachy.co2` (C4, CO2 high) |
 | `leo_baseline` | ISS day (LEO, 0 g), measured DOSTEL-1 radiation | `rad.saa.transit` INFO per South Atlantic Anomaly pass; no SPE alarm |
 | `lunar_surface` | Lunar landing (0 -> 0.16 g), CRaTER surface dose | none (radiation switches to LRO CRaTER, bone loss slows to 84 % of the 0 g rate) |

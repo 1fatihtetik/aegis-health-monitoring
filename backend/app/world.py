@@ -358,6 +358,21 @@ class World:
         text, checklist = self.space_weather.crew_brief()
         return self.send_recommendation(text, checklist, crew_id)
 
+    def next_gravity_increase(self) -> dict[str, Any] | None:
+        """T-8: the next scheduled phase change to a higher gravity (a landing), from the scenario events still ahead."""
+        now = self.clock.now()
+        g = float(self.sim.phase_cfg["gravity_g"])
+        for ts, _, event in self._events:
+            if event["type"] != "phase":
+                continue
+            name = event["params"]["name"]
+            to_g = float(self.cfg.mission["phases"][name]["gravity_g"])
+            if to_g > g:
+                return {"ts": iso(ts), "in_s": round((ts - now).total_seconds()), "to_phase": name,
+                        "from_g": g, "to_g": to_g}
+            g = to_g
+        return None
+
     # ---- snapshot ------------------------------------------------------------------------
     def _build_snapshot(self, private: bool = True) -> dict[str, Any]:
         """private=False leaves out alerts that must stay on board (T-4), for the downlink copy."""
@@ -368,6 +383,11 @@ class World:
             open_alerts = [a for a in open_alerts if not a.onboard_only]
             all_alerts = [a for a in all_alerts if not a.onboard_only]
         readiness = compute_readiness(self.cfg, self.store, open_alerts, self.crew_ids, now)
+        for cid in self.crew_ids:  # T-8: the landing gate shows where each value came from (per crew member)
+            for comp in readiness[cid].get("LANDING", {}).get("components", {}).values():
+                if comp["value"] is not None:
+                    signal = comp["signal"]
+                    comp["source"] = self.source_for(signal, cid if SIGNALS[signal].scope == "crew" else None)
 
         def status(alerts: list[Alert]) -> tuple[str, Alert | None]:
             top = max(alerts, key=lambda a: a.severity.rank, default=None)
@@ -419,6 +439,7 @@ class World:
                 "name": self.sim.phase,
                 "gravity_g": self.sim.phase_cfg["gravity_g"],
                 "gravity": self.sim.gravity_state(),
+                "next_gravity_increase": self.next_gravity_increase(),
                 "comm_delay_s": self.delay_s,
                 "comm_delay_source": self.delay_source().as_dict(),
             },

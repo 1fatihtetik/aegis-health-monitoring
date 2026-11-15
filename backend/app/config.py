@@ -84,3 +84,8 @@ class Config:
                 raise ValueError(f"readiness.yaml {kind} needs hazards and hrp_risks")
             for comp in spec["components"].values():
                 self.limit(comp["limit_ref"])
+            if "go_min_ref" in spec:
+                self.limit(spec["go_min_ref"])
+            for rule_id in spec.get("hold_rules", []):
+                if rule_id not in ids:
+                    raise ValueError(f"readiness.yaml {kind}: unknown hold rule '{rule_id}'")

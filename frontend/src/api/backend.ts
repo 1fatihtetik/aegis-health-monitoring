@@ -23,6 +23,9 @@ import {
   GravityEffect,
   Hazard,
   HrpRiskId,
+  LandingComponent,
+  LandingGate,
+  NextGravityIncrease,
   Inspiration4Panel,
   LinkStatus,
   LongTermTrendPoint,
@@ -122,6 +125,9 @@ export interface BackendReadiness {
   go?: boolean;
   go_min?: number;
   go_min_verified?: boolean;
+  go_min_source_ref?: string;
+  hold_alerts?: LandingGate['hold_alerts'];
+  hold_actions?: string[];
 }
 
 export interface BackendCrew {
@@ -210,7 +216,13 @@ export interface BackendSnapshot {
   scenario?: string;
   seed?: number;
   mission_day?: number;
-  phase?: { name: string; gravity_g: number; comm_delay_s: number; gravity?: GravityEffect };
+  phase?: {
+    name: string;
+    gravity_g: number;
+    comm_delay_s: number;
+    gravity?: GravityEffect;
+    next_gravity_increase?: NextGravityIncrease | null;
+  };
   crew?: BackendCrew[];
   environment?: Record<string, number>;
   hazards?: Record<string, { status: BackendStatus; alert_ids: string[] }>;
@@ -959,6 +971,7 @@ export function applyOnboardSnapshot(input: MapInput): AegisSystemState {
       phase: toPhase(snap.phase?.name, prev.sim.phase),
       gravity_g: snap.phase?.gravity_g ?? prev.sim.gravity_g,
       gravity: snap.phase?.gravity ?? prev.sim.gravity ?? null,
+      next_gravity_increase: snap.phase?.next_gravity_increase ?? null,
       comm_delay_s: snap.link.delay_s,
       active_scenario: snap.sim.scenario,
       demo_segment_label: undefined,
@@ -970,7 +983,33 @@ export function applyOnboardSnapshot(input: MapInput): AegisSystemState {
     radiation: mapRadiation(snap, input.history),
     link: mapLink(snap, prev.link.pending_packets, prev.link),
     provenance: snap.provenance ?? prev.provenance,
+    landing: mapLanding(snap) ?? prev.landing,
   };
+}
+
+/** T-8: the LANDING gate entries of the snapshot (raw shape; the gate card renders every component). */
+export function mapLanding(snap: BackendSnapshot): Partial<Record<CrewId, LandingGate>> | undefined {
+  if (!snap.readiness) return undefined;
+  const out: Partial<Record<CrewId, LandingGate>> = {};
+  for (const [cid, kinds] of Object.entries(snap.readiness)) {
+    const g = kinds.LANDING;
+    if (!g || g.go === undefined || g.go_min === undefined) continue;
+    out[cid as CrewId] = {
+      value: g.value,
+      base: g.base,
+      alert_penalty: g.alert_penalty,
+      go: g.go,
+      go_min: g.go_min,
+      go_min_verified: g.go_min_verified ?? false,
+      go_min_source_ref: g.go_min_source_ref,
+      components: g.components as unknown as Record<string, LandingComponent>,
+      hold_alerts: g.hold_alerts ?? [],
+      hold_actions: g.hold_actions ?? [],
+      hazards: g.hazards,
+      hrp_risks: g.hrp_risks,
+    };
+  }
+  return out;
 }
 
 /** Ground snapshot -> groundSnapshot (what the ground store has received over the link). */

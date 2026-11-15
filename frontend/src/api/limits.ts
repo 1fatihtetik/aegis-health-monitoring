@@ -68,6 +68,9 @@ const LIMIT_META: Record<string, { label: string; unit: string; op?: LimitOp }> 
   'stand_test.early_stop_flag': { label: 'Stopping early for symptoms', unit: '', op: '>=' },
   'sans.low_g_days_min': { label: 'Eye-change watch starts after this long below 1 g', unit: 'days', op: '>=' },
   'sans.ppco2_mmHg_24h_mean_max': { label: 'Eye-change watch: cabin CO₂ day average above', unit: 'mmHg', op: '>' },
+  // T-8 landing gate.
+  'readiness.landing_go_min': { label: 'Landing GO minimum readiness', unit: 'score', op: '>=' },
+  'landing.low_g_days_long': { label: 'Landing readiness: half score after this long below 1 g', unit: 'days' },
 };
 
 /** Pulls the NASA-STD-3001 clause id ("[V2 6004]") out of a source_ref, if there is one. */

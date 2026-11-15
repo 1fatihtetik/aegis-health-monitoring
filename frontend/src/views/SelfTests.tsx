@@ -14,6 +14,7 @@ import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
 import { PvtTest } from '../components/PvtTest';
 import { OnboardOnlyBadge, Questionnaire } from '../components/Questionnaire';
+import { ReadinessGate } from '../components/ReadinessGate';
 import { RoutineBoard } from '../components/RoutineBoard';
 import { StandTest } from '../components/StandTest';
 import { SelfTestExplainer } from '../components/SelfTestExplainer';
@@ -163,6 +164,15 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
               </button>
             ))}
           </div>
+          <ReadinessGate
+            gates={state.landing}
+            next={state.sim.next_gravity_increase}
+            connected={connected}
+            onStartTest={(id, testId) => {
+              setCrewId(id);
+              setOpenId(testId);
+            }}
+          />
           <RoutineBoard
             items={routine.filter((i) => hazard === 'ALL' || i.hazards.includes(hazard))}
             onStart={setOpenId}
