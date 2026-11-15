@@ -1,10 +1,11 @@
 # PRD — AEGIS: Autonomous Exploration Guardian for Integrated crew health & Safety
 
 > Working title. Rename freely.
-> Status: Draft v1.3 · 2026-11-14 · Audience: product team + coding agents (see `AGENTS.md`)
+> Status: Draft v1.4 · 2026-11-15 · Audience: product team + coding agents (see `AGENTS.md`)
 > **v1.1 change: real NASA data is now priority 1** (§1.8, §6 M0, `ROADMAP.md` §0). The MVP replays NASA-measured radiation, space-weather and ephemeris data and uses NASA-STD-3001 limits with clause ids. Crew physiology stays synthetic, because no public in-flight astronaut vitals exist, and it is labelled as synthetic.
 > **v1.2 change (Block P, `ROADMAP.md` §0):** measured radiation for the remaining phases (LEO from ISS dosimeters via NASA OSDR RadLab, lunar surface from LRO CRaTER, Earth after landing from EPA RadNet under a new `MEASURED_OTHER` label), crew physiology that responds to each phase's gravity (model chosen after research), an Inspiration4 aggregate reference panel, and an extended demo. *Done: Gate P, tag `demo-ready-v2`.*
 > **v1.3 change (Block T, `ROADMAP.md` §0, built: T-0..T-10):** crew self-assessment. Astronauts take tests and measurements themselves on a plain due / done / overdue routine (PVT-B reaction test, guided BP / SpO₂ / temperature / body mass / glucose / intake entries, sleepiness and workload questionnaires that stay onboard, a 10-minute stand test, an Amsler grid eye check), each test explains why / how / what is normal, a SANS rule and a landing Go / Hold gate use the results, and a clickable body map shows them. Values a person enters get the new provenance label `CREW_ENTERED`. **No gamification.** New module M11. *Done: Gate T, tag `demo-ready-v3`.*
+> **v1.4 change (Block L, `ROADMAP.md` §0a, planned):** data-honesty wording. Labels say what a value **is**: "Simulated" / "Simulated · NASA-calibrated" instead of "Synthetic", and "Not a NASA limit · <kind>" (published source, clinical guideline, AEGIS design setting, NASA reference that is not a standard) instead of "⚠ unverified". One "Where our data comes from" panel and one demo opening line explain it. No data, rule, limit value or `verified` flag changes.
 
 ---
 
@@ -159,6 +160,7 @@ On a Mars mission, crews will be up to 20 minutes from help, for about 3 years, 
 - Every observation carries `provenance` (`NASA_MEASURED` | `NASA_DERIVED` | `MEASURED_OTHER` | `CREW_ENTERED` | `SYNTHETIC_CALIBRATED` | `SYNTHETIC`) and `dataset_id`. `MEASURED_OTHER` (v1.2) is measured data from a non-NASA agency; the badge names the agency. `CREW_ENTERED` (v1.3) is a value a person typed or tapped in the UI: no `dataset_id`, kept in memory only, ranked between `SYNTHETIC_CALIBRATED` and `MEASURED_OTHER`; scripted results for the synthetic crew stay `SYNTHETIC`.
 - Startup verifies the manifest and sha256. A missing or bad file falls back to the synthetic generator for that signal, labelled `SYNTHETIC`, and never stops the crew app.
 - `GET /api/v1/datasets` lists the sources. The UI shows a `DataSourceBadge` on every chart, tile and alert evidence block.
+- *v1.4 (Block L, planned):* badge text says what a value is ("Simulated", "Simulated · NASA-calibrated", "Crew-entered", NASA / NASA-derived / "Measured · <agency>"), and a "Where our data comes from" panel (from the footer and badge details) explains what is real NASA data, what is other measured data, what is simulated and why (in-flight astronaut vitals are restricted for crew privacy), and counts limits per source kind.
 - Work items R-0…R-6 and Gate R: done (`ROADMAP.md` §3). Block P (P-0…P-7, Gate P): `ROADMAP.md` §0.3.
 
 ### M1. Data ingestion & device adapters ★
@@ -348,7 +350,7 @@ Time-series storage: one table per entity, with Observations indexed on `(crew_i
 
 ## 9. Thresholds & limits (config, NOT hardcoded)
 
-The overview pages give **no numeric limits**. All limits live in `config/limits.yaml`, each with a `source_ref` and a `verified: true|false` flag. The UI shows a "⚠ unverified limit" marker for unverified entries.
+The overview pages give **no numeric limits**. All limits live in `config/limits.yaml`, each with a `source_ref` and a `verified: true|false` flag. The UI shows a "⚠ unverified limit" marker for unverified entries. *v1.4 (Block L, planned):* each `verified: false` entry gets a `source_kind` (`published`, `clinical`, `design`, `nasa_reference`) and the marker reads "Not a NASA limit · <kind>" (e.g. "Not a NASA limit · Clinical guideline"). The marker never disappears and never says NASA; `verified: true` still needs a NASA document + revision + clause id.
 
 **v1.1 (R-1):** pull the numbers from NASA-STD-3001 Vol 1/Vol 2 and the OCHMO Technical Briefs and flip them to `verified: true` with document, revision and clause id. Confirmed so far from the briefs: ppCO₂ 1-h mean ≤ 3 mmHg (Vol 2 Rev D [V2 6004], TB-004) and career effective dose < 600 mSv (Vol 1 [V1 4030], Radiation Protection brief). **Done (R-1):** 9 limits are verified, see `config/limits.yaml` (adds [V1 4031] SPE design event 250 mSv, [V1 4033] GCR design rate 1.3/0.9 mSv/day, [V2 6006] total pressure, [V2 6012] temperature and humidity, [V2 6077] hazardous noise 85 dBA, [V1 4027] BMD >= 95 %). Limits with no NASA number (SPE alert dose rate, 24-h dose alert, HR/SpO₂ clinical heuristics, readiness cut-offs) stay `verified: false` and say "Project heuristic". Target for Gate R: ≥ 6 verified limits.
 
@@ -548,6 +550,8 @@ Deferred out of the 30 hours: TREND rules, the `arrhythmia`, `eva` and `infectio
 
 ## 14. Demo script (5 minutes)
 
+*v1.4 (L-3) opening line:* "Everything you will see is either replayed NASA data or a simulation built from published parameters, and every number shows which."
+
 1. **Normal day in Mars transit** (0 g, 12-min delay). Crew overview is all green. Point out the radiation tile: the dose rate is **NASA-measured** (MSL/RAD in Mars cruise), the neutron share is derived, and the CO₂ limit carries a NASA-STD-3001 clause id. The vitals are clearly badged synthetic.
 2. **Insomnia streak + CO₂ creep** → compound CAUTION "cognitive performance risk" (HRP-14 + Hostile Env). EVA readiness drops for CDR, so the EVA is rescheduled.
 3. **Solar particle event** → EMERGENCY. *v1.1:* this is a **real event measured by RAD on the way to Mars**, replayed time-compressed; the evidence shows its date and DONKI record. Shelter procedure, headcount, dose counter. The ground console sees it one light-time later (Horizons delay), which shows why autonomy matters.
@@ -578,7 +582,8 @@ An optional live `pvt_b_short` (labelled demo length) or Amsler grid may be show
 ## 16. Risks & open questions
 
 - **Numeric limits not verified**: R-1 pulls the values from the NASA-STD-3001 PDFs and the OCHMO briefs. Until then, the UI labels them. The briefs cite different revisions (Vol 1 Rev B/C, Vol 2 Rev C/D), so record the revision actually read.
-- **No public in-flight vitals.** Judges may ask "is this real astronaut data?". Answer plainly: radiation, space weather, delay and limits are NASA data; crew vitals are synthetic and NASA-calibrated. The UI badges say the same.
+- **No public in-flight vitals.** Judges may ask "is this real astronaut data?". Answer plainly: radiation, space weather, delay and 14 limits are NASA data; crew vitals are simulated from published parameters, because NASA keeps in-flight vitals restricted for crew privacy. The UI badges say the same.
+- **"Synthetic" and "unverified" can read as "fake" (v1.4).** Block L changes the words to say what each value is (simulated, published source, clinical guideline, design setting) and explains it once in a data panel and the demo opening, without changing any data or flag.
 - **RAD is not a crew dosimeter.** It sat inside the MSL spacecraft and then on the rover, so its shielding differs from a crew habitat. Present it as "measured deep-space environment", and keep the per-crew dose as `NASA_DERIVED`.
 - **The real SPE will not match the synthetic ×80 curve.** The SPE alert and 24-h dose limits are heuristics; retune them in `limits.yaml` (still `verified: false`) and rehearse again.
 - **Data gaps and formats** in PDS/CDAWeb products: bundle small windows, hold the last value through short gaps, mark `SUSPECT`.

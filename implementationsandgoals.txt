@@ -1,193 +1,104 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: group-A clause limits BUILT (fluid 2.5 L, inspired O2, 24-h noise dose), READY FOR REVIEW)
-State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P) and `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: nothing queued (D-5 confirmed). Stretch items only if the user asks (section 6).
+Last updated: 2026-11-15 (Claude: Block L (data-honesty labels) planned and documented; handoff pruned)
+State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) and the group-A clause limits APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
+Next: Block L (section 6): plan review by Antigravity, then L-1 -> L-2 -> L-3 (wording only, no data or limit changes).
 
-Read order: this file -> ROADMAP.md §0 -> AGENTS.md (§2b for Block T) -> PRD.md (§6 M11, §7.4 severity, §9 limits, then only needed sections). Older detail lives in git history (`git log -p implementationsandgoals.txt`).
+Read order: this file -> ROADMAP.md §0a (Block L) -> AGENTS.md §1, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
 
-User directives:
-- 2026-11-15 LANDING gate in `demo_5min`: KEEP AS IS (all crew on Hold before touchdown because the SPE `rad.dose.24h` WARNING penalty applies to everyone; C3 lowest with the fluid action). Do not exclude radiation alerts from the LANDING penalty. Claude waits for supervisor verification of T-10 before Gate T / D-5.
-- 2026-11-15 T-10 test moments APPROVED by user: (1) post-sleep scripted SYNTHETIC PVT-B lapses for C1 (~07:30-08:00, after `sleep.short_24h`); (2) pre-landing scripted SYNTHETIC low fluid intake for C3 (~22:00, before Mars landing at 23:30) so LANDING gate shows HOLD; (3) post-landing scripted SYNTHETIC stand test for C3 (~23:45) driving `cardio.orthostatic` on Heart & vessels; (4) optional live presenter moment (`pvt_b_short` 30 s or Amsler grid, not awaited by script).
+User directives (standing):
+- 2026-11-15 Block L: judges may read "Synthetic" and "unverified" as "fake". Fix the WORDING without lying or spending much time: say what a value IS (simulated, cited source, design setting), explain once why, and say it first in the demo. Data, rules and verified flags do not change. Details: section 6 and ROADMAP §0a.
+- 2026-11-15 LANDING gate in `demo_5min`: keep as is (all crew on Hold before touchdown because the SPE `rad.dose.24h` WARNING penalty applies to everyone; C3 lowest, with the fluid action). Do not exclude radiation alerts from the LANDING penalty.
 - 2026-11-15 hand-entered values take over the wearable stream for 30 min (`manual_override`; source_ref in `config/selftests.yaml`).
-- 2026-11-15 Block T go-ahead ("read implementationsandgoals.txt and work on your next tasks ... commit to the repo").
-- 2026-11-14 Block T scope: self-tests are a must; NO gamification (no points, streaks, badges, levels, leaderboards; overdue = neutral INFO); `CREW_ENTERED` label; T-6 body map is in; accepted SANS rule + intake, landing gate, Amsler grid; rejected the downlink summary packet (questionnaires stay onboard) and a hardcoded 20-min delay; severity stays INFO..EMERGENCY with a LOMO/LOM/LOC UI sublabel; RIDGE schedule filter; extend `demo_5min` and re-freeze as `demo-ready-v3`.
 - 2026-11-14 FIRST PRIORITY: real data. NASA-published measurements and limits wherever a public source exists; label the rest honestly.
+- No gamification (no points, streaks, badges, levels, leaderboards; overdue = neutral INFO). No camera input. No downlink summary packet (questionnaires stay onboard). Severity stays INFO..EMERGENCY with a LOMO/LOM/LOC UI sublabel.
 - Users are non-medical astronauts with delayed/blacked-out Earth comms: plain operational language, step-by-step checklists, >= 44 px targets, full onboard autonomy.
-- Block P decisions (all built): `MEASURED_OTHER` for non-NASA data; ISS DOSTEL-1 stays NASA_MEASURED with DLR named; SAA stand-down + INFO notice; partial-gravity model A, LINEAR.
+- Block P decisions: `MEASURED_OTHER` for non-NASA data; ISS DOSTEL-1 stays NASA_MEASURED with DLR named; SAA stand-down + INFO notice; partial-gravity model A, LINEAR.
 
 1. ROLES & PROTOCOL
 - Claude (implementer): owns all code (`backend/`, `config/`, `frontend/`, `data/`, `scripts/`), tests, docs, and sections 2, 3, 5, 6, 7, 8.
 - Antigravity (supervisor): does not write product code. Reviews against PRD/ROADMAP/AGENTS, approves items and gates, owns section 4.
 - Per item: implement -> checks (`cd backend && python -m ruff check . && python -m pytest -q`; `python -m ruff check scripts`; `python -P scripts/fetch_nasa_data.py verify`; `cd frontend && npx tsc --noEmit && npx vitest run`) -> commit (if the user allows) -> log in section 5 -> READY FOR REVIEW in section 6 -> Antigravity approves or opens a finding in section 4.
-- Data review checklist: every data file has a MANIFEST.yaml entry (source URL, retrieval date, sha256); no runtime network call; provenance in the UI; every `verified: true` limit names a document + clause id; no identifiable person's health data (Inspiration4: aggregate only).
+- Data review checklist: every data file has a MANIFEST.yaml entry (source URL, retrieval date, sha256); no runtime network call; provenance in the UI; every `verified: true` limit names a document + revision + clause id; no identifiable person's health data (Inspiration4: aggregate only).
 
 2. WHAT IS BUILT
-- Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 9 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND (`all`/`any`/`none`, hysteresis, context branching); alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
-- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts`; views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`.
-- Data (Block R/P): `backend/app/datasets/` replays with manifest + sha256 check and synthetic fallback; `data/nasa/MANIFEST.yaml` (16 files verified). Radiation replays per phase: MSL/RAD cruise (TRANSIT/MARS_TRANSIT/RETURN), Gale (MARS_SURFACE), March 2012 SPE (`spe_event`, demo), ISS DOSTEL-1 (LEO, SAA stand-down), LRO CRaTER (LUNAR_SURFACE), EPA RadNet (POST_LANDING, MEASURED_OTHER). JPL Horizons light time; DONKI + OMNI2 space-weather card; Inspiration4 aggregate CBC/CMP panel (reference only).
-- Limits: 9 `verified: true` from R-1 (ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rate [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise [V2 6077]; BMD [V1 4027]) plus 3 from Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1-h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref.
-- Gravity (P-5, LINEAR): drift = 0 g rate x (1 - g); BP = baseline + g x Norsk 2015 offset; a gravity increase records the Meck 2001 risk x the increase.
-- Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` catalog (15 tests: headache, bp_spo2, temperature, body_mass, glucose, intake, pvt_b, pvt_b_short, kss, tlx, motion_sickness, mood, stand_test, stand_test_short, amsler) + `body_map` (6 regions); `app/selftests/` (catalog, entries, schedule); Self-Tests tab (routine board, one test per screen, MeasurementForm, PvtTest, Questionnaire, StandTest, ReadinessGate); onboard-only questionnaires; SANS watch (`sans.watch`, cabin signal `low_g_days`); LANDING gate (T-8); Amsler grid (T-9, `eye.amsler.distortion`, joins `sans.watch` any); BodyMap on Crew Overview + Crew Detail (T-6).
-- `demo_5min` (seed 42, T-10): ISS/LEO 0-30m (SAA INFO 0h05m); lunar surface 30m-50m; Mars transit from 50m; `sleep.short_24h` 5h56m; scripted C1 PVT-B 7h45m -> `cog.pvt.lapses` + `cog.performance_risk` 7h46m; `env.co2.high_1h` 17h26m; `ctx.headache_tachy.co2` 19h16m; SPE EMERGENCY 20h09m onboard / 20h20m ground; blackout 20h45m-21h20m; `rad.dose.24h` WARNINGs 21h16m / 21h27m; scripted C3 fluid 1200 mL 22h -> `intake.fluid.low` + `sans.watch` 22h01m; 60x from 23h20m (landing gate: C3 HOLD 26); landing 23h30m; `cardio.orthostatic` 23h45m; scripted C3 stand test 23h45m -> `cardio.stand.positive` 23h46m; pause 24h30m (~4 min 50 s real time).
+- Backend (`backend/app/`): FastAPI + `/ws/live`; one process, `onboard` + `ground` stores; `SimClock`; `Config.limit(ref)`; 1-min ring buffers + ~140 d daily trends; seeded simulator, 9 scenarios (`nominal`, `demo_5min`, `spe_event`, `co2_scrubber_degradation`, `insomnia_streak`, `orthostatic_intolerance`, `headache_branching`, `leo_baseline`, `lunar_surface`); rules THRESHOLD/BASELINE/CUMULATIVE/COMPOUND; alert lifecycle; readiness OVERALL, EVA, COGNITIVE, PHYSICAL, LANDING; radiation + neutron spectrum + shelter headcount; store-and-forward `link/` with priority, delay, blackout.
+- Frontend (`frontend/src/`): live WS + REST with offline fallback; `limits.ts` (bundled limits.yaml); views CrewOverview, CrewDetail, SelfTests, Radiation, AlertCenter, GroundConsole; EmergencyTakeover, ScenarioDock, Dark/Light, `DataSourceBadge`, `LimitBadge`, `SeveritySublabel`, `BodyMap`, `ReadinessGate`.
+- Data: replays with manifest + sha256 check and synthetic fallback; `data/nasa/MANIFEST.yaml` (16 files). Radiation per phase: MSL/RAD cruise, Gale, March 2012 SPE, ISS DOSTEL-1 (LEO, SAA stand-down), LRO CRaTER (lunar), EPA RadNet (POST_LANDING, MEASURED_OTHER). JPL Horizons light time; DONKI + OMNI2 space-weather card; Inspiration4 aggregate CBC/CMP panel.
+- Limits: 14 `verified: true` entries (43 `verified: false`). R-1 (via OCHMO briefs, Vol 1 Rev C / Vol 2 Rev D): ppCO2 1 h [V2 6004]; career [V1 4030]; SPE design event [V1 4031]; GCR rates [V1 4033]; pressure [V2 6006]; cabin temp/RH [V2 6012]; noise 85 dBA [V2 6077]; BMD [V1 4027]. Vol 2 Rev F (2026-11-15): water 2.5 L/day [V2 6109]; inspired O2 (signal `pio2`) 127 mmHg 1 h / 122 mmHg floor [V2 6003]; 24-h noise dose 100 [V2 6115] (signal `noise_dose_rate`). Everything else `verified: false` with an honest source_ref (no NASA number exists for sodium, critical CO2, cabin ppO2, sleep noise in dBA, in-flight bone-loss rate).
+- Block T: `CREW_ENTERED` provenance (memory only); `config/selftests.yaml` (15 tests + 6 body-map regions); routine board; PVT-B; guided measurements; onboard-only questionnaires; stand test; SANS watch; LANDING gate; Amsler grid; body map.
+- `demo_5min` (seed 42, ~4 min 50 s): timings and walkthrough in README.md "Demo walkthrough".
 
 3. KEY DECISIONS (DO NOT REOPEN WITHOUT USER)
 - One FastAPI process, two stores; ground is written only by delivered `link/` messages.
-- Simulator in-process (60 s tick, 142 d daily history + 48 h 1-min prewarm before T0).
+- Simulator in-process (60 s tick, 142 d daily history + 48 h 1-min prewarm before T0). Derived signals add no RNG draws.
 - Rules: THRESHOLD, BASELINE (48 h), CUMULATIVE, COMPOUND. No TREND rule.
-- Readiness: 100 at `good`, 50 at `limit`, linear clamped, minus open-alert penalty (`config/readiness.yaml`). A kind with `go_min_ref` is a Go gate; `hold_rules` force Hold while one of those alerts is open (T-8).
+- Readiness: 100 at `good`, 50 at `limit`, linear clamped, minus open-alert penalty. `go_min_ref` makes a Go gate; `hold_rules` force Hold.
 - SPE rule uses the area dosimeter: sheltering lowers personal dose without clearing the cabin alert.
-- Data fetched once at build time into `data/nasa/` and replayed offline. Every value has `provenance`. Crew physiology stays synthetic and is labelled so. OSDR: aggregate only.
-- Block T: results are Observations on the existing path; `CREW_ENTERED` only for UI input; scripted results stay SYNTHETIC; new limits `verified: false` unless a clause is read; T-4 signals onboard-only; LOMO/LOM/LOC is a UI sublabel; no gamification, no camera, no downlink packet.
+- Data fetched once at build time and replayed offline. Every value has `provenance`. Crew physiology stays simulated and is labelled so. OSDR: aggregate only.
+- `verified: true` only with a NASA document + revision + clause id that was actually read. Block L changes words, never this rule.
+- Block T: results are Observations on the existing path; `CREW_ENTERED` only for UI input; scripted results stay SYNTHETIC; T-4 signals onboard-only.
 
 4. SUPERVISOR FINDINGS (Antigravity)
-- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P P-0..P-7 + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T plan; T-0 (`96c5c36`), T-3 (`603b76c`), T-1 (`2704bf2`), T-2 (`81eaef4`), T-4 (`7fa305a`), T-5 (`cacebca`), T-7 (`f1a7f91`), T-8 (`cb16926`), T-9 (`0627e7a`), T-6 (`0c5d4db`), **T-10 (`014ae27`)**, **Gate T**, and **D-5 (`b255101`, `demo-ready-v3`)** (2026-11-15: all checks independently verified — pytest 213 passed, ruff clean on backend & scripts, manifest 16/16 match, tsc clean, vitest 106 passed across 16 files; README/AGENTS/ROADMAP/PRD doc sync verified; onboard autonomy, plain non-medical-expert checklists, >= 44 px touch targets, CREW_ENTERED memory-only, T-4 onboard-only, no gamification, and no diagnosis copy confirmed). Full review notes in git history.
-- F-001..F-014: CLOSED (F-014 verified in `frontend/src/index.css`: `bg-space-950/60` and `/70` light-mode overrides).
-- Note for D-5 (non-blocking): README lines 17/40 "planned, not started" -> FIXED in D-5 (README, AGENTS, ROADMAP, PRD now say Block T done, `demo-ready-v3`).
-- Standing supervisor notes for Block T (non-medical-expert crew, extreme/offline environments):
-  - Escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; stand test keeps the always-visible STOP control (Lee et al. 2015 wall-lean protocol).
-  - T-9 Amsler grid: plain one-eye-at-a-time steps (cover other eye, focus on center dot, tap wavy/blurry/missing areas), >= 44 px tap targets on tablet, no image stored, `CREW_ENTERED` provenance, onboard CMO guidance (no diagnosis copy).
-  - T-6 Body map: plain region labels + color + icon, >= 44 px touch/keyboard targets, "Indicators consistent with..." copy only.
+- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T T-0..T-10 (last: T-10 `014ae27`), Gate T, D-5 (`b255101`, `demo-ready-v3`); group-A clause limits (`2272b8f`, `f51b448`; 2026-11-15, independently verified: pytest 219, ruff clean, manifest 16/16, tsc clean, vitest 106; [V2 6109], [V2 6003], [V2 6115] with honest SYNTHETIC provenance on derived signals, no extra RNG draws). Full review notes in git history.
+- F-001..F-014: CLOSED.
+- Standing note: escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; "Indicators consistent with..." copy only, never a diagnosis.
 
 5. RECENT LOG (Claude)
-- 2026-11-15 Group-A clause limits BUILT (user: "Build all three"). READY FOR REVIEW.
-  (1) Fluid: `nutrition.fluid_intake_mL_day_min` 2000 -> 2500, verified: true, NASA-STD-3001 Vol 2 Rev F [V2 6109]
-  Table 6.3-1 via OCHMO-TB-027 Rev B. The intake form now asks for "Water today (drinks + water added to food)", since
-  the clause counts drinking and food rehydration. Scenario values (1200 mL) still raise intake.fluid.low.
-  (2) Inspired O2: new cabin signal `pio2` (mmHg) = ppO2 x (PB - 47) / PB from the synthetic ppO2 and pressure
-  (Table 6.2-1 formula; SYNTHETIC with that basis in datasets.yaml; no extra RNG draw, all other streams unchanged).
-  Limits `environment.pio2_mmHg_min` 127 (1-h TWA) and `pio2_mmHg_floor` 122 (absolute), both verified [V2 6003].
-  `env.o2.low` now uses pio2, 1 h mean, CAUTION (was ppo2 10 m, WARNING, heuristic); new `env.o2.critical` pio2 5 m
-  < 122, WARNING (same pair shape as CO2). `environment.ppo2_kPa_min` stays as the unverified display limit on the
-  ppO2 tile; the tile now also shows "Breathable (inspired)" with the NASA [V2 6003] badge. Nominal PIO2 ~149 mmHg
-  (inside the 145-155 target).
-  (3) Noise dose: new cabin signal `noise_dose_rate` (%/h) = 12.5 x 2^((L - 75) / 3) ([V2 6115] formula); CUMULATIVE
-  rule `env.noise.dose_24h` > 100 over 24 h, CAUTION, HOSTILE_CLOSED_ENV, HRP-14 + HRP-12 (no hearing entry in
-  HRP-01..17; said in the rule comment). Nominal cabin ~8 %/day.
-  Body map: lungs adds pio2 + env.o2.critical; brain & eyes adds hearing to its text, noise_level and
-  env.noise.dose_24h. Frontend labels for the new signals and limits.
-  Tests: backend/tests/test_group_a_limits.py (6: verified + Rev F clause, PIO2 formula vs Table 6.2-1 examples,
-  noise-dose formula hits 100 at 8 h/75 dBA and 24 h/~70 dBA, O2 rule pair fires 1 h vs floor, noise dose integrates,
-  nominal quiet). Updated: test_sans (recovery value 3000 mL), test_selftests (fluid limit now verified),
-  standtest.test.tsx (>= 2500 mL). Live: O2 tile shows "Breathable (inspired): 148.6 mmHg, 1 h min >= 127 mmHg,
-  NASA [V2 6003]"; intake form serves the new wording with the verified 2500 mL band.
-  Checks: pytest 219 passed, ruff clean (backend + scripts), manifest all match, tsc clean, vitest 106 passed.
-- 2026-11-15 Group-A limit reading (user: "read the NASA clauses for the group A limits"). Read with pdftotext from
-  nasa.gov / standards.nasa.gov: NASA-STD-3001 Vol 2 Rev F (approved 2026-07-14, current) and Rev D; OCHMO-TB-004 Rev D,
-  TB-013 Rev C, TB-027 Rev B, MTB-003 Rev A, MTB-001, MTB-013 Rev D. Result: none of the six can honestly flip to
-  verified: true as configured; source_refs now say what the documents contain (config/limits.yaml):
-  * ppco2_mmHg_critical 5.0: Rev F [V2 6004] note says off-nominal CO2 values are NOT in the standard (per program).
-  * ppo2_kPa_min 19.5: [V2 6003] Table 6.2-1 limits INSPIRED O2 (PIO2): target 145-155 mmHg, mild-hypoxia lower 127 mmHg
-    1-h TWA, absolute 122 mmHg. Our signal is ambient ppO2 (19.5 kPa at 101 kPa cabin ~ PIO2 137 mmHg).
-  * noise_dBA_sleep_max 50: [V2 6079] = NC-40 octave-band curve for sleep areas (> 30 d), no dBA value. New find:
-    [V2 6115] 24-h noise dose D <= 100 (8-h 75 dBA basis; rationale: ~70 dBA over 24 h).
-  * fluid_intake_mL_day_min 2000: [V2 6109] Table 6.3-1 = vehicle must SUPPLY >= 2.5 L/crewmember/day potable water
-    for hydration (drinking + food rehydration); TB-027 Rev B calls it the water-intake requirement. Supply, not intake.
-  * sodium_intake_mg_day_max 3000: [V2 7100] defers to the NIH DRIs (Table 7.1-2 adjusts only vitamin D); no sodium
-    number in any NASA text read. TB-013: ISS intake ~3800-4700 mg/day.
-  * bmd_loss_pct_per_month_expected_0g 1.0-1.5: MTB-013 Rev D has no in-flight rate (only [V1 4026]-[V1 4028]).
-  Also: the 4 verified Vol 2 limits ([V2 6004] 3 mmHg, [V2 6006] 34.5-103 kPa, [V2 6012], [V2 6077] 85 dBA) are
-  unchanged in Rev F; source_refs still cite Rev D (read in R-1).
-  User decisions (1)-(3) below were taken ("Build all three") and built in the next entry. Sodium 2300 mg (DRI) would
-  need the NASEM document read; stays a heuristic.
-  Checks: pytest 213 passed, ruff clean, tsc clean, vitest 106, manifest all match.
-- 2026-11-15 D-5 re-freeze `demo-ready-v3` (user: "work on your next tasks ... commit", after Gate T approval).
-  Docs: README (Block T done banner, self-test data row, supervisor's lines 17/40 note), AGENTS (current state, §2b,
-  build order, next = nothing planned), ROADMAP (state, §0 header, Block T + D-5 rows), PRD (v1.3 banner and §6
-  wording no longer "planned", Gate T done). Code unchanged since T-10 (`014ae27`), whose checks were green:
-  pytest 213, ruff clean (backend + scripts), manifest verify all match, tsc clean, vitest 106.
-  Live rehearsal (backend 8010 / frontend 5180, demo_5min seed 42, untouched): every alert at its documented time
-  (PVT-B 7h46m, fluid + SANS 22h01m, gate 23h28m C3 HOLD 26.1 with fluid 1200 SYNTHETIC, orthostatic 23h45m,
-  stand positive 23h46m), scripted results badged SYNTHETIC, paused at 24h31m, no console errors.
-  Tag `demo-ready-v3` on the D-5 commit, pushed.
-- 2026-11-15 T-10 extended demo (user: "work on your next tasks ... commit"), with the 4 moments the user approved.
-  `demo_5min.yaml`: three `selftest` events (SYNTHETIC "scripted self-test result", no entry_method, never
-  CREW_ENTERED): (1) 7h45m C1 `pvt_b` {mean 395 ms, 7 lapses, 1 false start} -> `cog.pvt.lapses` CAUTION and
-  `cog.performance_risk` CAUTION at 7h46m (short sleep + lapses; previously this compound waited for CO2 at 17h26m,
-  CO2 is now the second piece of evidence; lapses expire 19h45m, the compound stays open on CO2 until 22h01m);
-  (2) 22h C3 `intake` {fluid 1200 mL} -> `intake.fluid.low` + `sans.watch` CAUTION 22h01m; speed 60x moved from
-  23h30m to 23h20m so the gate is on screen for ~10 s before touchdown (speed list unchanged, +10 s real time);
-  (3) 23h45m C3 `stand_test` summary {SBP drop 26, DBP drop 11, HR rise 34, PP min 24, PP 22 %, no early stop,
-  10 min} -> `cardio.stand.positive` CAUTION 23h46m next to `cardio.orthostatic` WARNING (both on Heart & vessels).
-  Hand vitals (heart_rate/bp_*) are NOT scripted, so the 30-min hand-entry takeover does not touch the synthetic
-  stream that drives `cardio.orthostatic`. (4) Optional live `pvt_b_short` / Amsler grid: described in README and
-  the scenario comment; the script does not wait for it. `expected` adds cog.pvt.lapses, intake.fluid.low,
-  sans.watch, cardio.stand.positive (cog.performance_risk now within 8h).
-  NOTE for supervisor/user: at 23h25m the LANDING gate is HOLD for every crew member, not only C3 (C3 26, C1 32,
-  C2/C4 56): the SPE's `rad.dose.24h` WARNING applies the readiness alert penalty (-20) to everyone. C3 is lowest
-  and the only one with the fluid action. Left as is (honest formula); README says so. User decided 2026-11-15: keep as is.
-  Docs: README walkthrough (4 min 50 s, test moments 1-3, optional live moment), PRD §14 v1.3 paragraph + banner,
-  ROADMAP/AGENTS status lines.
-  Tests: test_scenarios.py `test_demo_self_test_moments_are_scripted_synthetic_and_land_on_time` (results all
-  SYNTHETIC + scripted basis, alert timing windows, C3 gate Hold with the SYNTHETIC fluid component, Heart & vessels
-  links both cardio rules). Determinism (seed 7 twice) and no-network tests run the extended demo to 25 h.
-- 2026-11-15 T-9 Amsler grid + F-014 (`0627e7a`) and T-6 body map (user: "work on your next tasks ... commit"),
-  following the supervisor's T-9/T-6 notes.
-  F-014: `html.light` overrides for `bg-space-950/60` and `/70` (the /70 one was also used by Questionnaire/Amsler).
-  T-9: catalog `amsler` (kind amsler, entry_method amsler, weekly 09:00; steps cover one eye at a time, focus on the
-  centre dot, tap wavy/blurred/missing; escalation CMO first; protocol names Amsler 1953 and says the 10x10 screen
-  grid is not the calibrated chart). Signals `amsler_flag`, `amsler_cells_right`, `amsler_cells_left` (entry_only,
-  not onboard-only). Only flag + counts are sent; the marked grid lives in screen state, never stored (no image).
-  Rule `eye.amsler.distortion` THRESHOLD flag >= `eye.amsler_flag_min` (0.5, verified: false, flag cut), 7d last,
-  CAUTION, GRAVITY_FIELDS, HRP-10, "Indicators consistent with ..." copy; added to `sans.watch` `any` (checklist now
-  points to the grid test). UI `AmslerGrid`: right eye then left eye, 44 px squares with W/B/M letters (not colour
-  alone), kind picker, summary of both grids for the CMO, Save once; offline save disabled. Live: Start from the body
-  map opened the grid; 3 marks on C1 -> `eye.amsler.distortion` CAUTION (CREW_ENTERED) + `sans.watch` CAUTION.
-  T-6: `body_map` in `config/selftests.yaml` (brain_eyes, heart_vessels, lungs, bones_muscles, kidneys,
-  blood_immune; each what / hazards / HRP risks / signals / rules / tests; blood_immune `reference: inspiration4`).
-  Loader refuses unknown signals, rules, tests and a region with no signal and no test. Every rule except
-  `rad.saa.transit` (position notice) is on the map (test). `GET /bodymap?crew_id=&node=` -> regions with signals
-  (latest, last 2 h, source), rules (title, severity), tests; the ground copy drops onboard-only signals, their
-  single-signal rules and the questionnaire tests. UI `BodyMap` (Crew Overview with crew chips; Crew Detail): SVG
-  figure (pointer aid) + a list of 48 px region buttons (touch/keyboard) with colour + icon + text; colour = highest
-  open alert of the region's rules for that crew member or cabin-wide (`api/bodymap.ts`, live from WS alerts); drawer
-  with status line ("Indicators consistent with ... Recommend CMO review"), what it does, open alerts with LOMO/LOM/LOC,
-  readings with sparkline + source badge, hazards + HRP names, Start buttons (open that test on the Self-tests tab for
-  that crew member), Inspiration4 panel under blood & immune. Without the onboard server it says so.
-  Live check (port 8010/5180): SpO2 88 entry turned Lungs ■ WARNING with a Crew-entered badge; light mode OK; no
-  console errors. `demo_5min` untouched.
-  Tests: backend test_amsler.py (8), test_bodymap.py (10), test_sans.py updated; frontend amsler.test.tsx (4),
-  bodymap.test.tsx (6). Checks: pytest 212 passed, ruff clean (backend + scripts), manifest verify all match, tsc
-  clean, vitest 106 passed (16 files).
-- 2026-11-15 T-8 landing readiness gate (user: "work on your next tasks ... commit"), following the supervisor's T-8 guidance.
-  Config: readiness kind `LANDING` in `config/readiness.yaml` (hazards GRAVITY_FIELDS, ISOLATION_CONFINEMENT,
-  HOSTILE_CLOSED_ENV; HRP-03, HRP-02, HRP-14) with components pvt (pvt_mean_rt, 24h), stand (stand_hr_rise, 24h),
-  fluid (fluid_intake, 36h), spo2 (10m mean), low_g (cabin `low_g_days`); each has a plain `action`. New limits, both
-  `verified: false`: `readiness.landing_go_min` 70 and `landing.low_g_days_long` 129 d (Meck 2001 long-flight group;
-  `good` 16 d = the short-flight group). `hold_rules` (cardio.orthostatic, cardio.stand.positive, cardio.stand.early_stop,
-  physio.spo2.low, cog.pvt.lapses) force Hold while one is open on that crew member, whatever the score; `hold_actions`
-  lead with "Tell the CMO now ... do not wait for Earth". Config refuses an unknown hold rule or go_min_ref.
-  Engine: `compute_readiness` passes `action`, `hold_alerts`, `hold_actions`, `go_min_source_ref`; empty components keep
-  their limit metadata. World: LANDING components carry `source` per crew member (`source_for`), snapshot
-  `phase.next_gravity_increase` {ts, in_s, to_phase, from_g, to_g} from the scenario events still ahead.
-  Scenario `orthostatic_intolerance`: scripted C3 fluid log 1200 mL at 10m (SYNTHETIC "scripted self-test result"), so
-  C3 is on Hold before the landing (score ~46) and after it (cardio.orthostatic hold alert); this also raises
-  `intake.fluid.low` CAUTION and `sans.watch` CAUTION for C3 (both added to `expected`). Other crew stay Go (~76).
-  `demo_5min` untouched. UI: `ReadinessGate` card on the Self-tests tab (✓ GO / ▲ HOLD with colour + icon + text, score vs
-  Go minimum with the unverified marker, hold alerts with LOM/LOC sublabel, every component with value, unverified
-  marker, source badge and its action, Hold steps, Start buttons for PVT-B / stand test / fluid / SpO2, all >= 44 px);
-  `LandingGateSummary` line on Crew Overview while a landing is ahead. Live (orthostatic_intolerance, 30x): before the
-  landing C3 ▲ HOLD 46 with the fluid action and a Synthetic badge on the scripted value, C1/C2/C4 ✓ GO 76.
-  Tests: backend/tests/test_landing.py (7), frontend src/test/landing.test.tsx (7). Checks: pytest 194 passed, ruff clean (backend + scripts), manifest verify all match, tsc clean, vitest 96 passed (14 files).
-- 2026-11-15 F-012, F-013, T-7 (`f1a7f91`): stand-test signal labels, light-mode violet overrides; StandTest sends
-  nothing on a 0-reading non-symptom exit; SANS watch rule. Earlier Block T items: T-5 + F-010/F-011 (`0a63702`),
-  T-4 (`7fa305a`), T-2 (`81eaef4`), T-1 (`2704bf2`), T-3 (`603b76c`), T-0 (`96c5c36`); details in commit messages.
+- 2026-11-15 Block L planned (user: "add options 1, 2 and 3 ... change other docs to reach this goal ... delete redundant
+  information"). Docs only, no code: ROADMAP §0a (new), AGENTS §1 rule 2 + §8 + §10, PRD §6 M0 + §9 + §14 + §16.
+  This file pruned: finished-work detail (T-8..T-10, D-5, group-A reading) now lives in git history and commit messages.
+- 2026-11-15 Group-A clause limits (`2272b8f`, `f51b448`, APPROVED): read NASA-STD-3001 Vol 2 Rev F + OCHMO briefs;
+  fluid 2.5 L [V2 6109] (form counts drinks + water added to food), derived `pio2` with `env.o2.low` (1 h < 127,
+  CAUTION) + `env.o2.critical` (< 122, WARNING) [V2 6003], derived `noise_dose_rate` with CUMULATIVE
+  `env.noise.dose_24h` [V2 6115]. The other group-A entries stay `verified: false`; their source_refs say what the
+  documents contain. Checks: pytest 219, ruff, manifest, tsc, vitest 106.
 
 6. WORK QUEUE
-Done (APPROVED): MVP, Block R, D-3, Block P + Gate P, D-4; Block T T-0..T-10 + Gate T + D-5 (`demo-ready-v3`).
-Queue empty.
+Done (APPROVED): MVP, Block R + D-3, Block P + D-4, Block T + Gate T + D-5, group-A clause limits.
+
+Block L: data-honesty labels (PLANNED, user decision 2026-11-15; plan in ROADMAP §0a; about 2-3 h). Wording only:
+no data, rule, limit value or `verified` flag changes.
+- L-1 Labels say what a value is.
+  * `DataSourceBadge`: "Synthetic" -> "Simulated"; "Synthetic (NASA-calibrated)" -> "Simulated · NASA-calibrated".
+    NASA, NASA-derived, "Measured · <agency>" and "Crew-entered" badges unchanged. Tap detail unchanged (basis + source).
+  * `LimitBadge` / limit markers for `verified: false`: "⚠ unverified" -> "Not a NASA limit · <kind>" from a new
+    `source_kind` field on every `verified: false` entry in `config/limits.yaml`:
+    `published` = "Published source" (papers, NOAA scales, ADA, Meck, Basner, Freeman...); `clinical` = "Clinical
+    guideline" (clinical rules of thumb); `design` = "AEGIS design setting" (flag cuts, Go minimums, project
+    heuristics with no outside source); `nasa_reference` = "NASA reference, not a standard" (a number from a NASA
+    page that is not a NASA-STD clause; today only the HRP bone-loss rate). Verified badge "✓ NASA [Vx nnnn]" unchanged.
+  * Config refuses a `verified: false` entry without `source_kind`, and `source_kind` on a `verified: true` entry.
+  * Footer data line: "Radiation, space weather and <N> limits: NASA sources (N counted from limits.yaml). Crew physiology: simulated (no public
+    in-flight astronaut data)." (non-NASA measured source still named when active).
+  * Tests: badge text per provenance; limit marker text per kind; never "NASA" on an unverified limit; the old words
+    "unverified" and "Synthetic" no longer appear as badge text (they may stay in code identifiers and tooltips).
+- L-2 One "Where our data comes from" panel, opened from the footer (and from any badge's detail). Plain words:
+  (a) real NASA data: radiation replays, space weather, comm delay, 14 clause-verified limits; (b) other measured data:
+  EPA RadNet; (c) simulated: crew physiology and cabin air, because NASA keeps in-flight astronaut vitals restricted
+  for crew privacy; the simulator parameters cite their sources (`mission.yaml`, `crew.yaml`); (d) crew entries are
+  real inputs, kept in memory only; (e) limits: counts per source kind from `limits.yaml` (computed, not typed).
+  Works offline (bundled limits). No new data. One component + one test.
+- L-3 Demo opening line in README "Demo walkthrough" step 0 and PRD §14: "Everything you will see is either replayed
+  NASA data or a simulation built from published parameters, and every number shows which."
+- After L-1..L-3: update README data table wording ("Synthetic" -> "Simulated") and AGENTS §8 examples to the built
+  text; no re-freeze unless the user asks (it would be D-6, `demo-ready-v4`).
+Choices Claude made inside the user's decision (Antigravity or the user may change them): the badge says "Simulated"
+(not "Simulated crew vitals") because it also marks cabin values; the `nasa_reference` kind exists for one entry.
+
 Open question for the user: submission deadline/format.
-Stretch (only if the user asks, after Gate T): `arrhythmia` scenario; a second real SPE; Countermeasures view + private journal.
+Stretch (only if the user asks): see ROADMAP §5.
 
 7. API & WS QUICK REFERENCE (`/api/v1`, `?node=onboard|ground`)
 - GETs return `{ node, now, as_of, age_s, ...data }`.
 - Endpoints: `GET /health`, `/crew`, `/crew/{id}/summary`, `/crew/{id}/timeseries?signal=&from=&to=&max_points=`, `/crew/{id}/baselines?window=48h`, `/environment/current`, `/environment/timeseries?signal=`, `/radiation/summary`, `POST /radiation/shelter {crew_id, sheltered}`, `GET /readiness?kind=`, `/alerts?state=&severity=`, `POST /alerts/{id}/ack|/treat|/resolve|/note {text}`, `GET /rules`, `/limits`, `/sim/status`, `POST /sim/scenario {name, seed?, speed?}`, `POST /sim/control {action, speed?}`, `GET /link/status`, `POST /link/blackout {on}`, `POST /link/delay {delay_s|null}`, `POST /link/recommendation {text, checklist?, crew_id?}`, `GET /link/recommendations`, `POST /observations [Observation]`, `GET /datasets`, `GET /spaceweather/event`, `POST /spaceweather/forward {crew_id?}`, `GET /reference/inspiration4`.
-- Block T: `GET /selftests` (catalog with resolved limits, `band`, `anchors`; stand tests add `checkpoints_min`, `stop_steps`, params), `GET /selftests/schedule?crew_id=` (DUE/DONE/OVERDUE/UPCOMING, overdue INFO), `GET /selftests/results?crew_id=`. Observation adds `entry_method` (required for CREW_ENTERED) and `test_id` (field + typing range checked, else 422); stand-test entries below `min_gravity_g` -> 422. Alert adds `onboard_only`.
-- T-6: `GET /bodymap?crew_id=&node=` -> `{regions: [{id, label, what, hazards, hrp_risks, signals[{signal, unit, scope, onboard_only, latest{ts,value}|null, recent[], source}], rules[{id, title, severity}], tests[{id, title, onboard_only}], reference}]}`. Ground copy without onboard-only items.
-- T-8: `GET /readiness?kind=LANDING` -> per crew `{value, base, alert_penalty, go, go_min, go_min_verified, go_min_source_ref, hold_alerts[{id, rule_id, severity, title}], hold_actions[], components{name: {signal, value|null, unit, score|null, weight, limit_ref, limit_verified, limit_source_ref, action, source?}}}`. Snapshot `phase.next_gravity_increase` {ts, in_s, to_phase, from_g, to_g} | null.
-- Provenance objects: `{provenance, dataset_id, basis, dataset: {id, label, title, source_url, retrieved, terms, transform, agency} | null}`; timeseries add `segments[]` and `suspect`.
+- Block T: `GET /selftests` (catalog with resolved limits), `GET /selftests/schedule?crew_id=`, `GET /selftests/results?crew_id=`. Observation adds `entry_method` (required for CREW_ENTERED) and `test_id`; stand-test entries below `min_gravity_g` -> 422. Alert adds `onboard_only`.
+- `GET /bodymap?crew_id=&node=` -> `{regions: [{id, label, what, hazards, hrp_risks, signals[...], rules[...], tests[...], reference}]}`; ground copy without onboard-only items.
+- `GET /readiness?kind=LANDING` -> per crew `{value, go, go_min, hold_alerts[], hold_actions[], components{...}}`. Snapshot `phase.next_gravity_increase` | null.
+- Limits (`GET /limits`): `{ref, value|min|max, source_ref, verified}`; Block L adds `source_kind` on unverified entries.
+- Provenance objects: `{provenance, dataset_id, basis, dataset: {...} | null}`; timeseries add `segments[]` and `suspect`.
 - WS `/ws/live?node=onboard|ground`: `{type: "snapshot", ...}` (~5/s), `{type: "alert", node, alert}`, `{type: "recommendation", node: "onboard", recommendation}`.
 
 8. GIT & ENVIRONMENT NOTES
 - Remote: `https://github.com/1fatihtetik/aegis-health-monitoring` (`main`). Tags: `g3-1`, `gate3-ready`, `gate3-approved`, `demo-ready`, `demo-ready-v2`, `demo-ready-v3`. Never force-push `main`; use `git revert` for rollbacks.
 - Windows: no `make`; run the commands from `README.md`. Python 3.14 global install. pytest may need to run outside the Windows sandbox (it blocks `socket.socketpair()` used by asyncio).
-- Downloaded data files are untrusted input: parse them with `python -P`, never execute anything from `data/nasa/raw/`.
+- Downloaded data files are untrusted input: parse them with `python -P`, never execute anything from `data/nasa/raw/`. PDFs: extract text with `pdftotext` into the scratchpad, never into the repo.

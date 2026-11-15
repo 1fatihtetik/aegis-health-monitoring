@@ -3,11 +3,24 @@
 Assumes one person plus coding agents. Hours are offsets from the start of each block.
 
 **Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
+**Next: Block L, data-honesty labels (§0a). Status: PLANNED (user decision 2026-11-15).** About 2-3 h, wording only.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
 ---
+
+## 0a. Block L: data-honesty labels (planned)
+
+Why: judges may read "Synthetic" and "unverified" as "fake". Both words say what a value is **not**. Block L makes every label say what the value **is**, explains the reasons once, and says it first in the demo. Nothing about the data changes: no new data, no rule, limit value or `verified` flag changes, and simulated values stay visibly simulated.
+
+| Item | What | Done when |
+|---|---|---|
+| L-1 Labels | `DataSourceBadge`: "Synthetic" → "Simulated", "Synthetic (NASA-calibrated)" → "Simulated · NASA-calibrated" (NASA, NASA-derived, "Measured · <agency>" and "Crew-entered" unchanged). Limit marker for `verified: false`: "⚠ unverified" → "Not a NASA limit · <kind>" from a new `source_kind` on each unverified entry in `config/limits.yaml`: `published` "Published source", `clinical` "Clinical guideline", `design` "AEGIS design setting", `nasa_reference` "NASA reference, not a standard". Footer: "Radiation, space weather and <N> limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data)." | Config refuses an unverified entry without `source_kind` (and `source_kind` on a verified one); tests: badge and marker text per kind, no "NASA" on an unverified limit, old words gone from badge text |
+| L-2 Data panel | "Where our data comes from" panel, opened from the footer and from badge details: real NASA data, other measured data (EPA), what is simulated and why (in-flight astronaut vitals are restricted for crew privacy; simulator parameters cite their sources), crew entries are real inputs kept in memory, limit counts per source kind computed from `limits.yaml` | Works offline; one component test |
+| L-3 Demo line | Opening sentence in README "Demo walkthrough" and PRD §14: "Everything you will see is either replayed NASA data or a simulation built from published parameters, and every number shows which." | Both docs carry it |
+
+Rules: the marker for a `verified: false` limit may change words but never disappears and never says NASA; `verified: true` still needs a NASA document + revision + clause id; no re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
 
 ## 0. Block T: crew self-tests and body map (done)
 
@@ -81,6 +94,7 @@ Cut in this order, top first: T-9 Amsler grid → T-8 landing gate (keep the sta
 6. **The demo is the product.** The story: *real deep-space radiation, measured by NASA's RAD on the way to Mars, replayed into a crew that handles a real solar particle event on its own, while the ground sees it one light-time later.* Block P added: *every phase uses measured radiation, and the body responds to the gravity of each place.* Block T adds: *the crew tests themselves on a routine, understands each result, and sees it on their own body.*
 7. **Block P (2026-11-14, user):** order radiation → gravity → Inspiration4 panel → extended demo; `MEASURED_OTHER` for non-NASA measured data; partial-gravity model A, LINEAR; demo re-frozen as `demo-ready-v2`.
 8. **Block T (2026-11-14, user):** see §0.2.
+9. **Block L (2026-11-15, user):** fix how labels read, not the data: "Simulated" and "Not a NASA limit · <kind>" instead of "Synthetic" and "unverified", one data-sources panel, one demo opening line. No lying, little time (§0a).
 
 ## 2. Architecture
 
@@ -111,7 +125,7 @@ Details of each item are in `implementationsandgoals.txt` (section 2) and `READM
 
 ## 4. Cut list for regressions
 
-If something already built breaks late, drop in this order: landing orthostatic scenario → BASELINE rule → recommendation round trip → CrewDetail charts → EVA readiness. Never cut: the SPE emergency flow, the delayed ground view, alert evidence, unverified-limit markers, provenance badges, the freeze block, and (after Block T) the self-test schedule and tests.
+If something already built breaks late, drop in this order: landing orthostatic scenario → BASELINE rule → recommendation round trip → CrewDetail charts → EVA readiness. Never cut: the SPE emergency flow, the delayed ground view, alert evidence, not-NASA limit markers, provenance badges, the freeze block, and (after Block T) the self-test schedule and tests.
 
 ## 5. Stretch (only if the user asks, after Gate T)
 
@@ -121,8 +135,9 @@ If something already built breaks late, drop in this order: landing orthostatic 
 
 ## 6. Open items
 
-- Submission deadline and format: still to confirm. They decide whether all of Block T (≈ 29 h) fits or the §0.5 cut order is used.
+- Submission deadline and format: still to confirm.
 - T-3: glucose, temperature and intake bands have no NASA clause read yet; they enter as `verified: false` unless one is found (NASA-STD-3001 Vol 1 / OCHMO briefs are checked first).
 - T-5: protocol confirmed by the supervisor 2026-11-15 (wall-lean adaptation of Lee et al. 2015, 5 min supine, readings at 1/3/5/10 min, STOP control, Freeman 2011 criteria); built.
 - T-7: the SANS evidence for CO₂ and sodium is limited; the rule's copy must say so. Revisit if the HRP SANS evidence report gives a usable measure.
-- T-10: the exact demo test moments are proposed in T-10 and agreed with the user before the rehearsal.
+- T-10: demo test moments agreed with the user 2026-11-15; built.
+- Block L: the exact words in §0a were proposed by Claude inside the user's decision; the user or the supervisor may adjust them before L-1 is built.

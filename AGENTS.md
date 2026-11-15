@@ -4,14 +4,14 @@ This repo builds **AEGIS**, an onboard-first astronaut health monitoring system 
 **Read `PRD.md` first.** It is the source of truth for scope, the domain model and the APIs. This file tells you *how* to build it.
 **Then read `ROADMAP.md`.** It sets the scope, the build order and the cut list. Where the PRD describes more than the roadmap, build the roadmap version.
 
-> **Current state (2026-11-15): Block T, crew self-tests and body map: DONE** (`ROADMAP.md` §0). Built and approved: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. No new block is planned; stretch items only if the user asks. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
+> **Current state (2026-11-15): Block T, crew self-tests and body map: DONE** (`ROADMAP.md` §0). Built and approved: T-0..T-10, Gate T; D-5 re-freeze at tag `demo-ready-v3`. **Next: Block L, data-honesty labels (planned, `ROADMAP.md` §0a):** wording only, so judges read "simulated" and "not a NASA limit · <source>" instead of "Synthetic" and "unverified"; no data or limit changes. Hand-entered values replace the wearable stream for 30 min (user decision 2026-11-15). Done and frozen: MVP, Block R (tag `demo-ready`), Block P (tag `demo-ready-v2`), Block T (tag `demo-ready-v3`). Block T lets the crew take tests and measurements themselves on a routine (`CREW_ENTERED` values), explains each one, and adds a clickable body map. **No gamification.** §2a covers real data; §2b covers self-tests.
 
 ---
 
 ## 1. Ground rules
 
 1. **Autonomy first.** Onboard features must never depend on the ground node or on the internet at runtime. If the link is blacked out or the ground side is broken, the crew app must still work fully.
-2. **No hardcoded medical limits.** Every threshold comes from `config/limits.yaml` and carries `source_ref` + `verified`. Never present an unverified number as a NASA value. The UI must show an "unverified" marker for `verified: false`.
+2. **No hardcoded medical limits.** Every threshold comes from `config/limits.yaml` and carries `source_ref` + `verified`. Never present an unverified number as a NASA value. The UI must mark every `verified: false` limit as not NASA. Today the marker reads "⚠ unverified"; Block L (§8, `ROADMAP.md` §0a) changes it to "Not a NASA limit · <kind>", where `source_kind` says what the number is (published source, clinical guideline, AEGIS design setting, NASA reference that is not a standard). The marker may change words; it may never disappear or say NASA.
 3. **Traceability.** Every rule, alert and score must carry `hazards[]` (RIDGE enum) and `hrp_risks[]` (`HRP-01`…`HRP-17`, see PRD §7.2). PRs that add a rule without these fields are incomplete.
 4. **Explainability.** An alert payload must include its evidence (signal refs + values + limit + window). No black-box scores.
 5. **Real NASA data where it exists; honest labels everywhere.** Radiation, space weather, comm delay and limits come from bundled NASA snapshots (§2a); where NASA has no data, measured data from another agency is allowed with its own label (`MEASURED_OTHER`). Crew physiology is synthetic, because no public in-flight astronaut vitals exist, and its parameters are cited. Every value carries `provenance`. Never add an identifiable person's health data, and never present a synthetic value as measured.
@@ -124,7 +124,7 @@ Rules:
 - **No gamification.** No points, streaks, badges, levels, leaderboards or compliance scores. Overdue is a neutral `INFO` item with no readiness penalty.
 - **Same path.** Test results are `Observation`s through `POST /api/v1/observations` (or the in-process call) → store → rules. No second evaluator.
 - **`CREW_ENTERED` only for UI input.** Scripted results for the synthetic crew stay `SYNTHETIC` ("scripted self-test result"). Never present a synthetic result as crew-entered.
-- **Every test explains itself** from the catalog: why (hazard + HRP risk), numbered steps, the normal band from `limits.yaml` with the unverified marker, when to involve the CMO / ground. No test text hardcoded in components.
+- **Every test explains itself** from the catalog: why (hazard + HRP risk), numbered steps, the normal band from `limits.yaml` with the not-NASA marker (§8), when to involve the CMO / ground. No test text hardcoded in components.
 - **New limits are honest.** Glucose, temperature, PVT-B, KSS, stand-test and intake bands enter `limits.yaml` as `verified: false` with a paper or "clinical heuristic" `source_ref`, unless a NASA clause was actually read.
 - **Questionnaires (T-4) stay onboard.** Their signals are marked onboard-only; `link/` never sends them, not even as rollups.
 - **Short modes are labelled** ("Demo length, not the 3-minute protocol"). Real-time stand tests keep the protocol length; scenarios run them on the sim clock.
@@ -242,9 +242,10 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 - Tablet first (1024×768 minimum), dark theme by default, high contrast.
 - Status = color **and** icon/text (colorblind safe): ✓ nominal, ▲ caution, ■ warning, ✖ emergency.
 - No more than 3 taps to any critical action. Large touch targets (≥ 44 px).
-- Charts show limit bands from config and mark unverified limits.
-- Persistent footer: "Decision support only, not a medical diagnosis." followed by the data line. After R-0 the data line reads "Radiation, space weather and limits: NASA sources. Crew physiology: synthetic." When a non-NASA measured source is active (Block P, after landing), the line names it (e.g. "Ground radiation: EPA RadNet").
-- Every chart, tile and alert evidence block shows a `DataSourceBadge`: "NASA · MSL/RAD 2012" (measured), "NASA-derived", "Measured · EPA RadNet" (Block P, `MEASURED_OTHER`), "Synthetic (NASA-calibrated)" or "Synthetic". Tapping it shows the manifest entry (source, retrieved date, transform).
+- Charts show limit bands from config and mark every `verified: false` limit as not NASA (Block L wording: "Not a NASA limit · <kind>"; until built: "⚠ unverified").
+- Persistent footer: "Decision support only, not a medical diagnosis." followed by the data line. After R-0 the data line reads "Radiation, space weather and limits: NASA sources. Crew physiology: synthetic." Block L changes it to "Radiation, space weather and <N> limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data)." with N counted from `limits.yaml`, and the footer opens a "Where our data comes from" panel. When a non-NASA measured source is active (Block P, after landing), the line names it (e.g. "Ground radiation: EPA RadNet").
+- Every chart, tile and alert evidence block shows a `DataSourceBadge`: "NASA · MSL/RAD 2012" (measured), "NASA-derived", "Measured · EPA RadNet" (Block P, `MEASURED_OTHER`), "Synthetic (NASA-calibrated)" or "Synthetic" (Block L: "Simulated · NASA-calibrated" or "Simulated"; "Crew-entered" unchanged). Tapping it shows the manifest entry (source, retrieved date, transform).
+- Block L wording rule: labels say what a value **is**, never only what it is not. Allowed: "Simulated", "Published source", "Clinical guideline", "AEGIS design setting". Not allowed: calling a non-NASA number "verified", hiding a simulation badge, or calling simulated data "measured".
 - Block T: show the severity sublabel (LOMO / LOM / LOC) next to CAUTION / WARNING / EMERGENCY. Self-test screens: one task per screen, numbered steps, big Start / Done buttons, the normal band and the unverified marker visible while entering. No gamification.
 - Journal entries are private by default. Never sync them to ground unless the user opts in.
 
@@ -264,4 +265,4 @@ The simulator now fills only the signals that no public dataset covers (§2a). B
 
 Done: setup → simulator (Gate 1) → rules + alerts (Gate 2) → crew UI (Gate 3) → radiation/SPE → ground link (Gate 4) → demo script (D-1, D-2) → Block R (R-0..R-6, Gate R) → D-3 freeze (tag `demo-ready`) → Block P (P-0..P-7, Gate P) → D-4 re-freeze (tag `demo-ready-v2`) → Block T (T-0..T-10, Gate T) → D-5 re-freeze (tag `demo-ready-v3`).
 
-**Next:** nothing planned. Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
+**Next:** Block L (data-honesty labels, `ROADMAP.md` §0a): L-1 badge and limit-marker wording + `source_kind` → L-2 "Where our data comes from" panel → L-3 demo opening line. Stretch items (only if the user asks): `arrhythmia` scenario, a second real SPE, Countermeasures view + private journal.
