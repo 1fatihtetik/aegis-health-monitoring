@@ -11,6 +11,9 @@ signals:
   bmd_estimate:
     provenance: SYNTHETIC_CALIBRATED
     basis: "Loss rate 1-1.5 %/month in 0 g, NASA HRP Gravity Fields hazard page (limits.yaml bone.bmd_loss_pct_per_month_expected_0g, HRP reference rate, not a STD-3001 limit)"
+  low_g_days:
+    provenance: SYNTHETIC
+    basis: "Mission timeline: scenario mission day for the time before T0 at the starting phase's gravity, plus simulated time below 1 g; resets on reaching 1 g (P-5 assumption)."
   ppco2:
     provenance: SYNTHETIC_CALIBRATED
     basis: "Nominal 2.0 mmHg (OCHMO-TB-004 Rev D: ISS 24-h average at or below 3.00 mmHg since 2016; CDRA sized for 2.0-3.9 mmHg). Scrubber-degradation peaks 3.7-3.8 mmHg sit in the TB-004 headache band (2.8-4.5 mmHg)."

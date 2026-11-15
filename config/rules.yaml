@@ -426,6 +426,30 @@ rules:
       - "Drink enough fluid through the day"
       - "Keep logging your daily intake"
 
+  # ---- Block T, T-7: SANS watch (HRP-10). A watch, not a diagnosis: after a month below 1 g, any one of the
+  # suspected, changeable contributors (cabin CO2, high sodium, low fluid) asks for an eye self-check and a CMO look.
+  # Evidence for these contributors is limited, and the copy says so. T-9 adds the Amsler grid flag to `any`.
+  - id: sans.watch
+    type: COMPOUND
+    title: "Eye-change watch (SANS): long time in low gravity plus a possible contributor"
+    all:
+      - { signal: low_g_days, op: ">=", limit_ref: sans.low_g_days_min, window: 1h, agg: last }
+    any:
+      - { signal: ppco2, op: ">", limit_ref: sans.ppco2_mmHg_24h_mean_max, window: 24h, agg: mean }
+      - intake.sodium.high
+      - intake.fluid.low
+    severity: CAUTION
+    hazards: [GRAVITY_FIELDS, HOSTILE_CLOSED_ENV]
+    hrp_risks: [HRP-10]
+    rationale: "Long stays in low gravity can cause changes at the back of the eye and in vision (SANS, spaceflight associated neuro-ocular syndrome). Higher cabin CO2, salty food and drinking too little are suspected contributors, but the evidence linking them to SANS is limited. This is a watch: indicators worth an eye self-check, not a finding."
+    action: "Do an eye self-check today and recommend CMO review; lower the possible contributors (CO2, salt, too little fluid). The evidence for these links is limited, so treat this as a precaution."
+    checklist:
+      - "Eye self-check: cover one eye, look at a grid or straight edge; note any wavy, blurred or missing areas; repeat with the other eye"
+      - "Tell the CMO about any change in vision, even small, and show them this watch"
+      - "Lower what you can: drink to your daily target and pick lower-salt food"
+      - "If cabin CO2 is high, follow the CO2 checklist"
+      - "Remember: these links are suspected, not proven; this is a precaution, not a diagnosis"
+
   # ---- Block T, T-2: PVT-B reaction-time test ----------------------------------------------------------------------
   - id: cog.pvt.lapses
     type: THRESHOLD

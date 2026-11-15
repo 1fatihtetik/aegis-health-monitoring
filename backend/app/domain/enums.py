@@ -115,6 +115,8 @@ SIGNALS: dict[str, SignalMeta] = {
     # P-1: 1 while the spacecraft is inside the South Atlantic Anomaly box, else 0. Emitted only while a LEO
     # replay with position data is active. Lets the SPE rule stand down for trapped-proton spikes.
     "saa_transit": SignalMeta("0=out,1=in", "cabin", "navigation"),
+    # Block T, T-7: days the crew has spent below 1 g (mission timeline; resets at 1 g). Feeds the SANS watch rule.
+    "low_g_days": SignalMeta("days", "cabin", "mission_timeline"),
     # Block T, T-3: guided measurements the crew takes by hand (entry_only: the simulator never produces them).
     "body_temp": SignalMeta("°C", "crew", "self_test", entry_only=True),
     "glucose": SignalMeta("mg/dL", "crew", "self_test", entry_only=True),

@@ -144,6 +144,11 @@ html.light .text-purple-200,
 html.light .text-purple-300 {
   color: #6d28d9 !important;
 }
+html.light .text-violet-100,
+html.light .text-violet-200,
+html.light .text-violet-300 {
+  color: #5b21b6 !important;
+}
 html.light .text-fuchsia-200,
 html.light .text-fuchsia-300 {
   color: #a21caf !important;
@@ -188,6 +193,15 @@ html.light .bg-emerald-950\/70 {
 html.light .bg-purple-950\/25,
 html.light .bg-purple-950\/50 {
   background-color: #ede9fe !important;
+}
+html.light .bg-violet-950\/40,
+html.light .bg-violet-950\/50 {
+  background-color: #ede9fe !important;
+}
+html.light .border-violet-300\/60,
+html.light .border-violet-400\/50,
+html.light .border-violet-400\/70 {
+  border-color: #8b5cf6 !important;
 }
 html.light .bg-fuchsia-950\/40 {
   background-color: #fae8ff !important;

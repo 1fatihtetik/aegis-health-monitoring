@@ -177,6 +177,36 @@ describe('T-5 StandTest screen', () => {
     expect(screen.getByTestId('stand-captured').textContent).toContain('missed: min 1');
   });
 
+  it('F-013: ending without symptoms and without a standing reading sends nothing and stays due', () => {
+    const onSubmit = vi.fn();
+    render(<StandTest test={standTest()} gravityG={0.16} connected onSubmit={onSubmit} now={() => t} />);
+    fireEvent.click(screen.getByTestId('stand-start'));
+    advance(30_000);
+    enter('60', '118', '76');
+    fireEvent.click(screen.getByTestId('stand-save-supine'));
+    advance(60_000); // past minute 10, every checkpoint missed
+    expect(screen.queryByText('No reading, end the test')).toBeNull();
+    fireEvent.click(screen.getByText(/End early for another reason/));
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByTestId('stand-not-counted').textContent).toContain('Not counted as done');
+    expect(screen.getByTestId('stand-start')).toBeTruthy();
+  });
+
+  it('F-013: STOP for symptoms still saves with no standing reading', async () => {
+    const onSubmit = vi.fn().mockResolvedValue({ ok: true, message: 'Saved on board.' });
+    render(<StandTest test={standTest()} gravityG={0.16} connected onSubmit={onSubmit} now={() => t} />);
+    fireEvent.click(screen.getByTestId('stand-start'));
+    advance(30_000);
+    enter('60', '118', '76');
+    fireEvent.click(screen.getByTestId('stand-save-supine'));
+    advance(3_000);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('stand-stop'));
+    });
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({ stand_early_stop: 1 });
+  });
+
   it('refuses a reading with the bottom number above the top number', () => {
     render(<StandTest test={standTest()} gravityG={0.16} connected onSubmit={vi.fn()} now={() => t} />);
     fireEvent.click(screen.getByTestId('stand-start'));
@@ -255,5 +285,18 @@ describe('F-011 TLX slider starts unset', () => {
       fireEvent.click(screen.getByTestId('questionnaire-save'));
     });
     expect(onSubmit).toHaveBeenCalledWith({ tlx_workload: 50 });
+  });
+});
+
+describe('F-012 / T-7 plain labels', () => {
+  it('names the stand-test and SANS signals and limits in plain words', async () => {
+    const { signalLabel } = await import('../api/backend');
+    for (const s of ['stand_sbp_drop', 'stand_dbp_drop', 'stand_hr_rise', 'stand_pulse_pressure_min', 'stand_pulse_pressure_pct', 'stand_early_stop', 'stand_minutes', 'low_g_days']) {
+      expect(signalLabel(s)).not.toMatch(/_/);
+      expect(signalLabel(s)).not.toBe(s.replace(/_/g, ' '));
+    }
+    expect(formatLimit(BUNDLED_LIMITS['sans.low_g_days_min'])).toBe('≥ 30 days');
+    expect(formatLimit(BUNDLED_LIMITS['sans.ppco2_mmHg_24h_mean_max'])).toBe('> 3 mmHg');
+    expect(BUNDLED_LIMITS['sans.low_g_days_min'].verified).toBe(false);
   });
 });

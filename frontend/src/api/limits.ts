@@ -66,6 +66,8 @@ const LIMIT_META: Record<string, { label: string; unit: string; op?: LimitOp }> 
   'stand_test.pulse_pressure_mmHg_min': { label: 'Alert if the gap between the two numbers is', unit: 'mmHg', op: '<' },
   'stand_test.pulse_pressure_pct_min': { label: 'Alert if that gap is', unit: '% of the top number', op: '<' },
   'stand_test.early_stop_flag': { label: 'Stopping early for symptoms', unit: '', op: '>=' },
+  'sans.low_g_days_min': { label: 'Eye-change watch starts after this long below 1 g', unit: 'days', op: '>=' },
+  'sans.ppco2_mmHg_24h_mean_max': { label: 'Eye-change watch: cabin CO₂ day average above', unit: 'mmHg', op: '>' },
 };
 
 /** Pulls the NASA-STD-3001 clause id ("[V2 6004]") out of a source_ref, if there is one. */

@@ -57,6 +57,11 @@ stand_test:
   pulse_pressure_mmHg_min: { value: 20, source_ref: "Clinical heuristic (narrowed pulse pressure below 20 mmHg while standing); no NASA-STD-3001 clause read", verified: false }
   pulse_pressure_pct_min:  { value: 25, source_ref: "Clinical heuristic (pulse pressure below 25% of systolic while standing); no NASA-STD-3001 clause read", verified: false }
   early_stop_flag:         { value: 0.5, source_ref: "Flag cut for stand_early_stop (0 or 1), not a medical limit: stopping early for symptoms counts as a positive test (supervisor protocol, 2026-11-15)", verified: false }
+# Block T, T-7: SANS watch (HRP-10). No NASA limit exists for any of these as SANS triggers; the links between CO2,
+# sodium, fluid intake and SANS are hypotheses with limited evidence. All are project heuristics.
+sans:
+  low_g_days_min:        { value: 30, source_ref: "Project heuristic: start of the SANS watch after 30 days below 1 g. SANS findings are reported after long-duration flights (Mader et al. 2011 Ophthalmology 118:2058-2069; Lee et al. 2020 npj Microgravity 6:7); partial-gravity effect unknown; no NASA-STD-3001 clause read", verified: false }
+  ppco2_mmHg_24h_mean_max: { value: 3.0, source_ref: "Project heuristic: 24-h mean above the level ISS has stayed at or below since 2016 (OCHMO-TB-004 Rev D p. 7). CO2 as a SANS contributor is a hypothesis (Lee et al. 2020 review); not a NASA SANS limit", verified: false }
 symptoms:
   headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
 sleep:

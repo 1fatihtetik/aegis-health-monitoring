@@ -609,6 +609,14 @@ const SIGNAL_LABEL: Record<string, string> = {
   sleep_night_h: 'Sleep last night',
   bmd_estimate: 'Bone density estimate',
   exercise_adherence_pct: 'Exercise sessions done',
+  stand_sbp_drop: 'Stand test: drop in top blood pressure number',
+  stand_dbp_drop: 'Stand test: drop in bottom blood pressure number',
+  stand_hr_rise: 'Stand test: rise in heart rate',
+  stand_pulse_pressure_min: 'Stand test: smallest gap between BP numbers',
+  stand_pulse_pressure_pct: 'Stand test: BP gap as % of top number',
+  stand_early_stop: 'Stand test: stopped early (dizzy / faint)',
+  stand_minutes: 'Stand test: minutes standing',
+  low_g_days: 'Days below 1 g',
   compound: 'Combined indicators',
 };
 

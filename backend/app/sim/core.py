@@ -305,6 +305,8 @@ class Simulator:
         ]
         if rad is not None and rad.saa is not None:
             out.append((None, "saa_transit", 1.0 if rad.saa else 0.0))
+        # T-7: time below 1 g from the mission timeline (no RNG draw, so the other streams do not shift)
+        out.append((None, "low_g_days", self.low_g_days))
 
         # ---- crew
         midnight = t.hour == 0 and t.minute == 0 and t.second == 0

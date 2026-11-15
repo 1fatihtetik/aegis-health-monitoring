@@ -61,6 +61,7 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
   const [outcome, setOutcome] = useState<SubmitOutcome | null>(null);
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
   const [busy, setBusy] = useState(false);
+  const [notCounted, setNotCounted] = useState(false);
   const startRef = useRef(0);
   const sentRef = useRef(false);
 
@@ -79,7 +80,24 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
     setElapsed(0);
     setRaw({});
     setError(null);
+    setNotCounted(false);
     setStage(next);
+  };
+
+  /**
+   * F-013: ending without symptoms and without a single standing reading is not a result. Nothing is sent, so the
+   * routine item stays due (a post-landing stand test must not show as done with no standing vitals). STOP for
+   * symptoms is different: it always saves, even with no standing reading.
+   */
+  const abandon = (): void => {
+    setStage('setup');
+    setElapsed(0);
+    setSupine(null);
+    setStanding([]);
+    setMissed([]);
+    setRaw({});
+    setError(null);
+    setNotCounted(true);
   };
 
   const finish = useCallback(
@@ -126,11 +144,13 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
     if (openIdx === lastIdx) void finish(false, next, params.stand_s / 60);
   };
   const skipLast = (): void => {
+    if (standing.length === 0) return abandon();
     setMissed((m) => [...m, lastIdx]);
     void finish(false, standing, params.stand_s / 60);
   };
 
   const stop = (symptoms: boolean): void => {
+    if (!symptoms && standing.length === 0) return abandon();
     void finish(symptoms, standing, protocolMinutes(elapsed, params));
   };
 
@@ -175,6 +195,12 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
               <li key={i}>{s}</li>
             ))}
           </ol>
+          {notCounted && (
+            <p data-testid="stand-not-counted" role="status" className="rounded-lg border border-slate-500 bg-space-900 p-3 text-sm font-semibold text-slate-100">
+              ◐ Not counted as done: no standing reading was saved, so nothing was recorded and this test stays due.
+              Start again when you are ready.
+            </p>
+          )}
           {!enoughGravity && (
             <p data-testid="stand-needs-gravity" className="rounded-lg border border-amber-500/60 bg-amber-950/40 p-3 text-sm font-semibold text-amber-100">
               ▲ Needs gravity: now {gravityG} g. In weightlessness standing does not load the heart and blood vessels, so
@@ -246,7 +272,7 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
                 >
                   Save minute {params.checkpoints_min[openIdx]} reading
                 </button>
-                {openIdx === lastIdx && (
+                {openIdx === lastIdx && standing.length > 0 && (
                   <button
                     type="button"
                     onClick={skipLast}
@@ -279,7 +305,9 @@ export const StandTest: React.FC<StandTestProps> = ({ test, gravityG, connected,
             onClick={() => stop(false)}
             className="min-h-[44px] rounded-lg border border-slate-600 px-4 text-xs font-bold text-slate-300"
           >
-            End early for another reason (I feel fine)
+            {standing.length === 0
+              ? 'End early for another reason (I feel fine, not counted)'
+              : 'End early for another reason (I feel fine)'}
           </button>
         </section>
       )}
