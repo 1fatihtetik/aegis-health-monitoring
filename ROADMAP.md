@@ -4,11 +4,47 @@ Assumes one person plus coding agents. Hours are offsets from the start of each 
 
 **Current state (2026-11-15):** the 30-hour MVP, Block R (real NASA data), Block P (phases and gravity) and Block T (crew self-tests) are built and approved. The demo is frozen at tag `demo-ready-v3` (D-5); `demo-ready-v2` (Block P) and `demo-ready` (Block R) stay. See `implementationsandgoals.txt`.
 **Block L, data-honesty labels (§0a). Status: BUILT 2026-11-15 (L-1..L-3), awaiting supervisor review.** Wording only.
+**Next: Block C, countermeasures and private journal (§0b). Status: PLANNED (user decisions 2026-11-15).** About 13 h; starts after the supervisor approves the plan.
 **Block T, crew self-tests and body map (§0). Status: DONE.** T-0..T-10 and Gate T approved (2026-11-15); D-5 re-freeze at tag `demo-ready-v3`.
 
 Why Block T: the hackathon challenge asks for a tool that helps astronauts **assess their own health**. The MVP watches the crew (sensors, environment, radiation), but the crew can only enter one thing (the 0-3 headache rating). Block T lets the crew take the tests and measurements themselves, on a routine, with plain instructions, and shows the result on a clickable body figure.
 
 ---
+
+## 0b. Block C: countermeasures and private journal (planned)
+
+Why: PRD M5 lists a Countermeasures view and a private journal; both were deferred. Countermeasures show the crew **what to do today to stay healthy and why**, and give the onboard CMO and the ground team a **per-person weekly trend** so they can act before a problem shows up (for example falling exercise before bone or orthostatic trouble). The journal gives each crew member a private place to write. Design rule: **no third to-do list.** Countermeasures live on the existing routine board (T-1); the journal is a quiet, separate screen.
+
+### 0b.1 Decisions (user, 2026-11-15)
+
+1. **Journal storage: saved locally on the tablet.** Entries live in the browser's local storage on the crew tablet (frontend only). The backend never writes them to disk, they never go into `data/` or git, and `link/` never sends them.
+2. **Journal sharing: onboard CMO only.** One entry at a time, off by default, with a preview and a confirm step. Never to the ground.
+3. **Adherence: yes for the CMO and the ground, never as a ranking.** Weekly prescribed vs done per person (charts and %) go to the onboard CMO view and the ground console, so the ground can step in early. No crew member sees a rank: one person per chart, crew always in fixed id order, no sorting by adherence, no crew average to compare against, no "best/worst", no points/streaks/badges.
+
+### 0b.2 Rules for Block C
+
+1. **Same path.** A logged countermeasure is an `Observation` (`CREW_ENTERED` when tapped in the UI; the simulator's scripted sessions stay `SYNTHETIC`), through the store → rules path. Adherence is derived from those observations (the existing daily `exercise_adherence_pct` signal), never typed.
+2. **Catalog, not code.** `config/countermeasures.yaml`: per item id, type (`EXERCISE`, `LIGHT`, `THIGH_CUFF`, `NUTRITION`, `FLUID_LOADING`), why (hazard + HRP risk), numbered steps, prescription (minutes / sessions / mL, each a `limits.yaml` ref with `source_ref`, `verified` and `source_kind`), schedule, and `triggered_by` rule ids. Loader refuses an item without hazards/HRP or with an unknown ref.
+3. **Crew view stays neutral.** The crew member sees their own today list: "done" / "not logged", same icons, `INFO` at most, no %, no penalty, ≤ 3 taps. Ranking or comparison copy is a test failure (extends the no-gamification grep with "rank", "top", "best", "worst", "ahead of", "behind").
+4. **The journal is not analysed.** No sentiment or mood score from the text, no keyword alerts, no rule reads it. It is not an `Observation`.
+5. **Honest privacy wording.** "Saved on this tablet, never sent to Earth." Local storage is not encrypted; the copy must not claim it is.
+
+### 0b.3 Work items (≈ 13 h)
+
+| Hours | Item | Done when |
+|---|---|---|
+| C+0 to 2 | **C-0 Catalog + logging.** `config/countermeasures.yaml` (exercise: resistance + aerobic; light timing before a sleep shift; Thigh Cuff session; fluid and sodium targets reuse the T-3 entries; pre-landing fluid loading). `GET /countermeasures`; "Done" logs `countermeasure_done` / `exercise_minutes` observations. Prescriptions enter `limits.yaml` (the ISS exercise time as a published reference, the rest design settings) | Loader tests (hazards/HRP, refs); a tapped session is `CREW_ENTERED`; scripted ones stay `SYNTHETIC`; works with the link blacked out |
+| C+2 to 5 | **C-1 Today's plan on the routine board.** "Countermeasures" filter pill next to the RIDGE pills; each item shows its "why" from the catalog, the prescription with its marker ("✓ NASA" or "Not a NASA limit · <kind>"), Start / Done; items added by an open alert say "Added because: <alert title>" (SANS watch → Thigh Cuff + eye check; landing Hold → fluid loading; short sleep → light schedule) | Same scenario + seed gives the same plan; an alert adds its item and the item leaves when the alert resolves; "not logged" never above `INFO`; no %/rank in crew copy |
+| C+5 to 8 | **C-2 Weekly adherence for the CMO and the ground.** Per crew member: last 7 days prescribed vs done per type (small bars + %), in CrewDetail (CMO section) and the GroundConsole. Ground gets it as daily rollups through `link/` (rollup priority, "Data as of T−Xm Ys"). Fixed C1..C4 order, one person per chart | Ground shows it only after the link delay; blackout holds it; no sort by adherence, no crew average; component test for the chart |
+| C+8 to 9 | **C-3 Early-warning rule + effect.** `cm.exercise.low_7d` THRESHOLD on the 7-day mean of `exercise_adherence_pct` below a design-setting limit, `INFO` (attention, not alarm), hazards `GRAVITY_FIELDS`, `hrp_risks [HRP-09, HRP-11]`, action "CMO: review the exercise plan with the crew member". CMO view shows the model effect: "Bone trend this month −1.1 % (model without exercise −1.5 %)", badged "Simulated" | Rule tests (fires, does not fire, hysteresis); C3 (adherence 0.6 in `crew.yaml`) trips it in a 7-day run; evidence has provenance |
+| C+9 to 12 | **C-4 Private journal.** Screen per crew member: free text, optional one-tap tags (slept badly, headache, conflict, homesick, good day), optional writing prompt the crew can ignore, auto context (date, phase, "written during comm blackout"). Hidden until tapped. Saved in browser local storage on the tablet; edit / delete. "Share with CMO" per entry: preview → confirm → a copy goes to the onboard backend in memory only, flagged onboard-only, visible in the CMO view; unshare removes it | Tests: nothing journal-related in any `link/` message or the ground store (also after a blackout); backend never writes it to disk; share needs the confirm step; no sentiment code; works offline |
+| C+12 to 13 | **C-5 Demo hook + docs.** Optional ground-console moment in `demo_5min` (C3's weekly exercise bars + the INFO) only if it fits without moving existing alert timings; README / AGENTS / PRD M5 updated | Demo plays twice with identical alerts; no-network test passes; re-freeze only if the user asks (D-6) |
+
+**Gate C (supervisor):** no ranking or comparison anywhere; crew view neutral; adherence reaches the ground only through `link/`; the journal never leaves the tablet except a confirmed copy to the onboard CMO; every new limit honest (`source_kind`); every new rule has hazards + HRP risks; works with the link blacked out and networking blocked; all checks pass.
+
+Cut list for Block C if it runs behind: C-5 demo hook → C-3 model-effect line → light schedule item. Never cut: the no-ranking rule, the journal's local-only storage and CMO-only sharing.
+
+Choices Claude made inside the user's decisions (the user or the supervisor may change them): the crew member sees only their own today list (no weekly % for themselves); supplements are left out (no source and no demo need); the early-warning rule is `INFO`, not `CAUTION`.
 
 ## 0a. Block L: data-honesty labels (built, awaiting review)
 
@@ -131,7 +167,7 @@ If something already built breaks late, drop in this order: landing orthostatic 
 
 1. S-3: `arrhythmia` scenario
 2. A second real SPE (a larger event) as an extra scenario
-3. Countermeasures view (exercise prescription vs done) and private journal (PRD M5)
+3. ~~Countermeasures view and private journal (PRD M5)~~ → planned as Block C (§0b)
 
 ## 6. Open items
 

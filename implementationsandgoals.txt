@@ -1,7 +1,7 @@
 AEGIS HANDOFF: Claude (implementer) + Antigravity (supervisor)
-Last updated: 2026-11-15 (Claude: Block L L-1..L-3 built, READY FOR REVIEW)
-State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5) and the group-A clause limits APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
-Next: Antigravity reviews Block L (section 6, READY FOR REVIEW). No re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
+Last updated: 2026-11-15 (Antigravity: Block L L-1..L-3 APPROVED)
+State: MVP, Block R, Block P, Block T (T-0..T-10, Gate T, D-5), group-A clause limits, and Block L (L-1..L-3) APPROVED; frozen at `demo-ready` (Block R), `demo-ready-v2` (Block P), `demo-ready-v3` (Block T). F-001..F-014 CLOSED.
+Next: Ready for demo / submission. No re-freeze unless the user asks (would be D-6, `demo-ready-v4`).
 
 Read order: this file -> ROADMAP.md §0a (Block L) -> AGENTS.md §1, §8 -> PRD.md (§6 M0, §9, §14 as needed). Older detail lives in git history (`git log -p implementationsandgoals.txt`) and in the commit messages.
 
@@ -39,13 +39,9 @@ User directives (standing):
 - Block T: results are Observations on the existing path; `CREW_ENTERED` only for UI input; scripted results stay SYNTHETIC; T-4 signals onboard-only.
 
 4. SUPERVISOR FINDINGS (Antigravity)
-- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T T-0..T-10 (last: T-10 `014ae27`), Gate T, D-5 (`b255101`, `demo-ready-v3`); group-A clause limits (`2272b8f`, `f51b448`; 2026-11-15, independently verified: pytest 219, ruff clean, manifest 16/16, tsc clean, vitest 106; [V2 6109], [V2 6003], [V2 6115] with honest SYNTHETIC provenance on derived signals, no extra RNG draws). Full review notes in git history.
+- Approved, with commits: Gates 1-4, R-0..R-6, Gate R, D-3 (`de359bf`, `demo-ready`); Block P + Gate P, D-4 (`fb14f1d`, `demo-ready-v2`); Block T T-0..T-10 (last: T-10 `014ae27`), Gate T, D-5 (`b255101`, `demo-ready-v3`); group-A clause limits (`2272b8f`, `f51b448`); Block L L-1..L-3 (`18f018e`, 2026-11-15, independently verified: pytest 227 passed, ruff clean, manifest 16/16, tsc clean, vitest 17 files / 122 passed). Full review notes in git history.
 - F-001..F-014: CLOSED.
-- Block L plan (`ROADMAP.md` §0a, `af03b9c`): APPROVED for L-1 -> L-2 -> L-3. Clearer for non-medical-expert crew ("Simulated" and "Not a NASA limit · <kind>" avoid false doubt during off-nominal ops). Implementation notes for Claude:
-  1. Keep `frontend/src/api/limits.ts` (`RawLimit` + parser) in sync with `source_kind` so offline fallback works identically without ground/network.
-  2. Footer data line renders the clean string `"Radiation, space weather and <N> limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data)."` (without the parenthetical note in section 6).
-  3. In tests, assert unverified limits carry `"Not a NASA limit"` and never the verified `"✓ NASA"` badge (note `"Not a NASA limit · NASA reference, not a standard"` intentionally contains the word "NASA" as a disclaimer).
-  4. Ensure `"Not a NASA limit · ..."` badges wrap cleanly at 1024x768, `"Where our data comes from"` panel controls are >= 44 px, and the panel never blocks or obscures `EmergencyTakeover` or `AlertBanner`.
+- Block L (`18f018e`): APPROVED. All 4 implementation notes satisfied: `RawLimit`/parser in `frontend/src/api/limits.ts` syncs `source_kind` for offline fallback; footer renders clean `Radiation, space weather and 14 limits: NASA sources. Crew physiology: simulated (no public in-flight astronaut data).`; all 43 unverified limits carry `source_kind` and render `Not a NASA limit · <kind>` (verified count unchanged at 14); `DataSourcesPanel` opens inline in the footer with >= 44 px controls and never obscures `EmergencyTakeover` or `AlertBanner`; L-3 demo opening line present in `README.md` and `PRD.md`. No re-freeze unless the user asks (`demo-ready-v4`).
 - Standing note: escalation copy leads with onboard/CMO steps; high-severity manual entries need a confirm step; "Indicators consistent with..." copy only, never a diagnosis.
 
 5. RECENT LOG (Claude)
@@ -77,9 +73,9 @@ User directives (standing):
   documents contain. Checks: pytest 219, ruff, manifest, tsc, vitest 106.
 
 6. WORK QUEUE
-Done (APPROVED): MVP, Block R + D-3, Block P + D-4, Block T + Gate T + D-5, group-A clause limits.
+Done (APPROVED): MVP, Block R + D-3, Block P + D-4, Block T + Gate T + D-5, group-A clause limits, Block L (L-1..L-3).
 
-Block L: data-honesty labels (READY FOR REVIEW 2026-11-15; plan in ROADMAP §0a; log in section 5). Wording only:
+Block L: data-honesty labels (APPROVED 2026-11-15, `18f018e`; plan in ROADMAP §0a; log in section 5). Wording only:
 no data, rule, limit value or `verified` flag changes.
 - L-1 Labels say what a value is.
   * `DataSourceBadge`: "Synthetic" -> "Simulated"; "Synthetic (NASA-calibrated)" -> "Simulated · NASA-calibrated".
