@@ -6,6 +6,7 @@ Next: review T-10 -> Gate T -> D-5 re-freeze (`demo-ready-v3`, user go-ahead).
 Read order: this file -> ROADMAP.md §0 -> AGENTS.md (§2b for Block T) -> PRD.md (§6 M11, §7.4 severity, §9 limits, then only needed sections). Older detail lives in git history (`git log -p implementationsandgoals.txt`).
 
 User directives:
+- 2026-11-15 LANDING gate in `demo_5min`: KEEP AS IS (all crew on Hold before touchdown because the SPE `rad.dose.24h` WARNING penalty applies to everyone; C3 lowest with the fluid action). Do not exclude radiation alerts from the LANDING penalty. Claude waits for supervisor verification of T-10 before Gate T / D-5.
 - 2026-11-15 T-10 test moments APPROVED by user: (1) post-sleep scripted SYNTHETIC PVT-B lapses for C1 (~07:30-08:00, after `sleep.short_24h`); (2) pre-landing scripted SYNTHETIC low fluid intake for C3 (~22:00, before Mars landing at 23:30) so LANDING gate shows HOLD; (3) post-landing scripted SYNTHETIC stand test for C3 (~23:45) driving `cardio.orthostatic` on Heart & vessels; (4) optional live presenter moment (`pvt_b_short` 30 s or Amsler grid, not awaited by script).
 - 2026-11-15 hand-entered values take over the wearable stream for 30 min (`manual_override`; source_ref in `config/selftests.yaml`).
 - 2026-11-15 Block T go-ahead ("read implementationsandgoals.txt and work on your next tasks ... commit to the repo").
@@ -62,8 +63,7 @@ User directives:
   sans.watch, cardio.stand.positive (cog.performance_risk now within 8h).
   NOTE for supervisor/user: at 23h25m the LANDING gate is HOLD for every crew member, not only C3 (C3 26, C1 32,
   C2/C4 56): the SPE's `rad.dose.24h` WARNING applies the readiness alert penalty (-20) to everyone. C3 is lowest
-  and the only one with the fluid action. Left as is (honest formula); README says so. Changing it would mean
-  excluding radiation alerts from the LANDING penalty: a user decision.
+  and the only one with the fluid action. Left as is (honest formula); README says so. User decided 2026-11-15: keep as is.
   Docs: README walkthrough (4 min 50 s, test moments 1-3, optional live moment), PRD §14 v1.3 paragraph + banner,
   ROADMAP/AGENTS status lines.
   Tests: test_scenarios.py `test_demo_self_test_moments_are_scripted_synthetic_and_land_on_time` (results all
