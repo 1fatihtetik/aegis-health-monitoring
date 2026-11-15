@@ -10,6 +10,7 @@ import {
   SubmitOutcome,
 } from '../api/types';
 import { useAegis } from '../api/useLiveSocket';
+import { AmslerGrid } from '../components/AmslerGrid';
 import { DataSourceBadge } from '../components/DataSourceBadge';
 import { MeasurementForm } from '../components/MeasurementForm';
 import { PvtTest } from '../components/PvtTest';
@@ -143,6 +144,8 @@ export const SelfTests: React.FC<{ initialCrewId?: CrewId }> = ({ initialCrewId 
               connected={connected}
               onSubmit={onSubmit}
             />
+          ) : open.kind === 'amsler' ? (
+            <AmslerGrid key={`${open.id}-${crewId}`} test={open} connected={connected} onSubmit={onSubmit} />
           ) : (
             <MeasurementForm key={`${open.id}-${crewId}`} test={open} connected={connected} onSubmit={onSubmit} />
           )}

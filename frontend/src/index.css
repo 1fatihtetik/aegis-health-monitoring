@@ -24,7 +24,9 @@ html.light body,
 html.light .bg-space-950,
 html.light .bg-space-950\/90,
 html.light .bg-space-950\/85,
-html.light .bg-space-950\/80 {
+html.light .bg-space-950\/80,
+html.light .bg-space-950\/70,
+html.light .bg-space-950\/60 {
   background-color: #f1f5f9 !important;
 }
 

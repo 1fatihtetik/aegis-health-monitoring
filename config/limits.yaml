@@ -62,6 +62,9 @@ stand_test:
 sans:
   low_g_days_min:        { value: 30, source_ref: "Project heuristic: start of the SANS watch after 30 days below 1 g. SANS findings are reported after long-duration flights (Mader et al. 2011 Ophthalmology 118:2058-2069; Lee et al. 2020 npj Microgravity 6:7); partial-gravity effect unknown; no NASA-STD-3001 clause read", verified: false }
   ppco2_mmHg_24h_mean_max: { value: 3.0, source_ref: "Project heuristic: 24-h mean above the level ISS has stayed at or below since 2016 (OCHMO-TB-004 Rev D p. 7). CO2 as a SANS contributor is a hypothesis (Lee et al. 2020 review); not a NASA SANS limit", verified: false }
+# Block T, T-9: Amsler grid self-check. A flag cut, not a medical limit.
+eye:
+  amsler_flag_min:       { value: 0.5, source_ref: "Flag cut for amsler_flag (0 or 1), not a medical limit: any area marked wavy, blurred or missing on the Amsler grid counts (project choice; self-monitoring of central vision after Amsler 1953 Br J Ophthalmol 37:521-531); no NASA-STD-3001 clause read", verified: false }
 symptoms:
   headache_report_min: { value: 1, source_ref: "Project heuristic (self-report scale 0-3)", verified: false }
 sleep:

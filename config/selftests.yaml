@@ -246,6 +246,32 @@ tests:
       - "Stay lying down until the dizziness has fully passed, then sit up slowly before you stand"
     short_mode_note: "Demo timing, not the 10-minute stand protocol"
 
+  # ---- T-9: Amsler grid eye self-check. The tablet sends the flag and the marked-cell count per eye; the marked grid
+  # is shown for the CMO on screen and never stored (no image, no camera).
+  - id: amsler
+    title: "Eye check (Amsler grid)"
+    kind: amsler
+    entry_method: amsler
+    fields:
+      - { signal: amsler_flag, label: "Any area wavy, blurred or missing (0 no, 1 yes)", input_min: 0, input_max: 1 }
+      - { signal: amsler_cells_right, label: "Marked squares, right eye", input_min: 0, input_max: 100 }
+      - { signal: amsler_cells_left, label: "Marked squares, left eye", input_min: 0, input_max: 100 }
+    why: "Long stays in low gravity can change the back of the eye and blur vision (SANS). A weekly grid check, one eye at a time, can show a small change in central vision early, so the CMO can look at it."
+    hazards: [GRAVITY_FIELDS]
+    hrp_risks: [HRP-10]
+    steps:
+      - "Wear your usual reading glasses; make sure the light is good and the screen is clean"
+      - "Hold the tablet at reading distance, about 30-40 cm from your eyes"
+      - "Cover your LEFT eye with your hand; with the right eye, look only at the dot in the middle"
+      - "Keep looking at the dot. If lines look wavy, blurred or missing anywhere, pick the matching button and tap those squares"
+      - "Tap Next and repeat with your RIGHT eye covered, looking with the left eye"
+      - "Check the summary and tap Save; then show any marked areas to the CMO"
+    limit_refs: [eye.amsler_flag_min]
+    escalation: "Any marked area: show the marked grid to the crew medical officer (CMO) today and repeat the check tomorrow. Sudden loss of vision, a dark curtain over part of the view or eye pain: stop work and tell the CMO at once. The CMO informs the ground when the link allows."
+    protocol: "Amsler grid self-check (Amsler 1953, Br J Ophthalmol 37:521-531), one eye at a time at reading distance. Screen version with 10 x 10 large squares so each square is a 44 px tap target; it is not the calibrated 20 x 20 print chart and cannot replace an eye exam."
+    params: { grid: 10 }
+    schedule: { every: 7d, at: "09:00", due_window: 4h }
+
   # ---- T-4: questionnaires. onboard_only: the answers and the alerts they raise never leave the spacecraft. --------
   - id: kss
     title: "Sleepiness check (KSS)"

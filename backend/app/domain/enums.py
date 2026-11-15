@@ -140,6 +140,11 @@ SIGNALS: dict[str, SignalMeta] = {
     "tlx_workload": SignalMeta("0-100", "crew", "questionnaire", entry_only=True, onboard_only=True),
     "motion_sickness": SignalMeta("0-10", "crew", "questionnaire", entry_only=True, onboard_only=True),
     "mood": SignalMeta("1-5", "crew", "questionnaire", entry_only=True, onboard_only=True),
+    # T-9: Amsler grid self-check. Only the flag and the marked-cell counts per eye are sent; the marked grid itself is
+    # shown on the tablet for the CMO and never stored (no image).
+    "amsler_flag": SignalMeta("0=none,1=areas marked", "crew", "self_test", entry_only=True),
+    "amsler_cells_right": SignalMeta("cells", "crew", "self_test", entry_only=True),
+    "amsler_cells_left": SignalMeta("cells", "crew", "self_test", entry_only=True),
 }
 
 Signal = StrEnum("Signal", {name.upper(): name for name in SIGNALS})  # type: ignore[misc]

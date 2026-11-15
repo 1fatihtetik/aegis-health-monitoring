@@ -10,7 +10,7 @@ CREW = ["C1", "C2"]
 
 
 def sans_engine(cfg, store):
-    ids = {"sans.watch", "intake.sodium.high", "intake.fluid.low"}
+    ids = {"sans.watch", "intake.sodium.high", "intake.fluid.low", "eye.amsler.distortion"}
     return RuleEngine([r for r in cfg.rules if r.id in ids], cfg, store, CREW)
 
 
@@ -41,7 +41,7 @@ def test_fires_for_the_crew_member_with_high_sodium_after_a_month_in_low_g(cfg, 
     assert not f[("sans.watch", "C2")].firing
     members = f[("sans.watch", "C1")].evidence["members"]
     signals = [m["signal"] for m in members]
-    assert signals == ["low_g_days", "ppco2", "sodium_intake", "fluid_intake"]  # every member listed
+    assert signals == ["low_g_days", "ppco2", "sodium_intake", "fluid_intake", "amsler_flag"]  # every member listed
     assert members[0]["limit_ref"] == "sans.low_g_days_min" and members[0]["firing"]
 
 

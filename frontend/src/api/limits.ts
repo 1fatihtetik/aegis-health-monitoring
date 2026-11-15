@@ -68,6 +68,7 @@ const LIMIT_META: Record<string, { label: string; unit: string; op?: LimitOp }> 
   'stand_test.early_stop_flag': { label: 'Stopping early for symptoms', unit: '', op: '>=' },
   'sans.low_g_days_min': { label: 'Eye-change watch starts after this long below 1 g', unit: 'days', op: '>=' },
   'sans.ppco2_mmHg_24h_mean_max': { label: 'Eye-change watch: cabin CO₂ day average above', unit: 'mmHg', op: '>' },
+  'eye.amsler_flag_min': { label: 'Eye check alert when any square is marked', unit: '', op: '>=' },
   // T-8 landing gate.
   'readiness.landing_go_min': { label: 'Landing GO minimum readiness', unit: 'score', op: '>=' },
   'landing.low_g_days_long': { label: 'Landing readiness: half score after this long below 1 g', unit: 'days' },

@@ -132,6 +132,13 @@ class SelfTest(BaseModel):
                 raise ValueError(f"{self.id}: checkpoints must rise and the last one must end the stand")
             if self.params["time_scale"] != 1 and not self.short_mode_note:
                 raise ValueError(f"{self.id}: a shortened stand test must say it is not the real protocol")
+        if self.kind == "amsler":  # T-9: one grid per eye; the flag and both counts are the fields
+            need = {"amsler_flag", "amsler_cells_right", "amsler_cells_left"}
+            grid = int(self.params.get("grid", 0))
+            if grid < 5 or {f.signal for f in self.fields} != need:
+                raise ValueError(f"{self.id}: an Amsler test needs params.grid >= 5 and fields {sorted(need)}")
+            if any(f.input_max != grid * grid for f in self.fields if f.signal != "amsler_flag"):
+                raise ValueError(f"{self.id}: marked-cell fields must allow up to grid x grid squares")
         return self
 
 
